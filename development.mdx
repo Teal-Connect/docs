@@ -1,23 +1,34 @@
 ---
-title: 'Development'
+title: 'Sandbox'
 description: 'Learn how to preview changes locally'
 ---
+
+The Sandbox environment is designed for safe, isolated testing, simulating real-world data and interactions. This allows developers to:
+
+- Test API integrations without impacting live data.
+- Simulate various scenarios to ensure robust handling of different data structures.
+- Learn the API’s functionalities in a risk-free environment.
+
+**Base URL for Sandbox:** `https://api-sandbox.[yourdomain].com/v2`
+
+The Sandbox supports all production environment functionalities, plus capabilities for simulating data refreshes and testing scenarios.
+
 
 <Info>
   **Prerequisite** You should have installed Node.js (version 18.10.0 or
   higher).
 </Info>
 
-Step 1. Install Mintlify on your OS:
+Step 1. Install Teal on your OS:
 
 <CodeGroup>
 
 ```bash npm
-npm i -g mintlify
+npm i -g Teal
 ```
 
 ```bash yarn
-yarn global add mintlify
+yarn global add Teal
 ```
 
 </CodeGroup>
@@ -25,7 +36,7 @@ yarn global add mintlify
 Step 2. Go to the docs are located (where you can find `mint.json`) and run the following command:
 
 ```bash
-mintlify dev
+Teal dev
 ```
 
 The documentation website is now available at `http://localhost:3000`.
