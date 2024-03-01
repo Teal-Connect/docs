@@ -1,109 +1,269 @@
 ---
-title: 'Sandbox TEST 4'
-description: 'Learn how to preview changes locally'
+title: 'Sandbox Testing Guide'
+description: 'Test some of the main endpoint and retrieve mock data'
 ---
 
-The Sandbox environment is designed for safe, isolated testing, simulating real-world data and interactions. This allows developers to:
+This guide will support on testing our product's core functionalities in a sandbox environment. 
 
-- Test API integrations without impacting live data.
-- Simulate various scenarios to ensure robust handling of different data structures.
-- Learn the API’s functionalities in a risk-free environment.
+The Sandbox environment is designed for safe, isolated testing, simulating real-world data and interactions. The main use cases you will be able to test involve:
 
-**Base URL for Sandbox:** `https://api-sandbox.[yourdomain].com/v2`
+- generating a token for a new user
+- submitting payroll information via a payroll connection or payslip upload
+- fetching this data for lender verification
+- deleting all information from a user
 
-The Sandbox supports all production environment functionalities, plus capabilities for simulating data refreshes and testing scenarios.
+## Base URL for Sandbox Environment
 
+All API requests in this guide should be made to the following base URL:
 
-<Info>
-  **Prerequisite** You should have installed Node.js (version 18.10.0 or
-  higher).
-</Info>
-
-Step 1. Install Teal on your OS:
-
-<CodeGroup>
-
-```bash npm
-npm i -g Teal
+```arduino
+<https://api.sandbox.goteal.co>
 ```
 
-```bash yarn
-yarn global add Teal
-```
+## Request Headers
 
-</CodeGroup>
+For all requests, include the following headers for authorization and content type:
 
-Step 2. Go to the docs are located (where you can find `mint.json`) and run the following command:
+- `X-API-KEY`: Your API key provided for sandbox testing.
+- `Content-Type`: Appropriate content type for the request, typically `application/json; charset=utf-8` for JSON requests.
+
+## 1. Generate a Link Token
+
+### 1.1 Request a Token
+
+Generate a link token for authentication in subsequent steps to a unique user ID.
+
+**Endpoint** `POST/user-tokensusers`
+
+**Curl Example:**
 
 ```bash
-Teal dev
+curl -X POST https://api.sandbox.goteal.co/v1/user/{user_id}/token \
+-H "X-API-KEY: your-api-key" \
+-H "Content-Type: application/json; charset=utf-8" 
 ```
 
-The documentation website is now available at `http://localhost:3000`.
+**Response Example:**
+• `201 Created`
 
-### Custom Ports
+```json
+{
+  "upload_files_app": "https://app.sandbox.goteal.co/payroll_fetch?jwt=eyJhbGciOiJIUzI1NiJ9.eyJleHRlcm5hbFVzZXJJZCI6IjEyMzQiLCJzdWIiOiJ0ZWFsLXRlc3QtMjAyMyIsImlhdCI6MTcwNzgwODg0MiwiZXhwIjoxNzA3ODA4OTAyfQ.07fklAdnAYqgvZ5CIKHx1Fxo0EufrcVRg4_xU_MJ3ss&fetchId=88238380",
+  "user_d": "user-1234",
+  "user_token": "eyJhbGciOiJIUzI1NiJ9.eyJleHRlcm5hbFVzZXJJZCI6IjEyMzQiLCJzdWIiOiJ0ZWFsLXRlc3QtMjAyMyIsImlhdCI6MTcwNzgwODg0MiwiZXhwIjoxNzA3ODA4OTAyfQ.07fklAdnAYqgvZ5CIKHx1Fxo0EufrcVRg4_xU_MJ3ss",
+  "server_timestamp_ms": 1707975604000
+}
+```
 
-Mintlify uses port 3000 by default. You can use the `--port` flag to customize the port Mintlify runs on. For example, use this command to run in port 3333:
+## 2. Payroll Submission
+
+### 2 (A) Connecting a Payroll
+
+Connect a payroll account with the following API call.
+
+**Endpoint:**
+
+**`POST /users/{user_id}/connect`**
+
+**Curl Example:**
 
 ```bash
-mintlify dev --port 3333
+bashCopy code
+curl -X POST https://api.sandbox.goteal.co/v1/users/{user_id}/payroll/accounts \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer {user_token}" \
+-d '{"payrollProvider": "ProviderName", "**login_credentials**" {"user": "u1", "passowrd": "pass"}}'
 ```
 
-You will see an error like this if you try to run Mintlify in a port that's already taken:
+**Parameters:**
 
-```md
-Error: listen EADDRINUSE: address already in use :::3000
+- **`user_id`**: The unique identifier of the user attempting to connect their payroll.
+- **`payroll_provider`**: The name of the payroll provider to connect.
+- **`login_credentials`**: The credentials required by the payroll provider (typically email and password)
+
+**Response:**
+
+A successful connection will return a confirmation of the connection status.
+
+```json
+{
+  "status": "success",
+  "message": "Payroll account connected successfully."
+}
 ```
 
-## Mintlify Versions
+### 2 (B) Upload Payslips
 
-Each CLI is linked to a specific version of Mintlify. Please update the CLI if your local website looks different than production.
+Upload payslips using the following API call.
 
-<CodeGroup>
+**Endpoint:**
 
-```bash npm
-npm i -g mintlify@latest
+**`POST /users/{user_id}/upload`**
+
+**Parameters:**
+
+- **`user_id`**: The unique identifier of the user attempting to connect their payroll.
+
+**Curl Example:**
+
+```bash
+curl -X POST https://api.sandbox.goteal.co/v1/users/{user_id}/payroll/payslips \
+-H "Content-Type: multipart/form-data" \
+-H "Authorization: Bearer {user_token}" \
+-F 'payslip=@"/path/to/payslip1.pdf"' \
+-F 'payslip=@"/path/to/payslip2.pdf"'
 ```
 
-```bash yarn
-yarn global upgrade mintlify
+**Response Example:**
+
+```json
+{
+  "status": "success",
+  "message": "Payslips uploaded and processed successfully."
+}
 ```
 
-</CodeGroup>
+## 3. Fetch Data Submitted
 
-## Deployment
+### 3.1 Endpoint - Retrieve Payroll Data
 
-<Tip>
-  Unlimited editors available under the [Startup
-  Plan](https://mintlify.com/pricing)
-</Tip>
+**Endpoint:**
 
-You should see the following if the deploy successfully went through:
+**`GET /users/{user_id}/payroll_submission`**
 
-<Frame>
-  <img src="/images/checks-passed.png" style={{ borderRadius: '0.5rem' }} />
-</Frame>
+**Parameters:**
 
-## Troubleshooting
+- **`user_id`**: The unique identifier of the user that submitted their payroll.
+- **`start_date`**: The oldest date for a payroll submission (Optional).
+- **`end_date`**: The most recent date for a payroll submission (Optional).
 
-Here's how to solve some common problems when working with the CLI.
+**Curl Example:**
 
-<AccordionGroup>
-  <Accordion title="Mintlify is not loading">
-    Update to Node v18. Run `mintlify install` and try again.
-  </Accordion>
-  <Accordion title="No such file or directory on Windows">
-Go to the `C:/Users/Username/.mintlify/` directory and remove the `mint`
-folder. Then Open the Git Bash in this location and run `git clone
-https://github.com/mintlify/mint.git`.
+```bash
+curl -X GET https://api.sandbox.goteal.co/v1/users/{user_id}/**payroll**?**start_date=11-01-2023&end_date=31-04-2024** \
+-H "X-API-KEY: your-api-key"
+```
 
-Repeat step 3.
+**Response Body:**
 
-  </Accordion>
-  <Accordion title="Getting an unknown error">
-    Try navigating to the root of your device and delete the ~/.mintlify folder.
-    Then run `mintlify dev` again.
-  </Accordion>
-</AccordionGroup>
+```json
+{
+  "userId": "user-1234",
+  "serverTimestampMs": 123213123123213,
+  "source": "Payroll",
+	"payroll_submissions": [
+        {
+            "id": "0187c66e-e7e5-811c-b006-2232f00f426a",
+            "identity_information": {
+                "name": "Jane Doe",
+                "date_of_birth": "1990-04-01",
+                "address": {
+                    "street": "123 Main St",
+                    "county": "Anyshire",
+                    "city": "Anycity",
+                    "post_code": "AB12 3CD",
+                    "country": "Countryland",
+                },
+                "email": "jane.doe@example.com",
+                "phone": "+1234567890",
+                "NI_number": "AB123456C",
+                "employment_information": {
+                    "employer_name": "Acme Corp",
+                    "role": "Software Developer",
+                    "type": "Full-Time",
+                    "status": "Active",
+                    "start_date": "2018-06-01",
+                    "leave_date": null
+                },
+                "income_information": {
+                    "pay_date": "2024-02-15",
+                    "pay_interval_start": "2024-02-01",
+                    "pay_interval_end": "2024-02-15",
+                    "pay_frequency": "weekly",
+                    "earnings": {
+                        "gross_pay": 2000,
+                        "net_pay": 1500,
+                        "base_salary": 1900,
+                        "bonus": 100
+                    },
+                    "deductions": {
+                        "income_tax": 300,
+                        "employee_ni": 150,
+                        "employee_pension": 50,
+                        "total_deductions": 500
+                    }
+                }
+            }
+        },
+       ...
+    ]
+}
+```
 
-Curious about what changed in a CLI version? [Check out the CLI changelog.](/changelog/command-line)
+### 3.2 Webhooks - Payroll Submission
+
+Receive webhook notifications at your callback URL.
+
+**Endpoint:**
+
+**`POST /webhooks`**
+
+Request
+
+```json
+curl --request POST \
+     --url https://api.sandbox.goteal.co/v1/webhooks \
+     --header "X-API-KEY: your-api-key"
+     --header 'accept: application/json' \
+     --header 'content-type: application/json' \
+     --data '{
+        "events": ["users.payroll_submitted"],
+        "user_id": "user-1234",
+        "name": "name-for-the-webhook-subscription",
+        "url": "https://your-webhook-backend.com",
+        "secret": "optional-secret"
+     }'
+```
+
+Response Code 201
+
+```json
+{
+  "events": ["users.payroll_submitted"],
+  "user_id": "user-1234",
+  "timestamp": "2024-02-28T12:34:56Z",
+  "status": "submitted",
+  "details": "Payroll data submitted for processing."
+}
+```
+
+## 4. Delete User
+
+### 4.1 Delete All User Info
+
+**Endpoint:**
+
+**`DELETE /users/{user_id}`**
+
+**Parameters**
+
+- `user_id` (required): The unique identifier for the user.
+
+**Request Example**
+
+```bash
+curl -X DELETE https://api.sandbox.goteal.co/users/{user_id} \
+-H "X-API-KEY: your-api-key" 
+```
+
+**Responses**
+
+- `204 No Content`
+
+**Response Example**
+
+```json
+{
+  "message": "User deleted successfully."
+}
+```
