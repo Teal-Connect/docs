@@ -40,15 +40,14 @@
       "group": "Get Started",
       "pages": [
         "introduction",
-        "data",
-        "sandbox"
+        "quickstart",
+        "development"
       ]
     },
     {
       "group": "API Documentation",
       "pages": [
-        "api-reference/quickstart",
-        "api-reference/webhooks"
+        "api-reference/introduction"
       ]
     },
     {

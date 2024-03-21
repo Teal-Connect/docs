@@ -1,0 +1,140 @@
+---
+title: 'Data'
+description: 'Manage your data easily and securely'
+---
+This documentation is designed to provide developers with detailed insights into our API's structure, focusing on the management, delivery, and security of financial data.
+
+## 1. Data Structure
+
+Our API organizes financial data into several key entities, each tailored for specific aspects of data handling and retrieval.
+
+### Users `/users`
+
+Represents the borrowers and end-users that give consented access and upload their payslips to our API.
+
+**Example:** Register a new user
+```bash
+curl --request GET \
+  --url https://api.sandbox.goteal.co/users/{user_id} \
+  --header 'X-API-KEY: <api-key>'
+```
+
+### Accounts `/users/accounts`
+
+Accounts are the payroll or financial accounts that users link to our platform, providing a stream of payroll data.
+
+**Example:** Link a payroll account
+```bash
+curl --request POST \
+  --url https://api.sandbox.goteal.co/users/{user_id}/accounts \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-KEY: <api-key>' \
+  --data '{
+  "payroll_provider": "quickbooks",
+  "user_name": "john.smith@company.com",
+  "password": "very-secret-password"
+}'
+```
+
+### Entries `users/accounts/entries`
+
+Entries log each data submission, tracking the origin (account connection or manual upload) and content type of the data.
+
+**Example:** Retrieve submissions for a user
+```bash
+curl --request POST \
+  --url https://api.sandbox.goteal.co/users/{user_id}/accounts/entries/connections \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-KEY: <api-key>' \
+  --data '{
+  "payroll_provider": "quickbooks",
+  "user_name": "john.smith@gmail.com",
+  "password": "very-secret-password"
+}'
+```
+
+### Payroll `payroll`
+
+Aggregates detailed payroll information obtained through account synchronization or document analysis, including comprehensive earnings and deductions data.
+
+**Example:** Access payroll data
+```bash
+curl --request GET \
+  --url https://api.sandbox.goteal.co/payroll/{user_id} \
+  --header 'X-API-KEY: <api-key>''
+```
+
+### Documents `documents`
+
+Original documents (e.g., payslips) uploaded by users are stored securely, serving as the basis for data extraction and verification.
+
+**Example:** Upload a payslip
+```bash
+curl --request GET \
+  --url https://api.sandbox.goteal.co/documents/{user_id}/{file_id} \
+  --header 'X-API-KEY: <api-key>'
+```
+
+## 2. Data Delivery
+
+Data delivery mechanisms are designed to ensure timely, secure, and efficient access to financial data, facilitating seamless integration and real-time processing.
+
+### Timing
+
+Data processing is immediate for connected accounts, with payroll information updated in real-time as new data becomes available. Manual uploads are processed within minutes of submission, ensuring prompt data availability.
+
+### Availability
+
+Our API provides round-the-clock access to processed data, supporting queries for real-time and historical financial information. Data is accessible through dedicated endpoints, with responses designed for easy integration into client applications.
+
+**Example:** Query user's latest payroll entry
+```bash
+curl https://api.example.com/v1/users/{userId}/payroll/latest \
+-H "Authorization: Bearer yourApiKey"
+```
+
+### `webhooks`
+
+Webhooks offer a proactive approach to data delivery, notifying client applications of specific events, such as new data submissions or updates to existing entries, facilitating immediate action or processing.
+
+**Example:** Configure a webhook for new payroll data
+```bash
+curl --request POST \
+  --url https://api.sandbox.goteal.co/webhooks \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-KEY: <api-key>' \
+  --data '{
+  "events": [
+    "user-payroll-submitted",
+    "user-payroll-created"
+  ],
+  "name": "user-payroll-submitted",
+  "secret": "<string>",
+  "url": "https://webhooks.company.com"
+}'
+```
+
+## 3. Data Security
+
+Adhering to strict security protocols, our API ensures the integrity and confidentiality of sensitive financial data throughout its lifecycle.
+
+### Permissioned Access
+
+Data access within our API is strictly governed by user permissions and OAuth protocols, ensuring that only authorized parties can retrieve or modify data. 
+
+### Data Deletion Requests
+
+In compliance with privacy laws, our API supports explicit requests for data deletion, allowing users to manage their data footprint effectively.
+
+**Example:** Request data deletion
+```bash
+curl --request DELETE \
+  --url https://api.sandbox.goteal.co/users/{user_id} \
+  --header 'X-API-KEY: <api-key>'
+```
+
+### Security and Compliance
+
+Our infrastructure employs advanced security measures, including data encryption, regular security audits, and compliance with global data protection standards (e.g., GDPR, CCPA), to safeguard user data against unauthorized access or breaches.
+
+This enhanced documentation provides a clearer, more detailed view of how our API manages, delivers, and secures financial data, emphasizing our commitment to data integrity, security, and user control.
