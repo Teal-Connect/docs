@@ -915,7 +915,7 @@ components:
         message:
           type: string
           description: A msesage describing the conflict error
-          example: This user already exists
+          example: This user already exists. [name] and [email] must be a unique combination
     PayrollSubmission:
       type: object
       required: 
