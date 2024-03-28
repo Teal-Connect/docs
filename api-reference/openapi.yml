@@ -171,7 +171,16 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/AccountsResult"
+                allOf:
+                  - "$ref": "#/components/schemas/AccountsResult"
+                  - type: object
+                    properties:
+                      authorization_url:
+                        type: string
+                        description: Authrorization url for provider using OAUTH2
+                        example: https://provider/authenticate?redirect_url='https://api.teal.com/auth&state=state&scope=read'
+                        
+
         '400':
           "$ref": "#/components/responses/BadRequest"
         '401':
@@ -220,7 +229,7 @@ paths:
                 type: object
                 properties:
                   pagination:
-                    "$ref": "#/components/schemas/PaginationWithOrderedBy"
+                    "$ref": "#/components/schemas/Pagination"
                   accounts:
                     type: array
                     items:
@@ -790,10 +799,10 @@ components:
           type: string
           description: The payroll provider to use
           example: quickbooks
-        user_name:
+        status:
           type: string
-          description: The login of the user
-          example: john.smith@company.com
+          description: Status of account
+          example: PENDING
         created_at:
             "$ref": "#/components/schemas/Date"
     Entry:
