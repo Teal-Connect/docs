@@ -178,7 +178,7 @@ paths:
                       authorization_url:
                         type: string
                         description: Authrorization url for provider using OAUTH2
-                        example: https://provider/authenticate?redirect_url='https://api.teal.com/auth&state=state&scope=read'
+                        example: https://provider/authenticate?redirect_url=https://api.teal.com/auth&state=state&scope=read
                         
 
         '400':
