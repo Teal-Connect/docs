@@ -32,6 +32,9 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         '401':
           "$ref": "#/components/responses/UnauthorizedApiKey"
+        '409':
+          "$ref": "#/components/responses/ConflictedResource"
+
     get:
       summary: List all users.
       parameters:
@@ -156,6 +159,7 @@ paths:
             schema:
               allOf:
                 - type: object
+                  required: ["user_id"]
                   properties:
                     user_id:
                       type: string
@@ -168,7 +172,16 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/AccountsResult"
+                allOf:
+                  - "$ref": "#/components/schemas/AccountsResult"
+                  - type: object
+                    properties:
+                      authorization_url:
+                        type: string
+                        description: Authrorization url for provider using OAUTH2
+                        example: https://provider/authenticate?redirect_url=https://api.teal.com/auth&state=state&scope=read
+                        
+
         '400':
           "$ref": "#/components/responses/BadRequest"
         '401':
@@ -209,15 +222,15 @@ paths:
             maximum: 100
             default: 20
       responses: 
-        '201':
-          description: Created
+        '200':
+          description: Successfully retrieved accounts
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   pagination:
-                    "$ref": "#/components/schemas/PaginationWithOrderedBy"
+                    "$ref": "#/components/schemas/Pagination"
                   accounts:
                     type: array
                     items:
@@ -249,6 +262,27 @@ paths:
                     example: Account deleted successfully.
         '401':
           "$ref": "#/components/responses/UnauthorizedApiKey"
+    get:
+      summary: Retrieve an account with an account ID
+      parameters:
+        - in: path
+          name: account_id
+          schema:
+            type: string
+          required: true
+          description: ID of the account to retrieve
+      responses:
+        '200':
+          description: Succesfully retrieved account
+          content:
+            application/json:
+              schema:
+                "$ref" : "#/components/schemas/AccountsResult"
+        '404':
+          "$ref": "#/components/responses/ResourceNotFound"
+        '401':
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+
   "/entries":
     get:
       summary: Returns all entries for a user account sorted desc by created_at
@@ -671,12 +705,24 @@ components:
         application/json:
           schema:
             "$ref": "#/components/schemas/Error"
+    ConflictedResource:
+      description: Conflicted resource when creating if that resource already exists
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Conflict"
     UnauthorizedBearer:
       description: Unauthorized if the X-API-KEY is not provided or is wrong
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/UnauthorizedBarer"
+    ResourceNotFound:
+      description: Resource not found
+      content:
+        applcation/json:
+          schema:
+            "$ref": "#/components/schemas/NotFound"
   schemas:
     Date:
       type: string
@@ -722,10 +768,6 @@ components:
       required: [name, email]
       type: object
       properties:
-        user_id:
-          description: Optionl Id of the user. If not passed, it will be generated. If it is passed it must be unique for the client.
-          type: string
-          example: 95a0e70b-fe02-4f47-aef9-2efff279df71
         name:
           description: The full name of the user. It doens't have to be unique for the client.
           type: string
@@ -737,11 +779,16 @@ components:
           example: john.smith@company.com
     CreatedUser:
       allOf:
-      - "$ref": "#/components/schemas/User"
       - required: [user_id, created_at]
         properties:
+          user_id:
+            type: string
+            format: uuid
+            description: Unique identifier for user
           created_at:
             "$ref": "#/components/schemas/Date"
+            description: Creation time in UTC of the user
+      - "$ref": "#/components/schemas/User"
     UserToken:
       type: object
       required: [token, created_at]
@@ -780,10 +827,10 @@ components:
           type: string
           description: The payroll provider to use
           example: quickbooks
-        user_name:
+        status:
           type: string
-          description: The login of the user
-          example: john.smith@company.com
+          description: Status of account
+          example: PENDING
         created_at:
             "$ref": "#/components/schemas/Date"
     Entry:
@@ -899,6 +946,20 @@ components:
           type: string
           description: A message describing the error
           example: "Not Authorization: Bearer <token> provided or wrong value"
+    Conflict:
+      type: object
+      properties:
+        message:
+          type: string
+          description: A msesage describing the conflict error
+          example: This user already exists. [name] and [email] must be a unique combination
+    NotFound:
+      type: object
+      properties:
+        message:
+          type: string
+          description: A msesage describing the not found error
+          example: The account with id [8be3bb60-5ab4-4bd2-90e6-3b015691a827] does not exist
     PayrollSubmission:
       type: object
       required: 
