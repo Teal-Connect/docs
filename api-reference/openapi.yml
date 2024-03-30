@@ -878,24 +878,24 @@ components:
             "$ref": "#/components/schemas/Date"
     Error:
       required:
-      - message
+      - error
       type: object
       properties:
-        message:
+        error:
           type: string
           description: A message describing the error
           example: The request is missing the required field `name`
     Unauthorized:
       type: object
       properties:
-        message:
+        error:
           type: string
           description: A message describing the error
           example: No X-API-KEY header provided or wrong value
     UnauthorizedBarer:
       type: object
       properties:
-        message:
+        error:
           type: string
           description: A message describing the error
           example: "Not Authorization: Bearer <token> provided or wrong value"
