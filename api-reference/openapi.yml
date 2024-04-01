@@ -952,21 +952,21 @@ components:
       properties:
         errors:
           type: array
-          description: An array messages describing the errors
+          description: An array of messages describing the errors
           example: ["Not Authorization: Bearer <token> provided or wrong value"]
     Conflict:
       type: object
       properties:
         errors:
           type: array
-          description: An array of msesages describing the conflict errors
+          description: An array of messages describing the conflict errors
           example: ["This user already exists. [name] and [email] must be a unique combination"]
     NotFound:
       type: object
       properties:
         errors:
           type: string
-          description: A array of msesages describing the not found errors
+          description: An array of messages describing the not found errors
           example: ["The resource with id [8be3bb60-5ab4-4bd2-90e6-3b015691a827] does not exist"]
     PayrollSubmission:
       type: object
