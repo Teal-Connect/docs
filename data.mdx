@@ -141,7 +141,7 @@ curl --request DELETE \
   --header 'X-API-KEY: <api-key>'
 ```
 
-A deletion of a user deletes all sub-resources that the user is linked to. This includes accounts, payroll and uploaded documents.
+A deletion of a user deletes all sub-resources that the user is linked to. This includes accounts, payroll and uploaded documents. Once deleted no data can be retreived for that user, nor can any new data be attributed. On an account level, any connection can be revoked by the user at any time. A deletion of an account removes all entries under it.
 
 ### Security and Compliance
 
