@@ -19,7 +19,7 @@ curl --request GET \
   --header 'X-API-KEY: <api-key>'
 ```
 
-A user is made up of their identity information only.
+A user is made up of their identity information only. 
 
 ### Accounts `/accounts`
 
@@ -39,8 +39,8 @@ curl --request POST \
 }'
 ```
 
-A user can have multiple accounts to the same provider depending on the type of connection. The status of a connection determines if it is able to recieve data, needs authorisation or if it is invalid or expired. An account
-connected via OAuth will not require credentials to be passed into the account creation request. Any credentials that are passed to Teal are encrypted securely.
+A user can have multiple accounts to the same provider depending on the type of connection. The `POST /accounts` endpoint is a way to initialize a connection to a provider for a given user; Teal offers a separate provider flow for users via the WebUI as documented in [Introduction](./introduction.mdx). 
+The status of a account determines if it is able to recieve data, needs authorisation or if it is invalid or expired. An account connected via OAuth will not require credentials to be passed into the account creation request. Any credentials that are passed to Teal are encrypted securely.
 
 ### Entries `/entries`
 
@@ -57,11 +57,11 @@ curl --request POST \
   }'
 ```
 
-For an account, a call to the `/entries/connections` endpoint will query the connection for data. This endpoint is for additonal adhoc data retrieval for an account; Teal will also collect the payroll data via the user WebFlow as soon
-as a valid connection is established. Note that any new data retrieved via `/entries/connections` is persisted on Teal's storage and can be retrieved using the `/payroll/{user_id}` endpoint. 
+For an account, a call to the `/entries/connections` endpoint will query the connection for data. This endpoint is for adhoc data retrieval for an account; Teal will also collect the payroll data for users via the WebUI as soon
+as a valid connection is established. This endpoint can be applied to any account, it does not matter if it was established via your own call to `POST /accounts` or via the Teal WebUI. Note that any new data retrieved via `/entries/connections` is persisted on Teal's storage and can be retrieved using the `/payroll/{user_id}` endpoint. 
 
-A manual upload of payslip data using is not linked to an account, but the JSON response of `/entries/payslip` will be in the same format to that of the `/entries/connections` endpoint and the payroll data
-can be retireved in the exact same way. The files uploaded must be in PDF format.
+A manual upload of payslip data using is not linked to an account, but the JSON response of `/entries/payslips` will be in the same format and the payroll data
+can be retireved in the exact same way. The files for upload must be in PDF format.
 
 ### Payroll `/payroll`
 
@@ -141,7 +141,8 @@ curl --request DELETE \
   --header 'X-API-KEY: <api-key>'
 ```
 
-A deletion of a user deletes all sub-resources that the user is linked to. This includes accounts, payroll and uploaded documents. Once deleted no data can be retreived for that user, nor can any new data be attributed. On an account level, any connection can be revoked by the user at any time. A deletion of an account removes all entries under it.
+A deletion of a user deletes all sub-resources that the user is linked to. This includes accounts, payroll and uploaded documents. Once deleted no data can be retreived for that user, nor can any new data be attributed. On an account level, any connection can be revoked by the user at any time. 
+A deletion of an account removes all entries and payroll associated with it. After deletion, this account can not be retireved nor any data queried from it.
 
 ### Security and Compliance
 
