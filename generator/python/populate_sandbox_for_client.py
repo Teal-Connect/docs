@@ -38,7 +38,7 @@ def create_bearer_client(api_host, token):
 
 def create_user(api_instance: openapi_client.DefaultApi, client_name):
 
-    name = "John Smithdhhh"
+    name = "John Smith Second"
     email = f"jonsmith@{client_name}.com"
 
     try:
@@ -48,6 +48,7 @@ def create_user(api_instance: openapi_client.DefaultApi, client_name):
         return api_response.user_id
     except ApiException as e:
         print("Exception when calling creater user: %s\n" % e)
+        raise
 
 
 def create_account(api_instance: openapi_client.DefaultApi, user_id):
@@ -58,6 +59,7 @@ def create_account(api_instance: openapi_client.DefaultApi, user_id):
         return api_response.account_id
     except ApiException as e:
         print("Exception when calling create account: %s\n" % e)
+        raise
 
 
 def create_entry_for_account(api_instance: openapi_client.DefaultApi, account_id, user_token):
@@ -68,6 +70,7 @@ def create_entry_for_account(api_instance: openapi_client.DefaultApi, account_id
         return api_response.entry_id
     except ApiException as e:
         print("Exception when calling create entry for a connection: %s\n" % e)
+        raise
     
 
 def create_user_token(api_instance: openapi_client.DefaultApi, user_id):
@@ -77,12 +80,13 @@ def create_user_token(api_instance: openapi_client.DefaultApi, user_id):
         return api_response.token
     except ApiException as e:
         print("Exception when creating user token: %s\n" % e)
+        raise
 
 
 host = "http://localhost:8080"
 #host = "https://api.sandbox.goteal.co"
-client_api_key = "api-key"
-client_name = "aruncompany"
+client_api_key = ""
+client_name = ""
 
 api_instance = create_api_client(client_api_key, host)
 
