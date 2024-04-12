@@ -28,6 +28,7 @@ docs/
 tox.ini
 .travis.yml
 setup.cfg
+setup.py
 git_push.sh
 README.md
 pyproject.toml
