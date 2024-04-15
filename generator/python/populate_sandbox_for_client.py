@@ -86,10 +86,10 @@ def create_user_token(api_instance: openapi_client.DefaultApi, user_id):
         raise
 
 
-host = "http://localhost:8080"
+host = "http://host.docker.internal:8080" # host machine
 #host = "https://api.sandbox.goteal.co"
-client_api_key = "api-key"
-client_name = "aruncompany"
+client_api_key = ""
+client_name = ""
 
 api_instance = create_api_client(client_api_key, host)
 
