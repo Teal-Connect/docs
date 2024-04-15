@@ -1,20 +1,14 @@
-# Python client for Teal API
+# Populate sandbox values for a customer using openapi generator
 
-1. Download open api generator client - https://openapi-generator.tech/docs/installation
-2. Run following from docs root (client may change depending on installation used). This will generate the api client and model:
+1. Navigate to the teal docs root 
+2. Runing the following to create a container that generates the python client and models from our `openapi.yml`
 
-    `openapi-generator generate -i api-reference/openapi.yml -g python -o <path-to-teal-docs-root>/generator/python `
+    `docker build -f generator/python/Dockerfile -t python-populate-sandbox .`
 
+3. Run following command to put you on the docker container in the generated directory:
 
-3. Navigate to `<path-to-teal-docs-root>/generator/python` and install dependencies:
-    ```
-    python3 -m venv venv
-    . venv/bin/activate
-    pip3 install -r requirements.txt 
-    ```
+    `docker run -it python-populate-sandbox`
 
-    This will start a virtual env.
-
-4. Change `client_api_key` and `client_name` in `populate_sandbox_for_client.py`. Alter the host depending on needs.
+4. Change `client_api_key` and `client_name` in `populate_sandbox_for_client.py` using `vim`. Alter the host depending on needs.
 
 5. Run `python3 populate_sandbox_for_client.py`. The created identifiers will be printed in the response.

@@ -2,22 +2,23 @@ FROM nikolaik/python-nodejs:latest
 
 WORKDIR /usr/src/app
 
+# Install java (needed for openapi gen cli)
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive \
     apt-get -y install default-jre-headless && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# # Install npm
-# RUN apt-get update && \
-#     apt-get install -y nodejs npm && \
-#     rm -rf /var/lib/apt/lists/*
+# Install Vim
+RUN apt-get update && \
+    apt-get install -y vim && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install OpenAPI Generator
 RUN npm install @openapitools/openapi-generator-cli -g
 
-# Copy the OpenAPI definition and the ignore file
-COPY api-reference/openapi.yml generator/python/.openapi-generator-ignore /usr/src/app/api-reference/
+# Copy the OpenAPI definition
+COPY api-reference/openapi.yml /usr/src/app/api-reference/
 
 # Generate Python client code
 RUN openapi-generator-cli generate -i api-reference/openapi.yml -g python -o /tmp/generator/python
