@@ -426,7 +426,21 @@ curl --request GET \
 }
 ```
 
-## 8. Cleanup: Deleting a User `/users`
+## 8. WebApp usage
+
+Teal's webapp can be tested by accessing ```https://app.sandbox.goteal.co/``` in the browser. Use the generated bearer
+token in order to identify the user ```https://app.sandbox.goteal.co/?jwt=<bearer-token>```. The webapp uses the same API
+mechanism as the mentioned above, therefore the data will be retrieved in the same way.
+
+**Connect a Payroll:**
+
+<img src="/images/webapp/payroll-connection.gif" alt="payroll connection"  width="100%"/>
+
+**Submit a Payroll:**
+
+<img src="/images/webapp/payslip-submission.gif" alt="payslip submission" width="100%"/>
+
+## 9. Cleanup: Deleting a User `/users`
 
 After testing, clean up by deleting the test user and their associated data.
 
