@@ -520,6 +520,22 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         '401':
           "$ref": "#/components/responses/UnauthorizedApiKey"
+    delete:
+      summary: Deletes a document by id
+      parameters:
+        - in: path
+          name: document_id
+          schema:
+            type: string
+          required: true
+          description: The id of the file
+      responses:
+        '204':
+          description: No content
+        '401':
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        '404':
+          "$ref": "#/components/responses/ResourceNotFound"
   "/documents":
     get:
       summary: List all documents for a user.
