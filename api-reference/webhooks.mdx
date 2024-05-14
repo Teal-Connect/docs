@@ -75,7 +75,7 @@ const crypto = require('crypto');
 // The signature as "X-Teal-Signature" header
 const receivedTealSignature = '...'; 
 const client_secret = 'my little secret';
-var requestBody = '...'; // Your request body here
+const requestBody = '...'; // Your request body here
 
 // Make sure to use the raw requestBody when validating the signature.
 var signature = crypto
