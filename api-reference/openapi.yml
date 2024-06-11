@@ -410,10 +410,10 @@ paths:
       description: Uploads payslips as a multipart form data http request.
                    Every payslip must be a searchable and readable PDF file.
                    Scanned images as pdf files are not supported.
-                   The form field name for the file part is tored as a filed
-                   `document_external_id`. If a file part header
-                   `external_document_id` is provided it will saved as 
-                   `document_external_id` in the payroll submissin.
+                   If a file part header `external_document_id` is provided it
+                   will be returned as `document_external_id` in the respective
+                   payroll submission. If the header is not provided, the form
+                   field name for the file part will be used instead.
       security:
         - BearerAuth: []
       requestBody:
@@ -890,9 +890,9 @@ components:
           example: payslip1.pdf
         document_external_id:
           type: string
-          description: A string ccoming from the parameters of the 
-                       uploaded payslip1 either the form field name
-                       or external_document_id header for the file part.
+          description: A string coming from the parameters of the 
+                       uploaded payslip1.pdf either the form field name
+                       or `external_document_id` header for the file part.
                        It might not be unique and depends
                        on what's passed when uploading.
                        If the payroll submission doesn't originate from 
@@ -1039,12 +1039,13 @@ components:
           example: 2019-05-17T00:00:00.000Z
         document_external_id:
           type: string
-          description: If the payroll submission originates from a payslip 
-                       this will be the coming from the parameters of the 
-                       uploaded payslip1. It might not be unique and depends
-                      on what's passed when uploading.
-                      If the payroll submission doesn't originate from 
-                      a payslip this will be null.
+          description: A string coming from the parameters of the 
+                       uploaded payslip1.pdf either the form field name
+                       or `external_document_id` header for the file part.
+                       It might not be unique and depends
+                       on what's passed when uploading.
+                       If the payroll submission doesn't originate from 
+                       a payslip this will be null.
           example: payslip123456
         document_filename:
           type: string
@@ -1053,7 +1054,7 @@ components:
                        It will be duplicate if same file names are uploaded
                       If the payroll submission doesn't originate from 
                       a payslip this will be null.
-          example: file-payslip.pdf
+          example: file1-payslip.pdf
         identity_information:
           $ref: '#/components/schemas/IdentityInformation'
         employment_information:
