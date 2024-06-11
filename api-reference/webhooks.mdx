@@ -208,21 +208,29 @@ Leverage our webhooks to make your application more dynamic and responsive to ch
 Example of webhook request body configured to include the payload by setting
 ```"include_payload": "true"``` in POST ``` /webhooks``` request body.
 
+If the payroll data comes from uploading a payslip the `account_id`
+whould be `null` but `document_external_id` and `document_filename` would be populated
 
+
+is related to uploading a payslip.
 ```json
 {
   "event": "user-payroll-submitted",
   "user_id": "e9b7676b-f107-429c-8d17-cf3fd1362fd3",
   "timestamp": "2024-04-17T13:56:03.277Z",
+  "entry_id": "cc48a12c-0e98-47aa-b281-f203403470d0",
+  "account_id": "f68961c9-a083-4bfd-a3c6-0ae169b48f35",
   "payload": {
     "entry_id": "cc48a12c-0e98-47aa-b281-f203403470d0",
     "account_id": "f68961c9-a083-4bfd-a3c6-0ae169b48f35",
     "payroll_submissions": [
       {
         "id": "0187c66e-e7e5-811c-b006-2232f00f426a",
-        "account_id": null,
-        "entry_id": "5801b4eb-1c2e-4caf-b508-70eeab52d8ea",
+        "account_id": "f68961c9-a083-4bfd-a3c6-0ae169b48f35",
+        "entry_id": "cc48a12c-0e98-47aa-b281-f203403470d0",
         "created_at": "2024-04-17T13:56:03.118Z",
+        "document_external_id": null,
+        "document_filename": null,
         "identity_information": {
           "name": "Jane Doe",
           "date_of_birth": "1990-04-01",
