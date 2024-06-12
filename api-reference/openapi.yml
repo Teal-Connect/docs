@@ -895,8 +895,6 @@ components:
                        or `external_document_id` header for the file part.
                        It might not be unique and depends
                        on what's passed when uploading.
-                       If the payroll submission doesn't originate from 
-                       a payslip this will be null.
           example: payslip123456
         type:
           type: string
