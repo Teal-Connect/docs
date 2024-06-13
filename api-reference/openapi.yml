@@ -14,7 +14,7 @@ security:
 paths:
   "/users":
     description: A User represents the borrowers and end-users that
-                 give consented access and upload their payslips to our API.
+                 give consented access and/or upload their payslips to our API.
     post:
       summary: Creates a user.
       requestBody:
@@ -87,8 +87,8 @@ paths:
         '401':
           "$ref": "#/components/responses/UnauthorizedApiKey"
   "/users/{user_id}":
-    description: A User represents the borrowers and end-users that
-                 give consented access and upload their payslips to our API.
+    description: A User represents the borrowers and end-users that give
+                 consented access and/or upload their payslips to our API.
     get:
       summary: Creates a user.
       parameters:
@@ -156,8 +156,8 @@ paths:
         '401':
           "$ref": "#/components/responses/UnauthorizedApiKey"
   "/accounts":
-    description: Accounts are the payroll or financial accounts that
-                 users link to our platform, providing a stream of payroll data.
+    description: Account are the payroll and HR platform accesses that users link to Teal,
+                 providing a stream of income and employment data
     post:
       summary: Creates an account for the user e.g. a Xero account
       requestBody:
@@ -241,8 +241,8 @@ paths:
         '401':
           "$ref": "#/components/responses/UnauthorizedApiKey"
   "/accounts/{account_id}":
-    description: Accounts are the payroll or financial accounts that
-                 users link to our platform, providing a stream of payroll data.
+    description: Account are the payroll and HR platform accesses that users link to Teal,
+                 providing a stream of income and employment data
     delete:
       summary: Deletes an account for the user (e.g. a Xero account)
       parameters:
