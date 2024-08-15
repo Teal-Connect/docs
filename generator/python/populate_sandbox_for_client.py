@@ -100,7 +100,6 @@ api_instance = create_api_client(client_api_key, host)
 for x in range(15):
     print("User {}".format(x))
     user_id, user_name = create_user(api_instance, client_name, x)
-    print(user_id)
     account_id = create_account(api_instance, user_id, user_name)
 
     user_token = create_user_token(api_instance, user_id)
