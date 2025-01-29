@@ -1029,7 +1029,7 @@ components:
       type: object
       properties:
         name:
-          description: The full name of the user. It doens't have to be unique for the client.
+          description: The full name of the user. It doesn't have to be unique for the client.
           type: string
           example: John Smith
         email:
@@ -1397,7 +1397,7 @@ components:
           "$ref": "#/components/schemas/Date"
           description: The date the payroll was submitted
           example: 2019-05-17T00:00:00.000Z
-        document_id:  
+        document_id:
           type: string
           nullable: true
           format: uuid
