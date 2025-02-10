@@ -5,7 +5,7 @@ description: 'Learn about and configure recurring payroll'
 
 ## Introduction
 
-To keep your users' payroll up to date without having to manually query each connection, Recurring Payroll can be enabled for your client. This allows you to specify a time frequency for automated payroll fetches. 
+To keep your users' payroll up to date without having to manually query each connection, Recurring Payroll can be enabled for your users. This allows you to specify a time frequency for automated payroll fetches. 
 
 The valid frequencies are:
 - `WEEKLY` - once a week on Monday 12AM UTC
@@ -13,9 +13,9 @@ The valid frequencies are:
 
 ## Execution
 
-When a recurring check is executed, all of your eligible users will have their accounts updated with their latest payroll. At the moment, the frequency can only be applied on a client level
-which means all users will have their payroll fetched at the same time. In the future Teal will support user level frequencies. The payroll is queried from the payroll provider by using the most recent `pay_date` of the account, 
-retrieving the new data that falls after this.
+When a recurring check is executed, all of your eligible users will have their accounts updated with their latest payroll. The payroll is queried from the payroll provider by using the most recent `pay_date` of the account, 
+retrieving the new data that falls after this. Recurring checks can be enabled for all users or for individual users. This also applies to the recurring check configuration where the frequency and end date of the recurring
+check can be applied on the user level or to the client level. If a user has recurring check configuration, it will always take precedence over the client level configuration.
 
 ## Eligibility
 
