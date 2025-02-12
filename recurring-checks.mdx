@@ -35,16 +35,6 @@ by the creation time (most recently created). A user can have multiple active ac
 If a fetch fails for an account during the recurring payroll check, then it will be placed on a daily retry schedule until it is successful. The daily retry runs at 3AM UTC. When the failure is due to invalid credentials, expired refresh token or a detection of Multi-Factor authentication, these accounts
 are excluded from future checks.
 
-## Webhooks
-
-You can subscribe to the below events to receive the recurring check feedback for failures.
-
-- `recurring-checks-reconnect` - notifies when a user requires an account reconnection to resume recurring payroll checks. This will be due to invalid credentials (e.g. password) or a refresh token expiring for a provider that uses OAuth. 
-If this event is sent it signifies that the user must be redirected to the authorisation flow.
-- `recurring-checks-unavailable` - notifies when a user is no longer eligible for recurring payroll checks. This will be due to MFA being detected for the account.
-
-If you have subscribed to the `user-payroll-submitted`, then you will receive the notifications as usual for each user on a successful payroll update.
-
 ## Sandbox
 
 In the sandbox environment, recurring checks can be enabled but all the data that is returned for the accounts is mocked up. For testing purposes, the frequency of the recurring payroll can be set to `HOURLY` in this environment if you choose.
