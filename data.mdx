@@ -150,12 +150,13 @@ A deletion of an account removes all entries and payroll associated with it. Aft
 
 All dates in our API are formatted according to [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601). 
 
-Response dates are always returned in UTC, representing the equivalent moment in time regardless of the original time zone. For example, 2PM in Berlin:
+Response dates are always returned in UTC, representing the equivalent moment in time regardless of the original time zone offset. For example, 2PM in Berlin:
 `2024-02-17T14:00:00+02:00` is returned as `2024-02-17T12:00:00Z`
 
-When submitting dates to the API (such as in `POST /accounts`), you can include offsets, and these will be respected in all date calculations.
+When submitting dates to the API, you can include offsets, and these will be respected in all date calculations.
 
 When integrating with payroll providers that supply dates without time components (e.g., `2024-02-17`), we standardize these to noon UTC (`2024-02-17T12:00:00Z`) to avoid any ambiguity with date boundaries across time zones.
+This should be taken into consideration when submitting your own dates for filtering payroll (such as in `POST /accounts`).
 
 ### Security and Compliance
 
