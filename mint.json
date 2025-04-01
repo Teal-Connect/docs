@@ -110,8 +110,9 @@
       ]
     },
     {
-      "group": "Members",
+      "group": "Organization Members",
       "pages": [
+        "api-reference/members/overview",
         "api-reference/members/create",
         "api-reference/members/get",
         "api-reference/members/list",
