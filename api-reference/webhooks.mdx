@@ -34,7 +34,8 @@ curl --request POST \
   --data '{
     "events": ["user-payroll-submitted", "user-payroll-created"],
     "name": "user-payroll-submitted",
-    "secret": "very-secret",
+    "signing_secret": "very-secret",
+    "encryption_key": "St/73LZ1xHkwX5TanL7V+YAVczn4acozPf3cFySKQXI=",
     "url": "https://webhooks.site"
   }'
 ```
@@ -45,14 +46,14 @@ curl --request POST \
 - **encryption_key**: (Optional) A Base64-encoded 32-byte key used to encrypt webhook payloads.
 
 ### Verifying Webhooks
-If the optional `secret` was provided in the webhook subscription, it can be used to validate incoming webhook
+If the optional `signing_secret` was provided in the webhook subscription, it can be used to validate incoming webhook
 signatures, ensuring data integrity and authenticity.
 
 To verify if a received webhook event is authentic:
-- Encode the webook payload with the `secret` using `HMAC-SHA512`. You can then check that the result of this encoding matches the contents in the
+- Encode the webook payload with the `signing_secret` using `HMAC-SHA512`. You can then check that the result of this encoding matches the contents in the
 `X-Teal-Signature` header. If it matches then the webhook received is genuine. Example verification:
 
-If your `secret` was `mysecret` and you received the following webhook payload:
+If your `signing_secret` was `mysecret` and you received the following webhook payload:
 
 ```
             {
@@ -67,6 +68,219 @@ The signature to check against would be:
 ```
 "X-Teal-Signature" : "a30540779107a19069257432b775b74b16b32214616638fae2e6027a41a3f2dfb08f44daf3862c335d08fb83501fc769f73d49a1cb137f96f31c6a7db412c197"
 ```
+
+### Generating Encryption Keys
+If you want to use encrypted webhooks, you'll need to provide a 32-byte encryption key encoded in Base64 when creating your webhook. Here's how to generate a secure random key in different languages:
+
+<CodeGroup>
+
+```javascript JS
+const crypto = require('crypto');
+
+// Generate a random 32-byte key
+const encryptionKey = crypto.randomBytes(32);
+
+// Encode the key as Base64 for use with the API
+const encryptionKeyBase64 = encryptionKey.toString('base64');
+console.log('Encryption Key:', encryptionKeyBase64);
+// Example output: St/73LZ1xHkwX5TanL7V+YAVczn4acozPf3cFySKQXI=
+```
+
+```python Python
+import os
+import base64
+
+# Generate a random 32-byte key
+encryption_key = os.urandom(32)
+
+# Encode the key as Base64 for use with the API
+encryption_key_base64 = base64.b64encode(encryption_key).decode('utf-8')
+print(f"Encryption Key: {encryption_key_base64}")
+# Example output: St/73LZ1xHkwX5TanL7V+YAVczn4acozPf3cFySKQXI=
+```
+
+```java Java
+import java.security.SecureRandom;
+import java.util.Base64;
+
+public class GenerateEncryptionKey {
+    public static void main(String[] args) {
+        // Generate a random 32-byte key
+        SecureRandom secureRandom = new SecureRandom();
+        byte[] key = new byte[32];
+        secureRandom.nextBytes(key);
+        
+        // Encode the key as Base64 for use with the API
+        String encryptionKeyBase64 = Base64.getEncoder().encodeToString(key);
+        System.out.println("Encryption Key: " + encryptionKeyBase64);
+        // Example output: St/73LZ1xHkwX5TanL7V+YAVczn4acozPf3cFySKQXI=
+    }
+}
+```
+
+```kotlin Kotlin
+import java.security.SecureRandom
+import java.util.Base64
+
+// Generate a random 32-byte key
+val secureRandom = SecureRandom()
+val key = ByteArray(32)
+secureRandom.nextBytes(key)
+
+// Encode the key as Base64 for use with the API
+val encryptionKeyBase64 = Base64.getEncoder().encodeToString(key)
+println("Encryption Key: $encryptionKeyBase64")
+// Example output: St/73LZ1xHkwX5TanL7V+YAVczn4acozPf3cFySKQXI=
+```
+
+</CodeGroup>
+
+### Decrypting Webhook Payloads
+When you provide an `encryption_key`, the webhook payload will be encrypted using AES/GCM/NoPadding. To decrypt:
+
+1. The encrypted payload is sent in the request body
+2. The initialization vector is provided in the `X-Teal-Encryption-IV` header (Base64 encoded)
+
+Here's how to decrypt the payload in different languages:
+
+<CodeGroup>
+
+```javascript JS
+const crypto = require('crypto');
+
+// From your webhook setup
+const encryptionKeyBase64 = 'St/73LZ1xHkwX5TanL7V+YAVczn4acozPf3cFySKQXI=';
+const encryptionKey = Buffer.from(encryptionKeyBase64, 'base64');
+
+// From the webhook request
+const encryptedPayload = request.body; // The encrypted data as a buffer
+const ivBase64 = request.headers['x-teal-encryption-iv'];
+const iv = Buffer.from(ivBase64, 'base64');
+
+// Create a decipher with AES-GCM
+const decipher = crypto.createDecipheriv('aes-256-gcm', encryptionKey, iv);
+
+// Decrypt the payload
+let decrypted = decipher.update(encryptedPayload);
+try {
+    // Since we're using GCM, we need to call final() to verify the auth tag
+    const final = decipher.final();
+    if (final.length > 0) {
+        decrypted = Buffer.concat([decrypted, final]);
+    }
+    
+    // Parse the decrypted JSON
+    const payload = JSON.parse(decrypted.toString('utf8'));
+    console.log('Decrypted payload:', payload);
+} catch (error) {
+    console.error('Decryption failed:', error);
+}
+```
+
+```python Python
+import base64
+import json
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+# From your webhook setup
+encryption_key_base64 = 'St/73LZ1xHkwX5TanL7V+YAVczn4acozPf3cFySKQXI='
+encryption_key = base64.b64decode(encryption_key_base64)
+
+# From the webhook request
+encrypted_payload = request.body  # The encrypted data as bytes
+iv_base64 = request.headers['x-teal-encryption-iv']
+iv = base64.b64decode(iv_base64)
+
+try:
+    # Create AESGCM cipher and decrypt
+    aesgcm = AESGCM(encryption_key)
+    
+    # Decrypt with empty associated data
+    decrypted = aesgcm.decrypt(iv, encrypted_payload, b'')
+    
+    # Parse the decrypted JSON
+    payload = json.loads(decrypted.decode('utf-8'))
+    print(f"Decrypted payload: {payload}")
+except Exception as e:
+    print(f"Decryption failed: {e}")
+```
+
+```java Java
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.util.Base64;
+
+public class DecryptWebhook {
+    public static void main(String[] args) throws Exception {
+        // From your webhook setup
+        String encryptionKeyBase64 = "St/73LZ1xHkwX5TanL7V+YAVczn4acozPf3cFySKQXI=";
+        byte[] encryptionKey = Base64.getDecoder().decode(encryptionKeyBase64);
+        
+        // From the webhook request
+        byte[] encryptedPayload = request.getBody(); // The encrypted data as bytes
+        String ivBase64 = request.getHeader("X-Teal-Encryption-IV");
+        byte[] iv = Base64.getDecoder().decode(ivBase64);
+        
+        try {
+            // Create SecretKey from the raw key bytes
+            SecretKey secretKey = new SecretKeySpec(encryptionKey, "AES");
+            
+            // Initialize the cipher for decryption
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            GCMParameterSpec parameterSpec = new GCMParameterSpec(128, iv); // 128-bit auth tag length
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
+            
+            // Decrypt the payload
+            byte[] decrypted = cipher.doFinal(encryptedPayload);
+            
+            // Parse the decrypted JSON
+            String payloadJson = new String(decrypted, "UTF-8");
+            System.out.println("Decrypted payload: " + payloadJson);
+        } catch (Exception e) {
+            System.err.println("Decryption failed: " + e.getMessage());
+        }
+    }
+}
+```
+
+```kotlin Kotlin
+import javax.crypto.Cipher
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
+import java.util.Base64
+
+// From your webhook setup
+val encryptionKeyBase64 = "St/73LZ1xHkwX5TanL7V+YAVczn4acozPf3cFySKQXI="
+val encryptionKey = Base64.getDecoder().decode(encryptionKeyBase64)
+
+// From the webhook request
+val encryptedPayload = request.body // The encrypted data as bytes
+val ivBase64 = request.headers["X-Teal-Encryption-IV"]
+val iv = Base64.getDecoder().decode(ivBase64)
+
+try {
+    // Create SecretKey from the raw key bytes
+    val secretKey = SecretKeySpec(encryptionKey, "AES")
+    
+    // Initialize the cipher for decryption
+    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+    val parameterSpec = GCMParameterSpec(128, iv) // 128-bit auth tag length
+    cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec)
+    
+    // Decrypt the payload
+    val decrypted = cipher.doFinal(encryptedPayload)
+    
+    // Parse the decrypted JSON
+    val payloadJson = String(decrypted, Charsets.UTF_8)
+    println("Decrypted payload: $payloadJson")
+} catch (e: Exception) {
+    println("Decryption failed: ${e.message}")
+}
+```
+
+</CodeGroup>
 
 Example of verifying signature:
 <CodeGroup>
@@ -199,7 +413,8 @@ Unsubscribe using the webhook ID in the request `DELETE /webhooks/{webhook_id}`
 ## Best Practices
 
 - **Secure Endpoints**: Ensure your webhook URL is HTTPS-secured to safeguard transmitted data.
-- **Manage Secrets**: Keep your `secret` confidential and use it to verify webhook payloads.
+- **Manage Secrets**: Keep your `signing_secret` and `encryption_key` confidential.
+- **Use Encryption**: For sensitive data, consider using the encryption feature by providing an `encryption_key`.
 - **Regular Review**: Periodically check your webhook subscriptions and adjust as needed to match your application's requirements.
 
 Leverage our webhooks to make your application more dynamic and responsive to changes without the overhead of continuous polling.
