@@ -42,6 +42,7 @@ curl --request POST \
 - **name**: Label your webhook for easier management.
 - **url**: Your endpoint to receive webhook payloads.
 - **signing_secret**: (Optional) A secret for secure webhook verification.
+- **encryption_key**: (Optional) A Base64-encoded 32-byte key used to encrypt webhook payloads.
 
 ### Verifying Webhooks
 If the optional `secret` was provided in the webhook subscription, it can be used to validate incoming webhook
