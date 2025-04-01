@@ -69,6 +69,125 @@ The signature to check against would be:
 "X-Teal-Signature" : "a30540779107a19069257432b775b74b16b32214616638fae2e6027a41a3f2dfb08f44daf3862c335d08fb83501fc769f73d49a1cb137f96f31c6a7db412c197"
 ```
 
+Example of verifying signature:
+<CodeGroup>
+
+```javascript JS
+const crypto = require('crypto');
+
+// The signature as "X-Teal-Signature" header
+const receivedTealSignature = '...'; 
+const client_secret = 'my little secret';
+const requestBody = '...'; // Your request body here
+
+// Make sure to use the raw requestBody when validating the signature.
+var signature = crypto
+  .createHmac('sha512', client_secret)
+  .update(requestBody)
+  .digest('hex');
+
+if (receivedTealSignature === signature) {
+    console.log('Signature is valid');
+} else {
+    console.log('Signature is invalid');
+}
+```
+
+```python Python
+import hmac
+import hashlib
+
+receivedTealSignature = '...'  # The signature as "X-Teal-Signature" header
+client_secret = 'my little secret'
+requestBody = '...'  # Your request body here
+
+# Make sure to use the raw requestBody when validating the signature.
+signature = hmac.new(
+  client_secret.encode(),
+  msg=requestBody.encode(),
+  digestmod=hashlib.sha512
+).hexdigest()
+
+if receivedTealSignature == signature:
+    print('Signature is valid')
+else:
+    print('Signature is invalid')
+```
+
+```java Java
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+
+        // The signature as "X-Teal-Signature" header
+        String receivedTealSignature = "...";
+        String client_secret = "my little secret";
+        String requestBody = "...";  // Your request body here
+
+        // Make sure to use the raw requestBody when validating the signature.
+        Mac sha512_HMAC = Mac.getInstance("HmacSHA512");
+        SecretKeySpec secret_key = new SecretKeySpec(
+          client_secret.getBytes(StandardCharsets.UTF_8),
+          "HmacSHA512"
+        );
+        sha512_HMAC.init(secret_key);
+
+        byte[] hash = sha512_HMAC
+        .doFinal(requestBody.getBytes(StandardCharsets.UTF_8));
+        StringBuilder sb = new StringBuilder(hash.length * 2);
+        for(byte b : hash) {
+            sb.append(String.format("%02x", b));
+        }
+        String signature = sb.toString();
+
+        if (receivedTealSignature.equals(signature)) {
+            System.out.println("Signature is valid");
+        } else {
+            System.out.println("Signature is invalid");
+        }
+    }
+}
+```
+
+```kotlin Kotlin
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
+import java.nio.charset.StandardCharsets
+import java.security.InvalidKeyException
+import java.security.NoSuchAlgorithmException
+
+ // The signature as "X-Teal-Signature" header
+val receivedTealSignature = "..." 
+val client_secret = "my little secret"
+val requestBody = "..."  // Your request body here
+
+// Make sure to use the raw requestBody when validating the signature.
+val sha512_HMAC = Mac.getInstance("HmacSHA512")
+val secret_key = SecretKeySpec(
+  client_secret.toByteArray(StandardCharsets.UTF_8),
+  "HmacSHA512"
+)
+sha512_HMAC.init(secret_key)
+
+val hash = sha512_HMAC
+    .doFinal(requestBody.toByteArray(StandardCharsets.UTF_8))
+val signature = hash.joinToString("") { "%02x".format(it) }
+
+if (receivedTealSignature == signature) {
+    println("Signature is valid")
+} else {
+    println("Signature is invalid")
+}
+
+```
+
+</CodeGroup>
+
 ### Generating Encryption Keys
 If you want to use encrypted webhooks, you'll need to provide a 32-byte encryption key encoded in Base64 when creating your webhook. Here's how to generate a secure random key in different languages:
 
@@ -281,127 +400,6 @@ try {
 ```
 
 </CodeGroup>
-
-Example of verifying signature:
-<CodeGroup>
-
-```javascript JS
-const crypto = require('crypto');
-
-// The signature as "X-Teal-Signature" header
-const receivedTealSignature = '...'; 
-const client_secret = 'my little secret';
-const requestBody = '...'; // Your request body here
-
-// Make sure to use the raw requestBody when validating the signature.
-var signature = crypto
-  .createHmac('sha512', client_secret)
-  .update(requestBody)
-  .digest('hex');
-
-if (receivedTealSignature === signature) {
-    console.log('Signature is valid');
-} else {
-    console.log('Signature is invalid');
-}
-```
-
-```python Python
-import hmac
-import hashlib
-
-receivedTealSignature = '...'  # The signature as "X-Teal-Signature" header
-client_secret = 'my little secret'
-requestBody = '...'  # Your request body here
-
-# Make sure to use the raw requestBody when validating the signature.
-signature = hmac.new(
-  client_secret.encode(),
-  msg=requestBody.encode(),
-  digestmod=hashlib.sha512
-).hexdigest()
-
-if receivedTealSignature == signature:
-    print('Signature is valid')
-else:
-    print('Signature is invalid')
-```
-
-```java Java
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-
-public class Main {
-    public static void main(String[] args) throws Exception {
-
-        // The signature as "X-Teal-Signature" header
-        String receivedTealSignature = "...";
-        String client_secret = "my little secret";
-        String requestBody = "...";  // Your request body here
-
-        // Make sure to use the raw requestBody when validating the signature.
-        Mac sha512_HMAC = Mac.getInstance("HmacSHA512");
-        SecretKeySpec secret_key = new SecretKeySpec(
-          client_secret.getBytes(StandardCharsets.UTF_8),
-          "HmacSHA512"
-        );
-        sha512_HMAC.init(secret_key);
-
-        byte[] hash = sha512_HMAC
-        .doFinal(requestBody.getBytes(StandardCharsets.UTF_8));
-        StringBuilder sb = new StringBuilder(hash.length * 2);
-        for(byte b : hash) {
-            sb.append(String.format("%02x", b));
-        }
-        String signature = sb.toString();
-
-        if (receivedTealSignature.equals(signature)) {
-            System.out.println("Signature is valid");
-        } else {
-            System.out.println("Signature is invalid");
-        }
-    }
-}
-```
-
-```java Kotlin
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
-import java.nio.charset.StandardCharsets
-import java.security.InvalidKeyException
-import java.security.NoSuchAlgorithmException
-
- // The signature as "X-Teal-Signature" header
-val receivedTealSignature = "..." 
-val client_secret = "my little secret"
-val requestBody = "..."  // Your request body here
-
-// Make sure to use the raw requestBody when validating the signature.
-val sha512_HMAC = Mac.getInstance("HmacSHA512")
-val secret_key = SecretKeySpec(
-  client_secret.toByteArray(StandardCharsets.UTF_8),
-  "HmacSHA512"
-)
-sha512_HMAC.init(secret_key)
-
-val hash = sha512_HMAC
-    .doFinal(requestBody.toByteArray(StandardCharsets.UTF_8))
-val signature = hash.joinToString("") { "%02x".format(it) }
-
-if (receivedTealSignature == signature) {
-    println("Signature is valid")
-} else {
-    println("Signature is invalid")
-}
-
-```
-
-</CodeGroup>
-
-
 ## Webhook Management
 
 ### Viewing subscriptions
@@ -414,7 +412,8 @@ Unsubscribe using the webhook ID in the request `DELETE /webhooks/{webhook_id}`
 
 - **Secure Endpoints**: Ensure your webhook URL is HTTPS-secured to safeguard transmitted data.
 - **Manage Secrets**: Keep your `signing_secret` and `encryption_key` confidential.
-- **Use Encryption**: For sensitive data, consider using the encryption feature by providing an `encryption_key`.
+- **Use Encryption**: Consider using the encryption feature when your team doesn't control HTTPS termination and you want payloads to be decrypted only by applications possessing the encryption key. As an example, this could help prevent sensitive or GDPR-regulated information from being logged in systems not designed to handle such data (there might be more cases for your specific situation).
+- **Alternative to Encryption**: As an alternative to encryption, consider disabling the payload in webhooks by not setting `include_payload` in your webhook configuration.
 - **Regular Review**: Periodically check your webhook subscriptions and adjust as needed to match your application's requirements.
 
 Leverage our webhooks to make your application more dynamic and responsive to changes without the overhead of continuous polling.
