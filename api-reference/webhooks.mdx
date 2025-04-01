@@ -41,10 +41,11 @@ curl --request POST \
 - **events**: Choose events like `user-payroll-submitted` for targeted notifications.
 - **name**: Label your webhook for easier management.
 - **url**: Your endpoint to receive webhook payloads.
-- **secret**: (Optional) A secret for secure webhook verification.
+- **signing_secret**: (Optional) A secret for secure webhook verification.
 
 ### Verifying Webhooks
-If the optional `secret` was provided in the webhook subscription, it can be used to validate incoming webhook signatures, ensuring data integrity and authenticity.
+If the optional `secret` was provided in the webhook subscription, it can be used to validate incoming webhook
+signatures, ensuring data integrity and authenticity.
 
 To verify if a received webhook event is authentic:
 - Encode the webook payload with the `secret` using `HMAC-SHA512`. You can then check that the result of this encoding matches the contents in the
