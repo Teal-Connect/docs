@@ -922,7 +922,7 @@ paths:
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
     get:
-      summary: Lists all the team members including the Owner
+      summary: Lists all the team members including the Admin
       parameters:
         - name: offset
           in: query
@@ -973,7 +973,7 @@ paths:
               $ref: "#/components/schemas/MemberSignInRequest"
       responses:
         "200":
-          description: Successful signin
+          description: Successful sign-in
           content:
             application/json:
               schema:
@@ -1349,13 +1349,14 @@ components:
         email:
           type: string
           format: email
-          example: john.smith@goteal.co
+          example: john.smith@yourcompany.co
         role:
           type: string
           description: The Role of the Member
+          enum: [Admin, FullMember]
           items:
             type: string
-          example: "Owner"
+          example: "Admin"
         name:
           type: string
           description: Names of the Member
@@ -1389,7 +1390,7 @@ components:
         email:
           type: string
           format: email
-          example: john.smith@goteal.co
+          example: john.smith@yourcompany.com
         role:
           type: string
           enum: [FullMember]
@@ -1417,7 +1418,7 @@ components:
         username:
           type: string
           description: The username of the member
-          example: john.doe@example.com
+          example: john.doe@yourcompany.com
         password:
           type: string
           description: The password of the member
@@ -1450,10 +1451,11 @@ components:
           type: string
           format: email
           description: Email address of the member
-          example: "john.doe@example.com"
+          example: "john.doe@yourcompany.com"
         role:
           type: string
           description: Role of the member
+          enum: [Admin, FullMember]
           example: "Admin"
         name:
           type: string
