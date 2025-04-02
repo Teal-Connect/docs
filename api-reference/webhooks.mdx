@@ -56,11 +56,11 @@ To verify if a received webhook event is authentic:
 If your `signing_secret` was `mysecret` and you received the following webhook payload:
 
 ```
-            {
-              "event": "user-payroll-submitted",
-              "user_id": "4708334c-70b3-437d-8e46-91ff5c9a8d7d",
-              "timestamp": "2024-04-04T12:00:00.00Z"
-            }
+{
+    "event": "user-payroll-submitted",
+    "user_id": "4708334c-70b3-437d-8e46-91ff5c9a8d7d",
+    "timestamp": "2024-04-04T12:00:00.00Z"
+}
 ```
 
 The signature to check against would be:
