@@ -265,137 +265,163 @@ Here's how to decrypt the payload in different languages:
 <CodeGroup>
 
 ```javascript JS
-const crypto = require('crypto');
+    const crypto = require('crypto');
 
-// From your webhook setup
-const encryptionKeyBase64 = 'St/73LZ1xHkwX5TanL7V+YAVczn4acozPf3cFySKQXI=';
-const encryptionKey = Buffer.from(encryptionKeyBase64, 'base64');
+    function decrypt(
+        encryptedBase64,
+        ivBase64,
+        encryptionKeyBase64
+    ){
+    const encryptionKey = Buffer.from(encryptionKeyBase64, 'base64');
+    const iv = Buffer.from(ivBase64, 'base64');
+    const encryptedBuffer = Buffer.from(encryptedBase64, 'base64');
 
-// From the webhook request
-const encryptedPayload = request.body; // The encrypted data as a buffer
-const ivBase64 = request.headers['x-teal-encryption-iv'];
-const iv = Buffer.from(ivBase64, 'base64');
+    // Extract the auth tag (last 16 bytes) and ciphertext
+    const authTag = encryptedBuffer.subarray(encryptedBuffer.length - 16);
+    const ciphertext = encryptedBuffer.subarray(0, encryptedBuffer.length - 16);
 
-// Create a decipher with AES-GCM
-const decipher = crypto.createDecipheriv('aes-256-gcm', encryptionKey, iv);
-
-// Decrypt the payload
-let decrypted = decipher.update(encryptedPayload);
-try {
-    // Since we're using GCM, we need to call final() to verify the auth tag
+    const decipher = crypto.createDecipheriv('aes-256-gcm', encryptionKey, iv);
+    decipher.setAuthTag(authTag);
+    let decrypted = decipher.update(ciphertext);
+    try {
     const final = decipher.final();
     if (final.length > 0) {
-        decrypted = Buffer.concat([decrypted, final]);
-    }
-    
-    // Parse the decrypted JSON
+    decrypted = Buffer.concat([decrypted, final]);
+}
+
     const payload = JSON.parse(decrypted.toString('utf8'));
     console.log('Decrypted payload:', payload);
 } catch (error) {
     console.error('Decryption failed:', error);
 }
+}
+    decrypt(
+        webhookRequest.body,
+        webhookRequest.headers[x-teal-encryption-iv],
+        yourSecretStorage.base64EncryptionKey
+    )
 ```
 
 ```python Python
-import base64
-import json
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    import base64
+    import json
+    from Crypto.Cipher import AES
 
-# From your webhook setup
-encryption_key_base64 = 'St/73LZ1xHkwX5TanL7V+YAVczn4acozPf3cFySKQXI='
-encryption_key = base64.b64decode(encryption_key_base64)
+    def decrypt(
+    encrypted_base64: str,
+    iv_base64: str,
+    encryption_key_base64: str
+    ) -> dict:
+    encryption_key = base64.b64decode(encryption_key_base64)
+    print(f"Key length: {len(encryption_key)} bytes")
+    iv = base64.b64decode(iv_base64)
+    print(f"IV length: {len(iv)} bytes")
 
-# From the webhook request
-encrypted_payload = request.body  # The encrypted data as bytes
-iv_base64 = request.headers['x-teal-encryption-iv']
-iv = base64.b64decode(iv_base64)
+    encrypted_data = base64.b64decode(encrypted_base64)
+    print(f"Encrypted data length: {len(encrypted_data)} bytes")
 
-try:
-    # Create AESGCM cipher and decrypt
-    aesgcm = AESGCM(encryption_key)
-    
-    # Decrypt with empty associated data
-    decrypted = aesgcm.decrypt(iv, encrypted_payload, b'')
-    
-    # Parse the decrypted JSON
-    payload = json.loads(decrypted.decode('utf-8'))
+    auth_tag = encrypted_data[-16:]
+    ciphertext = encrypted_data[:-16]
+    print(f"Auth tag length: {len(auth_tag)} bytes")
+    print(f"Ciphertext length: {len(ciphertext)} bytes")
+
+    cipher = AES.new(encryption_key, AES.MODE_GCM, nonce=iv)
+
+    decrypted_data = cipher.decrypt_and_verify(ciphertext, auth_tag)
+
+    payload = json.loads(decrypted_data.decode('utf-8'))
+    print("Decryption successful!")
     print(f"Decrypted payload: {payload}")
-except Exception as e:
-    print(f"Decryption failed: {e}")
+    return payload
+
+    if __name__ == "__main__":
+    decrypt(
+    webhookRequest.body,
+    webhookRequest.headers[x-teal-encryption-iv]
+    secretStorage.base64Secret
+    )
 ```
 
-```java Java
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-import java.util.Base64;
+```java Java;
 
-public class DecryptWebhook {
-    public static void main(String[] args) throws Exception {
-        // From your webhook setup
-        String encryptionKeyBase64 = "St/73LZ1xHkwX5TanL7V+YAVczn4acozPf3cFySKQXI=";
-        byte[] encryptionKey = Base64.getDecoder().decode(encryptionKeyBase64);
-        
-        // From the webhook request
-        byte[] encryptedPayload = request.getBody(); // The encrypted data as bytes
-        String ivBase64 = request.getHeader("X-Teal-Encryption-IV");
-        byte[] iv = Base64.getDecoder().decode(ivBase64);
-        
-        try {
-            // Create SecretKey from the raw key bytes
-            SecretKey secretKey = new SecretKeySpec(encryptionKey, "AES");
-            
-            // Initialize the cipher for decryption
-            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-            GCMParameterSpec parameterSpec = new GCMParameterSpec(128, iv); // 128-bit auth tag length
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
-            
-            // Decrypt the payload
-            byte[] decrypted = cipher.doFinal(encryptedPayload);
-            
-            // Parse the decrypted JSON
-            String payloadJson = new String(decrypted, "UTF-8");
-            System.out.println("Decrypted payload: " + payloadJson);
-        } catch (Exception e) {
-            System.err.println("Decryption failed: " + e.getMessage());
-        }
-    }
+    import javax.crypto.Cipher;
+    import javax.crypto.spec.GCMParameterSpec;
+    import javax.crypto.spec.SecretKeySpec;
+    import java.util.Base64;
+
+    public class DecryptMessage {
+
+    public static String decryptWebhookPayload(
+    String encryptedData,
+    String encryptionKey,
+    String ivBase64
+    ) throws Exception {
+    byte[] key = Base64.getDecoder().decode(encryptionKey);
+    byte[] iv = Base64.getDecoder().decode(ivBase64);
+    byte[] encryptedBytes = Base64.getDecoder().decode(encryptedData);
+
+    SecretKeySpec secretKey = new SecretKeySpec(key, "AES");
+    Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+    GCMParameterSpec spec = new GCMParameterSpec(128, iv);
+
+    cipher.init(Cipher.DECRYPT_MODE, secretKey, spec);
+    byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
+
+    return new String(decryptedBytes, "UTF-8");
+}
+
+    public static void main(String[] args) {
+    try {
+    String result = decryptWebhookPayload(
+    "nBPqEB4T1g/88q1P2qm7oYH5MYbR/NpCVBCytMZsB7ux4xR+OYPS8Y/Ye8giQb6UplDitbKlFlHPoA6pzMu3CmD2cew4JvluyKiOQBE61OwETwJ++KkvwuB9WxegKnhncWqg6qwn9WkRGtmKpfrxiXrdvj7V4aKSOFkO8ByWYztQp58Ublm3yNPQyQmnzJOR+/4v8OMbVivcAkumRu8PO2EYr2uqfPvNMonXiNE5fnqJieZKFvRnDi+s6TNZpSsCzWPgfDGn+EqiDbjqWw+eWnUYd3BQ75OOJficovrzk1dYkONm5uYTnZYSdiwMzNm7",
+    "7/PxZATSzWbQkS8ZjSt0f+bTMt9oQ6jkm0aYFe3NN24=",
+    "vdBbe9Tk7aqo1pZi"
+    );
+    System.out.println("Decrypted payload: " + result);
+} catch (Exception e) {
+    System.err.println("Decryption failed: " + e.getMessage());
+    e.printStackTrace();
+}
+}
 }
 ```
 
 ```kotlin Kotlin
-import javax.crypto.Cipher
-import javax.crypto.spec.GCMParameterSpec
-import javax.crypto.spec.SecretKeySpec
-import java.util.Base64
+    package com.example
 
-// From your webhook setup
-val encryptionKeyBase64 = "St/73LZ1xHkwX5TanL7V+YAVczn4acozPf3cFySKQXI="
-val encryptionKey = Base64.getDecoder().decode(encryptionKeyBase64)
+    import java.util.Base64
+    import javax.crypto.Cipher
+    import javax.crypto.spec.GCMParameterSpec
+    import javax.crypto.spec.SecretKeySpec
 
-// From the webhook request
-val encryptedPayload = request.body // The encrypted data as bytes
-val ivBase64 = request.headers["X-Teal-Encryption-IV"]
-val iv = Base64.getDecoder().decode(ivBase64)
-
-try {
-    // Create SecretKey from the raw key bytes
-    val secretKey = SecretKeySpec(encryptionKey, "AES")
-    
-    // Initialize the cipher for decryption
+    fun decryptWebhookPayload(
+    encryptedData: String,
+    encryptionKey: String,
+    ivBase64: String
+    ): String {
+    val key = Base64.getDecoder().decode(encryptionKey)
+    val iv = Base64.getDecoder().decode(ivBase64)
+    val encryptedBytes = Base64.getDecoder().decode(encryptedData)
+    val secretKey = SecretKeySpec(key, "AES")
     val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-    val parameterSpec = GCMParameterSpec(128, iv) // 128-bit auth tag length
-    cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec)
-    
-    // Decrypt the payload
-    val decrypted = cipher.doFinal(encryptedPayload)
-    
-    // Parse the decrypted JSON
-    val payloadJson = String(decrypted, Charsets.UTF_8)
-    println("Decrypted payload: $payloadJson")
+    val spec = GCMParameterSpec(128, iv)
+    cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
+    val decryptedBytes = cipher.doFinal(encryptedBytes)
+    return String(decryptedBytes, Charsets.UTF_8)
+}
+
+    fun main() {
+    try {
+    val result = decryptWebhookPayload(
+    "nBPqEB4T1g/88q1P2qm7oYH5MYbR/NpCVBCytMZsB7ux4xR+OYPS8Y/Ye8giQb6UplDitbKlFlHPoA6pzMu3CmD2cew4JvluyKiOQBE61OwETwJ++KkvwuB9WxegKnhncWqg6qwn9WkRGtmKpfrxiXrdvj7V4aKSOFkO8ByWYztQp58Ublm3yNPQyQmnzJOR+/4v8OMbVivcAkumRu8PO2EYr2uqfPvNMonXiNE5fnqJieZKFvRnDi+s6TNZpSsCzWPgfDGn+EqiDbjqWw+eWnUYd3BQ75OOJficovrzk1dYkONm5uYTnZYSdiwMzNm7",
+    "7/PxZATSzWbQkS8ZjSt0f+bTMt9oQ6jkm0aYFe3NN24=",
+    "vdBbe9Tk7aqo1pZi"
+    )
+    println("Decrypted payload: $result")
 } catch (e: Exception) {
     println("Decryption failed: ${e.message}")
+    e.printStackTrace()
+}
 }
 ```
 
