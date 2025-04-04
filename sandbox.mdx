@@ -136,8 +136,7 @@ take a default of 36 months. To simulate a gap in the payroll, the `Shape` provi
 
 ## 5. Retrieve submitted Payroll information `/entries/connections`
 
-Retrieve latest payroll for a connected account. For sandbox, we'll always return new payroll where the `pay_date` is set to the current day. For `Shape` provider we will 
-still maintain a 3 month gap.
+Retrieve latest payroll for a connected account. For sandbox, we'll always return new payroll where the `pay_date` is set to the current day. For `Shape` provider we will still maintain a 3 month gap.
 
 ```bash
 curl --location --request POST 'https://api.sandbox.goteal.co/entries/connections' \
