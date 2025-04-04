@@ -55,7 +55,7 @@ To verify if a received webhook event is authentic:
 
 If your `signing_secret` was `mysecret` and you received the following webhook payload:
 
-```
+```json
 {
     "event": "user-payroll-submitted",
     "user_id": "4708334c-70b3-437d-8e46-91ff5c9a8d7d",
@@ -265,13 +265,13 @@ Here's how to decrypt the payload in different languages:
 <CodeGroup>
 
 ```javascript JS
-    const crypto = require('crypto');
+const crypto = require('crypto');
 
-    function decrypt(
-        encryptedBase64,
-        ivBase64,
-        encryptionKeyBase64
-    ){
+function decrypt(
+    encryptedBase64,
+    ivBase64,
+    encryptionKeyBase64
+) {
     const encryptionKey = Buffer.from(encryptionKeyBase64, 'base64');
     const iv = Buffer.from(ivBase64, 'base64');
     const encryptedBuffer = Buffer.from(encryptedBase64, 'base64');
@@ -284,34 +284,35 @@ Here's how to decrypt the payload in different languages:
     decipher.setAuthTag(authTag);
     let decrypted = decipher.update(ciphertext);
     try {
-    const final = decipher.final();
-    if (final.length > 0) {
-    decrypted = Buffer.concat([decrypted, final]);
+        const final = decipher.final();
+        if (final.length > 0) {
+            decrypted = Buffer.concat([decrypted, final]);
+        }
+
+        const payload = JSON.parse(decrypted.toString('utf8'));
+        console.log('Decrypted payload:', payload);
+    } catch (error) {
+        console.error('Decryption failed:', error);
+    }
 }
 
-    const payload = JSON.parse(decrypted.toString('utf8'));
-    console.log('Decrypted payload:', payload);
-} catch (error) {
-    console.error('Decryption failed:', error);
-}
-}
-    decrypt(
-        webhookRequest.body,
-        webhookRequest.headers[x-teal-encryption-iv],
-        yourSecretStorage.base64EncryptionKey
-    )
+decrypt(
+    webhookRequest.body,
+    webhookRequest.headers['x-teal-encryption-iv'],
+    yourSecretStorage.base64EncryptionKey
+)
 ```
 
 ```python Python
-    import base64
-    import json
-    from Crypto.Cipher import AES
+import base64
+import json
+from Crypto.Cipher import AES
 
-    def decrypt(
+def decrypt(
     encrypted_base64: str,
     iv_base64: str,
     encryption_key_base64: str
-    ) -> dict:
+) -> dict:
     encryption_key = base64.b64decode(encryption_key_base64)
     print(f"Key length: {len(encryption_key)} bytes")
     iv = base64.b64decode(iv_base64)
@@ -334,71 +335,70 @@ Here's how to decrypt the payload in different languages:
     print(f"Decrypted payload: {payload}")
     return payload
 
-    if __name__ == "__main__":
+if __name__ == "__main__":
     decrypt(
-    webhookRequest.body,
-    webhookRequest.headers[x-teal-encryption-iv]
-    secretStorage.base64Secret
+        webhookRequest.body,
+        webhookRequest.headers["x-teal-encryption-iv"],
+        secretStorage.base64Secret
     )
 ```
 
-```java Java;
+```java Java
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.util.Base64;
 
-    import javax.crypto.Cipher;
-    import javax.crypto.spec.GCMParameterSpec;
-    import javax.crypto.spec.SecretKeySpec;
-    import java.util.Base64;
-
-    public class DecryptMessage {
+public class DecryptMessage {
 
     public static String decryptWebhookPayload(
-    String encryptedData,
-    String encryptionKey,
-    String ivBase64
+        String encryptedData,
+        String encryptionKey,
+        String ivBase64
     ) throws Exception {
-    byte[] key = Base64.getDecoder().decode(encryptionKey);
-    byte[] iv = Base64.getDecoder().decode(ivBase64);
-    byte[] encryptedBytes = Base64.getDecoder().decode(encryptedData);
+        byte[] key = Base64.getDecoder().decode(encryptionKey);
+        byte[] iv = Base64.getDecoder().decode(ivBase64);
+        byte[] encryptedBytes = Base64.getDecoder().decode(encryptedData);
 
-    SecretKeySpec secretKey = new SecretKeySpec(key, "AES");
-    Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-    GCMParameterSpec spec = new GCMParameterSpec(128, iv);
+        SecretKeySpec secretKey = new SecretKeySpec(key, "AES");
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        GCMParameterSpec spec = new GCMParameterSpec(128, iv);
 
-    cipher.init(Cipher.DECRYPT_MODE, secretKey, spec);
-    byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, spec);
+        byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
 
-    return new String(decryptedBytes, "UTF-8");
-}
+        return new String(decryptedBytes, "UTF-8");
+    }
 
     public static void main(String[] args) {
-    try {
-    String result = decryptWebhookPayload(
-    "nBPqEB4T1g/88q1P2qm7oYH5MYbR/NpCVBCytMZsB7ux4xR+OYPS8Y/Ye8giQb6UplDitbKlFlHPoA6pzMu3CmD2cew4JvluyKiOQBE61OwETwJ++KkvwuB9WxegKnhncWqg6qwn9WkRGtmKpfrxiXrdvj7V4aKSOFkO8ByWYztQp58Ublm3yNPQyQmnzJOR+/4v8OMbVivcAkumRu8PO2EYr2uqfPvNMonXiNE5fnqJieZKFvRnDi+s6TNZpSsCzWPgfDGn+EqiDbjqWw+eWnUYd3BQ75OOJficovrzk1dYkONm5uYTnZYSdiwMzNm7",
-    "7/PxZATSzWbQkS8ZjSt0f+bTMt9oQ6jkm0aYFe3NN24=",
-    "vdBbe9Tk7aqo1pZi"
-    );
-    System.out.println("Decrypted payload: " + result);
-} catch (Exception e) {
-    System.err.println("Decryption failed: " + e.getMessage());
-    e.printStackTrace();
-}
-}
+        try {
+            String result = decryptWebhookPayload(
+                "nBPqEB4T1g/88q1P2qm7oYH5MYbR/NpCVBCytMZsB7ux4xR+OYPS8Y/Ye8giQb6UplDitbKlFlHPoA6pzMu3CmD2cew4JvluyKiOQBE61OwETwJ++KkvwuB9WxegKnhncWqg6qwn9WkRGtmKpfrxiXrdvj7V4aKSOFkO8ByWYztQp58Ublm3yNPQyQmnzJOR+/4v8OMbVivcAkumRu8PO2EYr2uqfPvNMonXiNE5fnqJieZKFvRnDi+s6TNZpSsCzWPgfDGn+EqiDbjqWw+eWnUYd3BQ75OOJficovrzk1dYkONm5uYTnZYSdiwMzNm7",
+                "7/PxZATSzWbQkS8ZjSt0f+bTMt9oQ6jkm0aYFe3NN24=",
+                "vdBbe9Tk7aqo1pZi"
+            );
+            System.out.println("Decrypted payload: " + result);
+        } catch (Exception e) {
+            System.err.println("Decryption failed: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 }
 ```
 
 ```kotlin Kotlin
-    package com.example
+package com.example
 
-    import java.util.Base64
-    import javax.crypto.Cipher
-    import javax.crypto.spec.GCMParameterSpec
-    import javax.crypto.spec.SecretKeySpec
+import java.util.Base64
+import javax.crypto.Cipher
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
-    fun decryptWebhookPayload(
+fun decryptWebhookPayload(
     encryptedData: String,
     encryptionKey: String,
     ivBase64: String
-    ): String {
+): String {
     val key = Base64.getDecoder().decode(encryptionKey)
     val iv = Base64.getDecoder().decode(ivBase64)
     val encryptedBytes = Base64.getDecoder().decode(encryptedData)
@@ -410,18 +410,18 @@ Here's how to decrypt the payload in different languages:
     return String(decryptedBytes, Charsets.UTF_8)
 }
 
-    fun main() {
+fun main() {
     try {
-    val result = decryptWebhookPayload(
-    "nBPqEB4T1g/88q1P2qm7oYH5MYbR/NpCVBCytMZsB7ux4xR+OYPS8Y/Ye8giQb6UplDitbKlFlHPoA6pzMu3CmD2cew4JvluyKiOQBE61OwETwJ++KkvwuB9WxegKnhncWqg6qwn9WkRGtmKpfrxiXrdvj7V4aKSOFkO8ByWYztQp58Ublm3yNPQyQmnzJOR+/4v8OMbVivcAkumRu8PO2EYr2uqfPvNMonXiNE5fnqJieZKFvRnDi+s6TNZpSsCzWPgfDGn+EqiDbjqWw+eWnUYd3BQ75OOJficovrzk1dYkONm5uYTnZYSdiwMzNm7",
-    "7/PxZATSzWbQkS8ZjSt0f+bTMt9oQ6jkm0aYFe3NN24=",
-    "vdBbe9Tk7aqo1pZi"
-    )
-    println("Decrypted payload: $result")
-} catch (e: Exception) {
-    println("Decryption failed: ${e.message}")
-    e.printStackTrace()
-}
+        val result = decryptWebhookPayload(
+            "nBPqEB4T1g/88q1P2qm7oYH5MYbR/NpCVBCytMZsB7ux4xR+OYPS8Y/Ye8giQb6UplDitbKlFlHPoA6pzMu3CmD2cew4JvluyKiOQBE61OwETwJ++KkvwuB9WxegKnhncWqg6qwn9WkRGtmKpfrxiXrdvj7V4aKSOFkO8ByWYztQp58Ublm3yNPQyQmnzJOR+/4v8OMbVivcAkumRu8PO2EYr2uqfPvNMonXiNE5fnqJieZKFvRnDi+s6TNZpSsCzWPgfDGn+EqiDbjqWw+eWnUYd3BQ75OOJficovrzk1dYkONm5uYTnZYSdiwMzNm7",
+            "7/PxZATSzWbQkS8ZjSt0f+bTMt9oQ6jkm0aYFe3NN24=",
+            "vdBbe9Tk7aqo1pZi"
+        )
+        println("Decrypted payload: $result")
+    } catch (e: Exception) {
+        println("Decryption failed: ${e.message}")
+        e.printStackTrace()
+    }
 }
 ```
 
