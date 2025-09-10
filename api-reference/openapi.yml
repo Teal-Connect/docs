@@ -1029,7 +1029,7 @@ paths:
         "404":
           "$ref": "#/components/responses/ResourceNotFound"
   "/api-keys":
-    description: API keys provide programmatic access to the API. A client can have up to 3 active API keys at any time.
+    description: API keys provide programmatic access to the API. You can have up to 3 active API keys at any time.
     get:
       summary: List all active API keys.
       responses:
