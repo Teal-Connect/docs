@@ -1038,9 +1038,12 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  "$ref": "#/components/schemas/ApiKey"
+                type: object
+                properties:
+                  api_keys:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/ApiKey"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
     post:
