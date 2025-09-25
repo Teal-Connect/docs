@@ -537,31 +537,57 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedBearer"
-  "/entries/payslips":
+  "/entries/payslips/presign":
     post:
-      summary: Fetches payslips for a user account
-      description: Uploads payslips as a multipart form data http request.
-        Every payslip must be a searchable and readable PDF file.
-        Scanned images as pdf files are not supported.
-        If a file part header `external_document_id` is provided it
-        will be returned as `document_external_id` in the respective
-        payroll submission. If the header is not provided, the form
-        field name for the file part will be used instead.
+      summary: Generate presigned URLs for payslip uploads
+      description: |
+        Generates short-lived presigned URLs that you can use to upload payslip PDFs
+        directly to Teal-managed storage. Use this endpoint before uploading any
+        files and submitting them for processing.
       security:
         - BearerAuth: []
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              type: object
-              properties:
-                payslip:
-                  type: string
-                  format: binary
-                  description: File to upload
-                  example: >
-                    @"/local/file/system/path/to/payslip/Payslip_44404148.pdf"
+              "$ref": "#/components/schemas/EntriesPayslipsPresignRequest"
+      responses:
+        "200":
+          description: Presigned URLs generated successfully
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/EntriesPayslipsPresignResponse"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedBearer"
+  "/entries/payslips":
+    post:
+      summary: Submit previously uploaded payslips for processing
+      description: |
+        Uploading payslips is a three-step flow:
+          1. Request upload slots with `POST /entries/payslips/presign`, providing
+             each PDF file name (and optional external identifier). The response
+             includes `presigned_url` and `path` values for every requested file.
+          2. Upload the PDF content to every `presigned_url` using an HTTP `PUT`
+             request with `Content-Type: application/octet-stream`. Each file must be a
+             searchable, machine-readable PDF (scanned images are not supported).
+          3. Call this endpoint with the JSON payload returned in step one,
+             echoing the `path` (and optional `external_document_id`) for every
+             uploaded file so Teal can process the documents.
+        The `path` values you submit must match the ones returned by the presign
+        step. Any files that failed validation or upload are reported in the
+        `payslip_errors` array.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/EntriesPayslipsJsonRequestFileRequest"
       responses:
         "201":
           description: Created
@@ -572,7 +598,7 @@ paths:
                   - "$ref": "#/components/schemas/PayrollData"
                   - properties:
                       payslip_errors:
-                        description: List of errors for payslips that passed valdiation but failed to upload
+                        description: List of errors for payslips that passed validation but failed to upload
                         type: array
                         items:
                           type: object
@@ -1533,6 +1559,79 @@ components:
           example: "Payslip"
         upload_time:
           "$ref": "#/components/schemas/Date"
+    EntriesPayslipsPresignRequest:
+      type: object
+      required: [files]
+      properties:
+        files:
+          type: array
+          description: Payslip files that require presigned upload URLs
+          minItems: 1
+          items:
+            "$ref": "#/components/schemas/EntriesPayslipsPresignRequestFile"
+    EntriesPayslipsPresignRequestFile:
+      type: object
+      required: [file_name]
+      properties:
+        file_name:
+          type: string
+          description: File name including extension. Must be a PDF.
+          example: payslip1.pdf
+        external_id:
+          type: string
+          description: Optional identifier echoed back in the presign response.
+          example: ext-payslip-2024-05
+    EntriesPayslipsPresignResponse:
+      type: object
+      required: [presigned_urls]
+      properties:
+        presigned_urls:
+          type: array
+          description: Generated URLs and metadata for uploading the requested files.
+          items:
+            "$ref": "#/components/schemas/EntriesPayslipsPresignResponseFile"
+    EntriesPayslipsPresignResponseFile:
+      type: object
+      required: [file_name, presigned_url, path]
+      properties:
+        file_name:
+          type: string
+          description: The requested file name.
+          example: payslip1.pdf
+        external_id:
+          type: string
+          description: Optional identifier provided in the presign request.
+          example: ext-payslip-2024-05
+        presigned_url:
+          type: string
+          format: uri
+          description: The URL to upload the file content to via HTTP PUT.
+          example: https://s3.amazonaws.com/bucket/presigned-upload-key?signature=abc123
+        path:
+          type: string
+          description: The storage path that must be echoed when submitting the payslips.
+          example: client/acct123/users/user456/payslip1.pdf
+    EntriesPayslipsJsonRequestFileRequest:
+      type: object
+      required: [files]
+      properties:
+        files:
+          type: array
+          minItems: 1
+          items:
+            "$ref": "#/components/schemas/EntriesPayslipsJsonRequestFile"
+    EntriesPayslipsJsonRequestFile:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+          description: Storage path returned by the presign endpoint.
+          example: client/acct123/users/user456/payslip1.pdf
+        external_document_id:
+          type: string
+          description: Optional identifier shown in payroll submissions when present.
+          example: ext-payslip-2024-05
     PayrollData:
       type: object
       required: [account_id, entry_id, pagination, payroll_submissions]
