@@ -52,6 +52,14 @@
             ]
           },
           {
+            "group": "API Keys",
+            "pages": [
+              "api-reference/api-keys/create",
+              "api-reference/api-keys/list",
+              "api-reference/api-keys/delete"
+            ]
+          },
+          {
             "group": "Accounts",
             "pages": [
               "api-reference/accounts/create",
