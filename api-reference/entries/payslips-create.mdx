@@ -1,88 +1,239 @@
 ---
-title: 'Upload payslips'
+title: 'Submit presigned payslips'
 openapi: 'POST /entries/payslips'
 ---
 
-
+Use this endpoint after uploading payslip PDFs via `POST /entries/payslips/presign`.
+Each object in the request body references a document uploaded in the previous
+step. This replaces the legacy multipart upload flow.
 
 <RequestExample>
 
 ```bash cURL
+# Step 1: request presigned upload URLs
+curl --request POST \
+  --url https://api.sandbox.goteal.co/entries/payslips/presign \
+  --header 'Authorization: Bearer <token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "files": [
+      {"file_name": "payslip1.pdf", "external_id": "ext-jan-2024"},
+      {"file_name": "payslip2.pdf"}
+    ]
+  }'
+
+# Step 2: upload PDFs with the provided presigned URLs
+curl --request PUT \
+  --url "<presigned_url_from_step_1>" \
+  --header 'Content-Type: application/pdf' \
+  --data-binary '@./fixtures/payslip1.pdf'
+
+# Step 3: submit uploaded payslips for processing
 curl --request POST \
   --url https://api.sandbox.goteal.co/entries/payslips \
   --header 'Authorization: Bearer <token>' \
-  --header 'Content-Type: multipart/form-data' \
-  --form 'payslip123456=@"/local/file/file1-payslip.pdf"'
-  --form 'payslip2=@"/local/file/John-Smith-payslip18.pdf.pdf"'
-  --form 'payslip98765=@"/local/file/Payslip3.pdf"'
+  --header 'Content-Type: application/json' \
+  --data '{
+    "files": [
+      {"path": "client/acct123/users/user456/payslip1.pdf", "external_document_id": "ext-jan-2024"},
+      {"path": "client/acct123/users/user456/payslip2.pdf"}
+    ]
+  }'
 ```
 
 ```python Python
+import json
 import requests
 
-url = "https://api.sandbox.goteal.co/entries/payslips"
+token = "<token>"
+base_url = "https://api.sandbox.goteal.co"
+headers = {"Authorization": f"Bearer {token}"}
 
-payload = "-----011000010111000001101001\r\nContent-Disposition: form-data; name=\"payslip\"\r\n\r\n@\"/local/file/system/path/to/payslip/Payslip_44404148.pdf\"\n\r\n-----011000010111000001101001--\r\n\r\n"
-headers = {
-    "Authorization": "Bearer <token>",
-    "Content-Type": "multipart/form-data"
+# Step 1: request presigned URLs
+presign_payload = {
+    "files": [
+        {"file_name": "payslip1.pdf", "external_id": "ext-jan-2024"},
+        {"file_name": "payslip2.pdf"},
+    ]
+}
+presign_res = requests.post(
+    f"{base_url}/entries/payslips/presign",
+    headers={**headers, "Content-Type": "application/json"},
+    json=presign_payload,
+)
+presign_res.raise_for_status()
+presigned_urls = presign_res.json()["presigned_urls"]
+
+# Step 2: upload PDFs via HTTP PUT
+for url_info, file_name in zip(presigned_urls, ["payslip1.pdf", "payslip2.pdf"]):
+    with open(f"./fixtures/{file_name}", "rb") as f:
+        put_res = requests.put(
+            url_info["presigned_url"],
+            data=f,
+            headers={"Content-Type": "application/pdf"},
+        )
+        put_res.raise_for_status()
+
+# Step 3: submit uploaded file paths
+submit_payload = {
+    "files": [
+        {
+            "path": url_info["path"],
+            "external_document_id": url_info.get("external_id"),
+        }
+        for url_info in presigned_urls
+    ]
 }
 
-response = requests.request("POST", url, data=payload, headers=headers)
+submit_res = requests.post(
+    f"{base_url}/entries/payslips",
+    headers={**headers, "Content-Type": "application/json"},
+    json=submit_payload,
+)
+submit_res.raise_for_status()
 
-print(response.text)
+print(json.dumps(submit_res.json(), indent=2))
 
 ```
 
 
 ```javascript JavaScript
-const form = new FormData();
-form.append("payslip", "@\"/local/file/system/path/to/payslip/Payslip_44404148.pdf\"\n");
+import axios from 'axios'
 
-const options = {
-  method: 'POST',
-  headers: {Authorization: 'Bearer <token>', 'Content-Type': 'multipart/form-data'}
-};
+const token = '<token>'
+const baseURL = 'https://api.sandbox.goteal.co'
 
-options.body = form;
+// Step 1: request presigned URLs
+export async function submitPresignedPayslips(files) {
+  const { data: presignData } = await axios.post(
+    `${baseURL}/entries/payslips/presign`,
+    {
+      files: files.map(file => ({
+        file_name: file.name,
+        external_id: file.externalId,
+      })),
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  )
 
-fetch('https://api.sandbox.goteal.co/entries/payslips', options)
-  .then(response => response.json())
-  .then(response => console.log(response))
-  .catch(err => console.error(err));
+  await Promise.all(
+    presignData.presigned_urls.map(async (urlInfo, index) => {
+      const file = files[index]
+      await axios.put(urlInfo.presigned_url, file.contents, {
+        headers: { 'Content-Type': 'application/pdf' },
+      })
+    })
+  )
+
+  const { data: submitData } = await axios.post(
+    `${baseURL}/entries/payslips`,
+    {
+      files: presignData.presigned_urls.map((urlInfo, index) => ({
+        path: urlInfo.path,
+        external_document_id: files[index]?.externalId,
+      })),
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  )
+
+  return submitData
+}
 ```
 
 
 ```php PHP
 <?php
 
-$curl = curl_init();
+$token = '<token>';
+$baseUrl = 'https://api.sandbox.goteal.co';
 
-curl_setopt_array($curl, [
-  CURLOPT_URL => "https://api.sandbox.goteal.co/entries/payslips",
-  CURLOPT_RETURNTRANSFER => true,
-  CURLOPT_ENCODING => "",
-  CURLOPT_MAXREDIRS => 10,
-  CURLOPT_TIMEOUT => 30,
-  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-  CURLOPT_CUSTOMREQUEST => "POST",
-  CURLOPT_POSTFIELDS => "-----011000010111000001101001\r\nContent-Disposition: form-data; name=\"payslip\"\r\n\r\n@\"/local/file/system/path/to/payslip/Payslip_44404148.pdf\"\n\r\n-----011000010111000001101001--\r\n\r\n",
-  CURLOPT_HTTPHEADER => [
-    "Authorization: Bearer <token>",
-    "Content-Type: multipart/form-data"
-  ],
-]);
+function postJson(string $url, array $payload, string $token): array {
+  $curl = curl_init($url);
+  curl_setopt_array($curl, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_CUSTOMREQUEST => 'POST',
+    CURLOPT_POSTFIELDS => json_encode($payload),
+    CURLOPT_HTTPHEADER => [
+      'Authorization: Bearer ' . $token,
+      'Content-Type: application/json'
+    ],
+  ]);
 
-$response = curl_exec($curl);
-$err = curl_error($curl);
+  $response = curl_exec($curl);
+  if ($response === false) {
+    throw new RuntimeException('Request failed: ' . curl_error($curl));
+  }
 
-curl_close($curl);
+  $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+  curl_close($curl);
 
-if ($err) {
-  echo "cURL Error #:" . $err;
-} else {
-  echo $response;
+  if ($status >= 400) {
+    throw new RuntimeException('Request returned status ' . $status . ': ' . $response);
+  }
+
+  return json_decode($response, true);
 }
+
+// Step 1: request presigned URLs
+$presignPayload = [
+  'files' => [
+    ['file_name' => 'payslip1.pdf', 'external_id' => 'ext-jan-2024'],
+    ['file_name' => 'payslip2.pdf'],
+  ],
+];
+
+$presignResponse = postJson($baseUrl . '/entries/payslips/presign', $presignPayload, $token);
+
+// Step 2: upload PDFs via PUT
+foreach ($presignResponse['presigned_urls'] as $index => $urlInfo) {
+  $filePath = __DIR__ . '/fixtures/payslip' . ($index + 1) . '.pdf';
+  $fileHandle = fopen($filePath, 'rb');
+  $putCurl = curl_init($urlInfo['presigned_url']);
+  curl_setopt_array($putCurl, [
+    CURLOPT_CUSTOMREQUEST => 'PUT',
+    CURLOPT_UPLOAD => true,
+    CURLOPT_INFILE => $fileHandle,
+    CURLOPT_INFILESIZE => filesize($filePath),
+    CURLOPT_HTTPHEADER => ['Content-Type: application/pdf'],
+  ]);
+
+  $putResponse = curl_exec($putCurl);
+  if ($putResponse === false) {
+    throw new RuntimeException('Upload failed: ' . curl_error($putCurl));
+  }
+
+  $status = curl_getinfo($putCurl, CURLINFO_HTTP_CODE);
+  curl_close($putCurl);
+  fclose($fileHandle);
+
+  if ($status >= 400) {
+    throw new RuntimeException('Upload returned status ' . $status . ': ' . $putResponse);
+  }
+}
+
+// Step 3: submit uploaded file paths
+$submitPayload = [
+  'files' => array_map(function ($urlInfo) {
+    return array_filter([
+      'path' => $urlInfo['path'],
+      'external_document_id' => $urlInfo['external_id'] ?? null,
+    ]);
+  }, $presignResponse['presigned_urls'])
+];
+
+$submitResponse = postJson($baseUrl . '/entries/payslips', $submitPayload, $token);
+
+print_r($submitResponse);
 ```
 
 
@@ -91,42 +242,157 @@ if ($err) {
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"strings"
+	"io"
 	"net/http"
-	"io/ioutil"
+	"os"
 )
 
 func main() {
+	token := "<token>"
+	baseURL := "https://api.sandbox.goteal.co"
+	client := &http.Client{}
 
-	url := "https://api.sandbox.goteal.co/entries/payslips"
+	presignPayload := map[string]any{
+		"files": []map[string]any{
+			{"file_name": "payslip1.pdf", "external_id": "ext-jan-2024"},
+			{"file_name": "payslip2.pdf"},
+		},
+	}
 
-	payload := strings.NewReader("-----011000010111000001101001\r\nContent-Disposition: form-data; name=\"payslip\"\r\n\r\n@\"/local/file/system/path/to/payslip/Payslip_44404148.pdf\"\n\r\n-----011000010111000001101001--\r\n\r\n")
+	presignBody, _ := json.Marshal(presignPayload)
+	presignReq, _ := http.NewRequest("POST", baseURL+"/entries/payslips/presign", bytes.NewBuffer(presignBody))
+	presignReq.Header.Set("Authorization", "Bearer "+token)
+	presignReq.Header.Set("Content-Type", "application/json")
 
-	req, _ := http.NewRequest("POST", url, payload)
+	presignRes, err := client.Do(presignReq)
+	if err != nil {
+		panic(err)
+	}
+	defer presignRes.Body.Close()
 
-	req.Header.Add("Authorization", "Bearer <token>")
-	req.Header.Add("Content-Type", "multipart/form-data")
+	if presignRes.StatusCode >= 400 {
+		bodyBytes, _ := io.ReadAll(presignRes.Body)
+		panic(fmt.Sprintf("presign failed: %s", string(bodyBytes)))
+	}
 
-	res, _ := http.DefaultClient.Do(req)
+	var presignData struct {
+		PresignedURLs []struct {
+			FileName    string  `json:"file_name"`
+			ExternalID  *string `json:"external_id"`
+			PresignedURL string `json:"presigned_url"`
+			Path        string  `json:"path"`
+		} `json:"presigned_urls"`
+	}
 
-	defer res.Body.Close()
-	body, _ := ioutil.ReadAll(res.Body)
+	if err := json.NewDecoder(presignRes.Body).Decode(&presignData); err != nil {
+		panic(err)
+	}
 
-	fmt.Println(res)
-	fmt.Println(string(body))
+	for i, urlInfo := range presignData.PresignedURLs {
+		file, err := os.Open(fmt.Sprintf("./fixtures/payslip%d.pdf", i+1))
+		if err != nil {
+			panic(err)
+		}
+		defer file.Close()
 
+		putReq, _ := http.NewRequest("PUT", urlInfo.PresignedURL, file)
+		putReq.Header.Set("Content-Type", "application/pdf")
+
+		putRes, err := client.Do(putReq)
+		if err != nil {
+			panic(err)
+		}
+		putRes.Body.Close()
+
+		if putRes.StatusCode >= 400 {
+			panic(fmt.Sprintf("upload failed with status %d", putRes.StatusCode))
+		}
+	}
+
+	submitPayload := map[string]any{
+		"files": func() []map[string]any {
+			files := make([]map[string]any, len(presignData.PresignedURLs))
+			for i, urlInfo := range presignData.PresignedURLs {
+				entry := map[string]any{"path": urlInfo.Path}
+				if urlInfo.ExternalID != nil {
+					entry["external_document_id"] = *urlInfo.ExternalID
+				}
+				files[i] = entry
+			}
+			return files
+		}(),
+	}
+
+	submitBody, _ := json.Marshal(submitPayload)
+	submitReq, _ := http.NewRequest("POST", baseURL+"/entries/payslips", bytes.NewBuffer(submitBody))
+	submitReq.Header.Set("Authorization", "Bearer "+token)
+	submitReq.Header.Set("Content-Type", "application/json")
+
+	submitRes, err := client.Do(submitReq)
+	if err != nil {
+		panic(err)
+	}
+	defer submitRes.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(submitRes.Body)
+
+	fmt.Println(submitRes.Status)
+	fmt.Println(string(bodyBytes))
 }
 ```
 
 
 
 ```java Java
-HttpResponse<String> response = Unirest.post("https://api.sandbox.goteal.co/entries/payslips")
-  .header("Authorization", "Bearer <token>")
-  .header("Content-Type", "multipart/form-data")
-  .body("-----011000010111000001101001\r\nContent-Disposition: form-data; name=\"payslip\"\r\n\r\n@\"/local/file/system/path/to/payslip/Payslip_44404148.pdf\"\n\r\n-----011000010111000001101001--\r\n\r\n")
-  .asString();
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import kong.unirest.HttpResponse;
+import kong.unirest.Unirest;
+
+String token = "<token>";
+String baseUrl = "https://api.sandbox.goteal.co";
+ObjectMapper mapper = new ObjectMapper();
+
+HttpResponse<String> presignResponse = Unirest.post(baseUrl + "/entries/payslips/presign")
+    .header("Authorization", "Bearer " + token)
+    .header("Content-Type", "application/json")
+    .body("{\n  \"files\": [\n    {\"file_name\": \"payslip1.pdf\", \"external_id\": \"ext-jan-2024\"},\n    {\"file_name\": \"payslip2.pdf\"}\n  ]\n}")
+    .asString();
+
+if (!presignResponse.isSuccess()) {
+    throw new RuntimeException("Presign request failed: " + presignResponse.getBody());
+}
+
+JsonNode presignJson = mapper.readTree(presignResponse.getBody());
+
+for (int i = 0; i < presignJson.get("presigned_urls").size(); i++) {
+    JsonNode urlInfo = presignJson.get("presigned_urls").get(i);
+    byte[] pdfBytes = java.nio.file.Files.readAllBytes(java.nio.file.Path.of("./fixtures/payslip" + (i + 1) + ".pdf"));
+
+    HttpResponse<String> putResponse = Unirest.put(urlInfo.get("presigned_url").asText())
+        .header("Content-Type", "application/pdf")
+        .body(pdfBytes)
+        .asString();
+
+    if (!putResponse.isSuccess()) {
+        throw new RuntimeException("Upload failed: " + putResponse.getBody());
+    }
+}
+
+HttpResponse<String> submitResponse = Unirest.post(baseUrl + "/entries/payslips")
+    .header("Authorization", "Bearer " + token)
+    .header("Content-Type", "application/json")
+    .body(presignJson.toString().replace("presigned_urls", "files"))
+    .asString();
+
+if (!submitResponse.isSuccess()) {
+    throw new RuntimeException("Submit failed: " + submitResponse.getBody());
+}
+
+System.out.println(submitResponse.getBody());
 ```
 
 </RequestExample>
