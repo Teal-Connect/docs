@@ -1028,9 +1028,6 @@ paths:
           "$ref": "#/components/responses/UnauthorizedApiKey"
         "404":
           "$ref": "#/components/responses/ResourceNotFound"
-  "/configuration":
-    get:
-      summary: Returns the client configuration
   "/api-keys":
     description: API keys provide programmatic access to the API. You can have up to 3 active API keys at any time.
     get:
@@ -1041,14 +1038,6 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ClientConfiguration"
-        "401":
-          "$ref": "#/components/responses/UnauthorizedApiKey"
-        "404":
-          "$ref": "#/components/responses/ResourceNotFound"
-    put:
-      summary: Updates the client configuration
-      description: Partial updates supported; omitted fields preserve their existing values.
                 type: object
                 properties:
                   api_keys:
@@ -1064,14 +1053,6 @@ paths:
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/ClientConfiguration"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ClientConfiguration"
               "$ref": "#/components/schemas/ApiKeyCreateRequest"
       responses:
         "201":
@@ -1109,6 +1090,40 @@ paths:
           "$ref": "#/components/responses/UnauthorizedApiKey"
         "404":
           "$ref": "#/components/responses/ResourceNotFound"
+  "/configuration":
+    get:
+      summary: Returns the client configuration
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientConfiguration"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
+    put:
+      summary: Updates the client configuration
+      description: Partial updates supported; omitted fields preserve their existing values.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ClientConfiguration"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientConfiguration"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
 components:
   responses:
     UnauthorizedApiKey:
