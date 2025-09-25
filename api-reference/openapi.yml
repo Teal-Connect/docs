@@ -567,11 +567,19 @@ paths:
     post:
       summary: Submit previously uploaded payslips for processing
       description: |
-        Completes the payslip ingestion flow by submitting metadata about files
-        you have already uploaded via presigned URLs. Each file must be a
-        searchable and readable PDF. Scanned images as PDF files are not
-        supported. The `path` for each file must correspond to a value returned
-        by `POST /entries/payslips/presign`.
+        Uploading payslips is a three-step flow:
+          1. Request upload slots with `POST /entries/payslips/presign`, providing
+             each PDF file name (and optional external identifier). The response
+             includes `presigned_url` and `path` values for every requested file.
+          2. Upload the PDF content to every `presigned_url` using an HTTP `PUT`
+             request with `Content-Type: application/octet-stream`. Each file must be a
+             searchable, machine-readable PDF (scanned images are not supported).
+          3. Call this endpoint with the JSON payload returned in step one,
+             echoing the `path` (and optional `external_document_id`) for every
+             uploaded file so Teal can process the documents.
+        The `path` values you submit must match the ones returned by the presign
+        step. Any files that failed validation or upload are reported in the
+        `payslip_errors` array.
       security:
         - BearerAuth: []
       requestBody:

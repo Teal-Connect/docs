@@ -1,11 +1,23 @@
 ---
-title: 'Submit presigned payslips'
+title: 'Payslips upload'
 openapi: 'POST /entries/payslips'
 ---
 
-Use this endpoint after uploading payslip PDFs via `POST /entries/payslips/presign`.
-Each object in the request body references a document uploaded in the previous
-step. This replaces the legacy multipart upload flow.
+## End-to-end upload flow
+
+Follow these steps to upload payslips programmatically:
+
+1. **Request upload slots** – call `POST /entries/payslips/presign` with the list
+   of filenames (and optional external identifiers) you intend to upload. The
+   response returns `presigned_url` and `path` fields for each file.
+2. **Upload PDFs** – for every returned `presigned_url`, perform an HTTP `PUT`
+   with `Content-Type: application/octet-stream`, streaming the PDF bytes. Files must be
+   searchable, machine-readable PDFs (scanned images are not supported).
+3. **Submit metadata** – call `POST /entries/payslips` (this endpoint) with a
+   JSON payload that includes the `path` for each uploaded file and an optional
+   `external_document_id`. Teal uses this metadata to process the uploaded
+   documents. Any files that fail validation are listed in `payslip_errors` in
+   the response.
 
 <RequestExample>
 
@@ -25,7 +37,7 @@ curl --request POST \
 # Step 2: upload PDFs with the provided presigned URLs
 curl --request PUT \
   --url "<presigned_url_from_step_1>" \
-  --header 'Content-Type: application/pdf' \
+  --header 'Content-Type: application/octet-stream' \
   --data-binary '@./fixtures/payslip1.pdf'
 
 # Step 3: submit uploaded payslips for processing
@@ -70,7 +82,7 @@ for url_info, file_name in zip(presigned_urls, ["payslip1.pdf", "payslip2.pdf"])
         put_res = requests.put(
             url_info["presigned_url"],
             data=f,
-            headers={"Content-Type": "application/pdf"},
+            headers={"Content-Type": "application/octet-stream"},
         )
         put_res.raise_for_status()
 
@@ -104,50 +116,52 @@ const token = '<token>'
 const baseURL = 'https://api.sandbox.goteal.co'
 
 // Step 1: request presigned URLs
-export async function submitPresignedPayslips(files) {
-  const { data: presignData } = await axios.post(
-    `${baseURL}/entries/payslips/presign`,
-    {
-      files: files.map(file => ({
-        file_name: file.name,
-        external_id: file.externalId,
-      })),
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+const presignResponse = await axios.post(
+  `${baseURL}/entries/payslips/presign`,
+  {
+    files: [
+      { file_name: 'payslip1.pdf', external_id: 'ext-jan-2024' },
+      { file_name: 'payslip2.pdf' }
+    ]
+  },
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
     }
-  )
+  }
+)
 
-  await Promise.all(
-    presignData.presigned_urls.map(async (urlInfo, index) => {
-      const file = files[index]
-      await axios.put(urlInfo.presigned_url, file.contents, {
-        headers: { 'Content-Type': 'application/pdf' },
-      })
+const presignedUrls = presignResponse.data.presigned_urls
+
+// Step 2: upload PDFs
+await Promise.all(
+  presignedUrls.map(async (urlInfo, index) => {
+    const fileData = await fetch(`/fixtures/payslip${index + 1}.pdf`).then(res => res.blob())
+    await axios.put(urlInfo.presigned_url, fileData, {
+      headers: {'Content-Type': 'application/octet-stream'}
     })
-  )
+  })
+)
 
-  const { data: submitData } = await axios.post(
-    `${baseURL}/entries/payslips`,
-    {
-      files: presignData.presigned_urls.map((urlInfo, index) => ({
-        path: urlInfo.path,
-        external_document_id: files[index]?.externalId,
-      })),
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+// Step 3: submit uploaded file paths
+const submitResponse = await axios.post(
+  `${baseURL}/entries/payslips`,
+  {
+    files: presignedUrls.map(urlInfo => ({
+      path: urlInfo.path,
+      external_document_id: urlInfo.external_id ?? undefined
+    }))
+  },
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
     }
-  )
+  }
+)
 
-  return submitData
-}
+console.log(submitResponse.data)
 ```
 
 
@@ -204,7 +218,7 @@ foreach ($presignResponse['presigned_urls'] as $index => $urlInfo) {
     CURLOPT_UPLOAD => true,
     CURLOPT_INFILE => $fileHandle,
     CURLOPT_INFILESIZE => filesize($filePath),
-    CURLOPT_HTTPHEADER => ['Content-Type: application/pdf'],
+    CURLOPT_HTTPHEADER => ['Content-Type: application/octet-stream'],
   ]);
 
   $putResponse = curl_exec($putCurl);
@@ -299,7 +313,7 @@ func main() {
 		defer file.Close()
 
 		putReq, _ := http.NewRequest("PUT", urlInfo.PresignedURL, file)
-		putReq.Header.Set("Content-Type", "application/pdf")
+		putReq.Header.Set("Content-Type", "application/octet-stream")
 
 		putRes, err := client.Do(putReq)
 		if err != nil {
@@ -373,7 +387,7 @@ for (int i = 0; i < presignJson.get("presigned_urls").size(); i++) {
     byte[] pdfBytes = java.nio.file.Files.readAllBytes(java.nio.file.Path.of("./fixtures/payslip" + (i + 1) + ".pdf"));
 
     HttpResponse<String> putResponse = Unirest.put(urlInfo.get("presigned_url").asText())
-        .header("Content-Type", "application/pdf")
+        .header("Content-Type", "application/octet-stream")
         .body(pdfBytes)
         .asString();
 
