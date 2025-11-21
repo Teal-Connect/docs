@@ -35,13 +35,18 @@ curl --request POST \
   "user_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
   "password": "very-secret-password",
   "payroll_provider": "quickbooks",
-  "user_name": "john.smith@company.com"
+  "user_name": "john.smith@company.com",
+  "extra_login_params": {
+    "company_name": "ACME Corp"
+  }
 }'
 ```
 
 A user can have multiple accounts to the same provider depending on the type of connection. The `POST /accounts` endpoint is a way to initialize a connection to a provider for a given user; Teal offers a separate provider flow for users via the WebUI as documented in [Introduction](./introduction.mdx). 
 The status of a account determines if it is able to recieve data, needs authorisation or if it is invalid or expired. An account connected via OAuth will not require credentials to be passed into the account creation request. Any credentials that are passed to Teal are encrypted securely. An account creation
 will do an initial payroll retrieval using the optional dates supplied; if none are sent with the request we then check for the client specific duration for which to lookback - if this is not configured, we take a default of 36 months.
+
+Use the optional `extra_login_params` object when a provider requires additional key/value pairs; otherwise omit it.
 
 ### Entries `/entries`
 

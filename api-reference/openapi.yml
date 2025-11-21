@@ -1381,6 +1381,13 @@ components:
           type: string
           description: The password of the user
           example: very-secret-password
+        extra_login_params:
+          type: object
+          description: Optional extra login parameters required by some providers
+          additionalProperties:
+            type: string
+          example:
+            company_name: "ACME Corp"
     AccountsResult:
       type: object
       required: [payroll_provider, user_name, created_at, account_id]
