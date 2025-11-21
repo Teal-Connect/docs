@@ -1383,7 +1383,9 @@ components:
           example: very-secret-password
         extra_login_params:
           type: object
-          description: Optional extra login parameters required by some providers
+          description: |
+            Optional extra login parameters required by some providers.
+            Dayforce connections require `extra_login_params.company_name`.
           additionalProperties:
             type: string
           example:

@@ -166,7 +166,8 @@ curl --request POST \
 }
 ```
 
-Use the optional `extra_login_params` object for provider-specific login fields (omit it when it isn't required).
+- Use the optional `extra_login_params` object for provider-specific login fields (omit it when it isn't required).
+- Dayforce connections require setting `extra_login_params.company_name`.
 
 As with production accounts, when connecting we will retrieve payroll immediately. For sandbox, the number of payroll submissions generated
 matches the `payroll_period_months` configuration. If this is set on both the client and user configuration, the user level config takes 
