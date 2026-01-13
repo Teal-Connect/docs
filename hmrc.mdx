@@ -58,3 +58,68 @@ curl --request POST \
 ```
 
 Once the account is created, the response will include an `authorisation_url`. The user must complete OAuth authentication via this URL, which redirects them to the HMRC Government Gateway. After successful authentication, you can fetch and retrieve income data using the [`/hmrc` endpoints](/api-reference/hmrc/get).
+
+<Note>
+HMRC connections require fraud prevention headers. See the [Fraud Headers](#fraud-headers) section below for details.
+</Note>
+
+## Fraud Headers
+
+HMRC requires fraud prevention headers on API requests to help protect users' confidential data from criminals and fraudsters. This data supports HMRC's transaction monitoring and is [required by law](https://developer.service.hmrc.gov.uk/guides/fraud-prevention/#why-you-must-send-data). 
+
+You must include the appropriate fraud prevention headers based on how your application connects to Teal. The headers are needed `POST /accounts` when the provider is `hmrc` and on `POST /hmrc/entries/connections` for subsquent post-authorisation fetches. 
+Only the headers that are collected by your client application are needed as described below..
+
+### Connection Method
+
+Set the `x-teal-connection-method` header to indicate your application's architecture:
+
+| Value | Description |
+| ----- | ----------- |
+| `WEB_APP_VIA_SERVER` | Your application is web based, connecting to HMRC via Teal through intermediary servers |
+| `MOBILE_APP_VIA_SERVER` | Your application is installed on a mobile device (phone or tablet) connecting to HMRC via Teal through intermediary servers |
+| `DESKTOP_APP_VIA_SERVER` | Your application is installed on a desktop (computer or laptop) connecting to HMRC via Teal through intermediary servers |
+
+### Common Headers
+
+These headers are required for all connection methods:
+
+| Header | Format | Example |
+| ------ | ------ | ------- |
+| `x-teal-user-agent` | String | `Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)...` |
+| `x-teal-device-id` | UUID | `550e8400-e29b-41d4-a716-446655440000` |
+| `x-teal-screen-dimensions` | `width=<int>&height=<int>` | `width=1920&height=1080` |
+| `x-teal-screen-scaling-factor` | Positive number | `2.0` |
+| `x-teal-screen-colour-depth` | Positive integer | `24` |
+| `x-teal-window-size` | `width=<int>&height=<int>` | `width=1280&height=720` |
+| `x-teal-client-timezone` | `UTC±hh:mm` | `UTC+00:00` |
+
+### Web App Headers
+
+Additional headers required for `WEB_APP_VIA_SERVER`:
+
+| Header | Format | Example |
+| ------ | ------ | ------- |
+| `x-teal-sdk-end-user-ip` | IP address | `203.0.113.195` |
+
+### Mobile App Headers
+
+Additional headers required for `MOBILE_APP_VIA_SERVER`:
+
+| Header | Format | Example |
+| ------ | ------ | ------- |
+| `x-teal-local-ips` | IP address(es) | `192.168.1.100` |
+| `x-teal-local-ips-timestamp` | ISO-8601 timestamp | `2025-01-13T10:30:00.000Z` |
+| `x-teal-mobile-app-version` | String | `1.2.3` |
+
+### Desktop App Headers
+
+Additional headers required for `DESKTOP_APP_VIA_SERVER`:
+
+| Header | Format | Example |
+| ------ | ------ | ------- |
+| `x-teal-local-ips` | IP address(es) | `192.168.1.100` |
+| `x-teal-local-ips-timestamp` | ISO-8601 timestamp | `2025-01-13T10:30:00.000Z` |
+| `x-teal-desktop-app-version` | String | `2.0.1` |
+| `x-teal-mac-addresses` | MAC address(es) | `01:23:45:67:89:AB` |
+| `x-teal-desktop-app-user-id` | String | `john.smith` |
