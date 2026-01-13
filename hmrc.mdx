@@ -58,3 +58,7 @@ curl --request POST \
 ```
 
 Once the account is created, the response will include an `authorisation_url`. The user must complete OAuth authentication via this URL, which redirects them to the HMRC Government Gateway. After successful authentication, you can fetch and retrieve income data using the [`/hmrc` endpoints](/api-reference/hmrc/get).
+
+## Webhook
+
+You can subscribe to the `user-hmrc-data-submitted` webhook to recieve updates on new HMRC data being retrieved.
