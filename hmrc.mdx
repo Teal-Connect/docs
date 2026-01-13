@@ -65,9 +65,60 @@ HMRC connections require fraud prevention headers. See the [Fraud Headers](#frau
 
 ## Fraud Headers
 
-TODO: Document the fraud prevention headers required for HMRC API calls.
+HMRC requires fraud prevention headers on API requests to help protect users' confidential data from criminals and fraudsters. This data supports HMRC's transaction monitoring and is [required by law](https://developer.service.hmrc.gov.uk/guides/fraud-prevention/#why-you-must-send-data) for MTD APIs.
 
-- What are fraud headers and why they're required
-- List of required headers
-- How to generate/obtain the header values
-- Example implementation
+When using the Teal SDK, you must include the appropriate fraud prevention headers based on how your application connects to HMRC.
+
+### Connection Method
+
+Set the `x-teal-connection-method` header to indicate your application's architecture:
+
+| Value | Description |
+| ----- | ----------- |
+| `WEB_APP_VIA_SERVER` | Your application is web based, connecting to HMRC through intermediary servers |
+| `MOBILE_APP_VIA_SERVER` | Your application is installed on a mobile device (phone or tablet) connecting to HMRC through intermediary servers |
+| `DESKTOP_APP_VIA_SERVER` | Your application is installed on a desktop (computer or laptop) connecting to HMRC through intermediary servers |
+
+### Common Headers
+
+These headers are required for all connection methods:
+
+| Header | Description |
+| ------ | ----------- |
+| `x-teal-user-agent` | User agent string from the originating device |
+| `x-teal-device-id` | A unique identifier for the originating device (UUID) |
+| `x-teal-screen-dimensions` | The screen dimensions of the originating device |
+| `x-teal-screen-scaling-factor` | The screen scaling factor of the originating device |
+| `x-teal-screen-colour-depth` | The colour depth of the screen |
+| `x-teal-window-size` | The width and height of the window in pixels |
+| `x-teal-client-timezone` | The timezone of the originating device |
+
+### Web App Headers
+
+Additional headers required for `WEB_APP_VIA_SERVER`:
+
+| Header | Description |
+| ------ | ----------- |
+| `x-teal-sdk-end-user-ip` | The public IP address of the originating device |
+
+### Mobile App Headers
+
+Additional headers required for `MOBILE_APP_VIA_SERVER`:
+
+| Header | Description |
+| ------ | ----------- |
+| `x-teal-local-ips` | Local IP addresses of the originating device |
+| `x-teal-local-ips-timestamp` | Timestamp when local IPs were collected |
+| `x-teal-mobile-app-version` | Version of the mobile application |
+
+### Desktop App Headers
+
+Additional headers required for `DESKTOP_APP_VIA_SERVER`:
+
+| Header | Description |
+| ------ | ----------- |
+| `x-teal-local-ips` | Local IP addresses of the originating device |
+| `x-teal-local-ips-timestamp` | Timestamp when local IPs were collected |
+| `x-teal-desktop-app-version` | Version of the desktop application |
+| `x-teal-mac-addresses` | MAC addresses of the originating device |
+| `x-teal-desktop-app-user-id` | User ID within the desktop application |
