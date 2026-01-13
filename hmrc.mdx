@@ -40,6 +40,10 @@ To establish an HMRC connection, call `POST /accounts` with `payroll_provider` s
 | `unique_tax_reference` | The user's UTR is a 10 or 13-digit number. They can find it on their Business Tax Account, the HMRC app, tax returns, or other documents from HMRC. It may appear as 'UTR', 'reference', or 'official use'. |
 | `ni_number` | The user's National Insurance number. They can find it on their payslip, P60, or letters from HMRC. |
 
+<Note>
+HMRC connections require fraud prevention headers. See the [Fraud Headers](#fraud-headers) section below for details.
+</Note>
+
 ### Example Request
 
 ```bash
@@ -59,9 +63,9 @@ curl --request POST \
 
 Once the account is created, the response will include an `authorisation_url`. The user must complete OAuth authentication via this URL, which redirects them to the HMRC Government Gateway. After successful authentication, you can fetch and retrieve income data using the [`/hmrc` endpoints](/api-reference/hmrc/get).
 
-<Note>
-HMRC connections require fraud prevention headers. See the [Fraud Headers](#fraud-headers) section below for details.
-</Note>
+## Webhook
+
+You can subscribe to the `user-hmrc-data-submitted` webhook to recieve updates on new HMRC data being retrieved.
 
 ## Fraud Headers
 
