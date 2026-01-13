@@ -20,6 +20,8 @@ Webhooks are system-wide meaning subscriptions are not limited to specific users
 ### Supported Event:
 - `user-payroll-submitted` - notifies when any user creates an entry with new payroll data.
    Includes the payroll data entry as json if `include_payload` is set in the configuration.
+- `user-hmrc-data-submitted` - notifies when any user creates an entry with new hmrc data.
+   Includes the hmrc data entry as json if `include_payload` is set in the configuration.
 - No more events are supported at the moment.
 
 ## Setting Up Webhooks
