@@ -83,42 +83,42 @@ Set the `x-teal-connection-method` header to indicate your application's archite
 
 These headers are required for all connection methods:
 
-| Header | Description |
-| ------ | ----------- |
-| `x-teal-user-agent` | User agent string from the originating device |
-| `x-teal-device-id` | A unique identifier for the originating device (UUID) |
-| `x-teal-screen-dimensions` | The screen dimensions of the originating device |
-| `x-teal-screen-scaling-factor` | The screen scaling factor of the originating device |
-| `x-teal-screen-colour-depth` | The colour depth of the screen |
-| `x-teal-window-size` | The width and height of the window in pixels |
-| `x-teal-client-timezone` | The timezone of the originating device |
+| Header | Format | Example |
+| ------ | ------ | ------- |
+| `x-teal-user-agent` | String | `Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)...` |
+| `x-teal-device-id` | UUID | `550e8400-e29b-41d4-a716-446655440000` |
+| `x-teal-screen-dimensions` | `width=<int>&height=<int>` | `width=1920&height=1080` |
+| `x-teal-screen-scaling-factor` | Positive number | `2.0` |
+| `x-teal-screen-colour-depth` | Positive integer | `24` |
+| `x-teal-window-size` | `width=<int>&height=<int>` | `width=1280&height=720` |
+| `x-teal-client-timezone` | `UTC±hh:mm` | `UTC+00:00` |
 
 ### Web App Headers
 
 Additional headers required for `WEB_APP_VIA_SERVER`:
 
-| Header | Description |
-| ------ | ----------- |
-| `x-teal-sdk-end-user-ip` | The public IP address of the originating device |
+| Header | Format | Example |
+| ------ | ------ | ------- |
+| `x-teal-sdk-end-user-ip` | IP address | `203.0.113.195` |
 
 ### Mobile App Headers
 
 Additional headers required for `MOBILE_APP_VIA_SERVER`:
 
-| Header | Description |
-| ------ | ----------- |
-| `x-teal-local-ips` | Local IP addresses of the originating device |
-| `x-teal-local-ips-timestamp` | Timestamp when local IPs were collected |
-| `x-teal-mobile-app-version` | Version of the mobile application |
+| Header | Format | Example |
+| ------ | ------ | ------- |
+| `x-teal-local-ips` | IP address(es) | `192.168.1.100` |
+| `x-teal-local-ips-timestamp` | ISO-8601 timestamp | `2025-01-13T10:30:00.000Z` |
+| `x-teal-mobile-app-version` | String | `1.2.3` |
 
 ### Desktop App Headers
 
 Additional headers required for `DESKTOP_APP_VIA_SERVER`:
 
-| Header | Description |
-| ------ | ----------- |
-| `x-teal-local-ips` | Local IP addresses of the originating device |
-| `x-teal-local-ips-timestamp` | Timestamp when local IPs were collected |
-| `x-teal-desktop-app-version` | Version of the desktop application |
-| `x-teal-mac-addresses` | MAC addresses of the originating device |
-| `x-teal-desktop-app-user-id` | User ID within the desktop application |
+| Header | Format | Example |
+| ------ | ------ | ------- |
+| `x-teal-local-ips` | IP address(es) | `192.168.1.100` |
+| `x-teal-local-ips-timestamp` | ISO-8601 timestamp | `2025-01-13T10:30:00.000Z` |
+| `x-teal-desktop-app-version` | String | `2.0.1` |
+| `x-teal-mac-addresses` | MAC address(es) | `01:23:45:67:89:AB` |
+| `x-teal-desktop-app-user-id` | String | `john.smith` |
