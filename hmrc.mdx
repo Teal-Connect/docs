@@ -1,0 +1,43 @@
+---
+title: 'HMRC'
+description: 'Access income and employment data directly from HMRC'
+---
+
+## Overview
+
+TODO: Explain what the HMRC option is and what type of data we get from the HMRC API.
+
+- What is HMRC integration
+- Types of data available (employment income, tax paid, etc.)
+- Use cases
+
+## Creating an HMRC Connection
+
+TODO: Guide on how to create an HMRC connection by calling `POST /accounts` with the required `extra_login_params`.
+
+```bash
+curl --request POST \
+  --url https://api.sandbox.goteal.co/accounts \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-KEY: <api-key>' \
+  --data '{
+  "user_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
+  "payroll_provider": "hmrc",
+  "extra_login_params": {
+    // TODO: Add required HMRC params
+  }
+}'
+```
+
+<Note>
+HMRC connections require fraud prevention headers. See the [Fraud Headers](#fraud-headers) section below for details.
+</Note>
+
+## Fraud Headers
+
+TODO: Document the fraud prevention headers required for HMRC API calls.
+
+- What are fraud headers and why they're required
+- List of required headers
+- How to generate/obtain the header values
+- Example implementation
