@@ -70,19 +70,23 @@
             ]
           },
           {
-            "group": "Entries",
+            "group": "Payroll",
             "pages": [
-              "api-reference/entries/connections-create",
-              "api-reference/entries/payslips-presign",
-              "api-reference/entries/payslips-create",
-              "api-reference/entries/list",
-              "api-reference/entries/delete"
+              "api-reference/payroll/connections-create",
+              "api-reference/payroll/payslips-presign",
+              "api-reference/payroll/payslips-create",
+              "api-reference/payroll/get",
+              "api-reference/payroll/entries-list",
+              "api-reference/payroll/entries-delete"
             ]
           },
           {
-            "group": "Payroll",
+            "group": "HMRC",
             "pages": [
-              "api-reference/payroll/get"
+              "api-reference/hmrc/connections-create",
+              "api-reference/hmrc/get",
+              "api-reference/hmrc/entries-list",
+              "api-reference/hmrc/entries-delete"
             ]
           },
           {

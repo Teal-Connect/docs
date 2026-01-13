@@ -50,14 +50,14 @@ will do an initial payroll retrieval using the optional dates supplied; if none 
 #### Providers that require extra login parameters:
   - Dayforce: <span style={{ color: '#f29fb3' }}>Required</span> `extra_login_params.company_name`
 
-### Entries `/entries`
+### Entries `/payroll/entries`
 
 Entries log each data submission, tracking the origin (account connection or manual upload) and content type of the data.
 
 **Example:** Query and persist data for a valid account connection
 ```bash
 curl --request POST \
-  --url https://api.sandbox.goteal.co/entries/connections \
+  --url https://api.sandbox.goteal.co/payroll/entries/connections \
   --header 'Authorization: Bearer <token>' \
   --header 'Content-Type: application/json' \
   --data '{
@@ -65,11 +65,11 @@ curl --request POST \
   }'
 ```
 
-For an account, a call to the `/entries/connections` endpoint will query the connection for data. This endpoint is for adhoc data retrieval for an account; Teal will also collect the payroll data for users via the WebUI as soon
-as a valid connection is established. This endpoint can be applied to any account, it does not matter if it was established via your own call to `POST /accounts` or via the Teal WebUI. Note that any new data retrieved via `/entries/connections` is persisted on Teal's storage and can be retrieved using the `/payroll/{user_id}` endpoint. 
+For an account, a call to the `/payroll/entries/connections` endpoint will query the connection for data. This endpoint is for adhoc data retrieval for an account; Teal will also collect the payroll data for users via the WebUI as soon
+as a valid connection is established. This endpoint can be applied to any account, it does not matter if it was established via your own call to `POST /accounts` or via the Teal WebUI. Note that any new data retrieved via `/payroll/entries/connections` is persisted on Teal's storage and can be retrieved using the `/payroll/{user_id}` endpoint. 
 When querying a connection, new payroll will be fetched based on the initial period used in account creation; Teal uses the most recent `pay_date` of an account to update the connection with the latest payroll seen after this date.
 
-A manual upload of payslip data using is not linked to an account, but the JSON response of `/entries/payslips` will be in the same format and the payroll data
+A manual upload of payslip data using is not linked to an account, but the JSON response of `/payroll/entries/payslips` will be in the same format and the payroll data
 can be retrieved in the exact same way. The files for upload must be in PDF format.
 
 ### Payroll `/payroll`
