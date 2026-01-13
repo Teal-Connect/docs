@@ -5,7 +5,7 @@ description: 'Access income and employment data directly from HMRC'
 
 ## Overview
 
-Teal's HMRC integration enables you to retrieve verified income and employment data directly from Her Majesty's Revenue and Customs. This provides a reliable, government-sourced view of a user's financial history, ideal for income verification, lending decisions, and affordability assessments.
+Teal's HMRC integration enables you to retrieve verified income and employment data directly from His Majesty's Revenue and Customs. This provides a reliable, government-sourced view of a user's financial history, ideal for income verification, lending decisions, and affordability assessments.
 
 ### Data Available
 
@@ -37,8 +37,8 @@ To establish an HMRC connection, call `POST /accounts` with `payroll_provider` s
 
 | Parameter | Description |
 | --------- | ----------- |
-| `unique_tax_reference` | The user's 10-digit Unique Taxpayer Reference (UTR) |
-| `ni_number` | The user's National Insurance number |
+| `unique_tax_reference` | The user's UTR is a 10 or 13-digit number. They can find it on their Business Tax Account, the HMRC app, tax returns, or other documents from HMRC. It may appear as 'UTR', 'reference', or 'official use'. |
+| `ni_number` | The user's National Insurance number. They can find it on their payslip, P60, or letters from HMRC. |
 
 ### Example Request
 
