@@ -5,15 +5,42 @@ description: 'Access income and employment data directly from HMRC'
 
 ## Overview
 
-TODO: Explain what the HMRC option is and what type of data we get from the HMRC API.
+Teal's HMRC integration enables you to retrieve verified income and employment data directly from Her Majesty's Revenue and Customs. This provides a reliable, government-sourced view of a user's financial history, ideal for income verification, lending decisions, and affordability assessments.
 
-- What is HMRC integration
-- Types of data available (employment income, tax paid, etc.)
-- Use cases
+### Data Available
+
+Through the HMRC integration, you can access:
+
+| Data Type | Description |
+| --------- | ----------- |
+| **Employment Income** | Total income and earnings from each employer |
+| **Tax Paid** | Tax deducted at source for each employment |
+| **Employer Details** | Names of employers on record |
+| **Income Period** | The tax year or period the data covers |
+
+### Use Cases
+
+Confirm employment income directly from HMRC records rather than relying on payslips alone
+
+### How It Works
+
+1. Create an account connection with `payroll_provider` set to `hmrc`
+2. The user authenticates via the HMRC Government Gateway
+3. Teal retrieves income submissions across available tax years
+4. Access the data via `GET /hmrc/{user_id}` or manage entries via `/hmrc/entries`
 
 ## Creating an HMRC Connection
 
-TODO: Guide on how to create an HMRC connection by calling `POST /accounts` with the required `extra_login_params`.
+To establish an HMRC connection, call `POST /accounts` with `payroll_provider` set to `hmrc`. HMRC requires additional authentication parameters in `extra_login_params`.
+
+### Required Parameters
+
+| Parameter | Description |
+| --------- | ----------- |
+| `unique_tax_reference` | The user's 10-digit Unique Taxpayer Reference (UTR) |
+| `ni_number` | The user's National Insurance number |
+
+### Example Request
 
 ```bash
 curl --request POST \
@@ -24,10 +51,13 @@ curl --request POST \
   "user_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
   "payroll_provider": "hmrc",
   "extra_login_params": {
-    // TODO: Add required HMRC params
+    "unique_tax_reference": "2622992714",
+    "ni_number": "GJ458274B"
   }
 }'
 ```
+
+Once the account is created, the response will include an `authorisation_url`. The user must complete OAuth authentication via this URL, which redirects them to the HMRC Government Gateway. After successful authentication, you can retrieve income data using the `/hmrc` endpoints.
 
 <Note>
 HMRC connections require fraud prevention headers. See the [Fraud Headers](#fraud-headers) section below for details.
