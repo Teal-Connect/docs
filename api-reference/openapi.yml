@@ -420,7 +420,7 @@ paths:
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
 
-  "/entries":
+  "/payroll/entries":
     get:
       summary: Returns all entries for a user account sorted desc by created_at
       parameters:
@@ -474,7 +474,7 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
-  "/entries/{entry_id}":
+  "/payroll/entries/{entry_id}":
     delete:
       summary: Deletes an entry for the user
       parameters:
@@ -499,15 +499,15 @@ paths:
           "$ref": "#/components/responses/UnauthorizedApiKey"
         "404":
           "$ref": "#/components/responses/ResourceNotFound"
-  "/entries/connections":
+  "/payroll/entries/connections":
     description:
-      For an account, a call to the `/entries/connections` endpoint will query the
+      For an account, a call to the `/payroll/entries/connections` endpoint will query the
       connection for data. This endpoint is for adhoc data retrieval for an account;
       Teal will also collect the payroll data for users via the WebUI as soon
       as a valid connection is established. This endpoint can be applied to any
       account, it does not matter if it was established via your own call to
       `POST /accounts` or via the Teal WebUI. Note that any new data retrieved via
-      `/entries/connections` is persisted on Teal's storage and can be retrieved using
+      `/payroll/entries/connections` is persisted on Teal's storage and can be retrieved using
       the `/payroll/{user_id}` endpoint.
     post:
       summary: Connects a user account to a payroll provider
@@ -537,7 +537,7 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedBearer"
-  "/entries/payslips/presign":
+  "/payroll/entries/payslips/presign":
     post:
       summary: Generate presigned URLs for payslip uploads
       description: |
@@ -563,12 +563,12 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedBearer"
-  "/entries/payslips":
+  "/payroll/entries/payslips":
     post:
       summary: Submit previously uploaded payslips for processing
       description: |
         Uploading payslips is a three-step flow:
-          1. Request upload slots with `POST /entries/payslips/presign`, providing
+          1. Request upload slots with `POST /payroll/entries/payslips/presign`, providing
              each PDF file name (and optional external identifier). The response
              includes `presigned_url` and `path` values for every requested file.
           2. Upload the PDF content to every `presigned_url` using an HTTP `PUT`

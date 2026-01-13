@@ -1,19 +1,19 @@
 ---
 title: 'Payslips upload'
-openapi: 'POST /entries/payslips'
+openapi: 'POST /payroll/entries/payslips'
 ---
 
 ## End-to-end upload flow
 
 Follow these steps to upload payslips programmatically:
 
-1. **Request upload slots** – call `POST /entries/payslips/presign` with the list
+1. **Request upload slots** – call `POST /payroll/entries/payslips/presign` with the list
    of filenames (and optional external identifiers) you intend to upload. The
    response returns `presigned_url` and `path` fields for each file.
 2. **Upload PDFs** – for every returned `presigned_url`, perform an HTTP `PUT`
    with `Content-Type: application/octet-stream`, streaming the PDF bytes. Files must be
    searchable, machine-readable PDFs (scanned images are not supported).
-3. **Submit metadata** – call `POST /entries/payslips` (this endpoint) with a
+3. **Submit metadata** – call `POST /payroll/entries/payslips` (this endpoint) with a
    JSON payload that includes the `path` for each uploaded file and an optional
    `external_document_id`. Teal uses this metadata to process the uploaded
    documents. Any files that fail validation are listed in `payslip_errors` in
@@ -24,7 +24,7 @@ Follow these steps to upload payslips programmatically:
 ```bash cURL
 # Step 1: request presigned upload URLs
 curl --request POST \
-  --url https://api.sandbox.goteal.co/entries/payslips/presign \
+  --url https://api.sandbox.goteal.co/payroll/entries/payslips/presign \
   --header 'Authorization: Bearer <token>' \
   --header 'Content-Type: application/json' \
   --data '{
@@ -42,7 +42,7 @@ curl --request PUT \
 
 # Step 3: submit uploaded payslips for processing
 curl --request POST \
-  --url https://api.sandbox.goteal.co/entries/payslips \
+  --url https://api.sandbox.goteal.co/payroll/entries/payslips \
   --header 'Authorization: Bearer <token>' \
   --header 'Content-Type: application/json' \
   --data '{
@@ -69,7 +69,7 @@ presign_payload = {
     ]
 }
 presign_res = requests.post(
-    f"{base_url}/entries/payslips/presign",
+    f"{base_url}/payroll/entries/payslips/presign",
     headers={**headers, "Content-Type": "application/json"},
     json=presign_payload,
 )
@@ -98,7 +98,7 @@ submit_payload = {
 }
 
 submit_res = requests.post(
-    f"{base_url}/entries/payslips",
+    f"{base_url}/payroll/entries/payslips",
     headers={**headers, "Content-Type": "application/json"},
     json=submit_payload,
 )
@@ -117,7 +117,7 @@ const baseURL = 'https://api.sandbox.goteal.co'
 
 // Step 1: request presigned URLs
 const presignResponse = await axios.post(
-  `${baseURL}/entries/payslips/presign`,
+  `${baseURL}/payroll/entries/payslips/presign`,
   {
     files: [
       { file_name: 'payslip1.pdf', external_id: 'ext-jan-2024' },
@@ -146,7 +146,7 @@ await Promise.all(
 
 // Step 3: submit uploaded file paths
 const submitResponse = await axios.post(
-  `${baseURL}/entries/payslips`,
+  `${baseURL}/payroll/entries/payslips`,
   {
     files: presignedUrls.map(urlInfo => ({
       path: urlInfo.path,
@@ -206,7 +206,7 @@ $presignPayload = [
   ],
 ];
 
-$presignResponse = postJson($baseUrl . '/entries/payslips/presign', $presignPayload, $token);
+$presignResponse = postJson($baseUrl . '/payroll/entries/payslips/presign', $presignPayload, $token);
 
 // Step 2: upload PDFs via PUT
 foreach ($presignResponse['presigned_urls'] as $index => $urlInfo) {
@@ -245,7 +245,7 @@ $submitPayload = [
   }, $presignResponse['presigned_urls'])
 ];
 
-$submitResponse = postJson($baseUrl . '/entries/payslips', $submitPayload, $token);
+$submitResponse = postJson($baseUrl . '/payroll/entries/payslips', $submitPayload, $token);
 
 print_r($submitResponse);
 ```
@@ -277,7 +277,7 @@ func main() {
 	}
 
 	presignBody, _ := json.Marshal(presignPayload)
-	presignReq, _ := http.NewRequest("POST", baseURL+"/entries/payslips/presign", bytes.NewBuffer(presignBody))
+	presignReq, _ := http.NewRequest("POST", baseURL+"/payroll/entries/payslips/presign", bytes.NewBuffer(presignBody))
 	presignReq.Header.Set("Authorization", "Bearer "+token)
 	presignReq.Header.Set("Content-Type", "application/json")
 
@@ -341,7 +341,7 @@ func main() {
 	}
 
 	submitBody, _ := json.Marshal(submitPayload)
-	submitReq, _ := http.NewRequest("POST", baseURL+"/entries/payslips", bytes.NewBuffer(submitBody))
+	submitReq, _ := http.NewRequest("POST", baseURL+"/payroll/entries/payslips", bytes.NewBuffer(submitBody))
 	submitReq.Header.Set("Authorization", "Bearer "+token)
 	submitReq.Header.Set("Content-Type", "application/json")
 
@@ -370,7 +370,7 @@ String token = "<token>";
 String baseUrl = "https://api.sandbox.goteal.co";
 ObjectMapper mapper = new ObjectMapper();
 
-HttpResponse<String> presignResponse = Unirest.post(baseUrl + "/entries/payslips/presign")
+HttpResponse<String> presignResponse = Unirest.post(baseUrl + "/payroll/entries/payslips/presign")
     .header("Authorization", "Bearer " + token)
     .header("Content-Type", "application/json")
     .body("{\n  \"files\": [\n    {\"file_name\": \"payslip1.pdf\", \"external_id\": \"ext-jan-2024\"},\n    {\"file_name\": \"payslip2.pdf\"}\n  ]\n}")
@@ -396,7 +396,7 @@ for (int i = 0; i < presignJson.get("presigned_urls").size(); i++) {
     }
 }
 
-HttpResponse<String> submitResponse = Unirest.post(baseUrl + "/entries/payslips")
+HttpResponse<String> submitResponse = Unirest.post(baseUrl + "/payroll/entries/payslips")
     .header("Authorization", "Bearer " + token)
     .header("Content-Type", "application/json")
     .body(presignJson.toString().replace("presigned_urls", "files"))

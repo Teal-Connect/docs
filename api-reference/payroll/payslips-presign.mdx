@@ -1,17 +1,17 @@
 ---
 title: 'Generate presigned payslip URLs'
-openapi: 'POST /entries/payslips/presign'
+openapi: 'POST /payroll/entries/payslips/presign'
 ---
 
 Request short-lived URLs to upload payslip PDFs directly to Teal managed storage.
 Use the returned `presigned_url` values with HTTP `PUT`, then call
-`POST /entries/payslips` to submit the uploaded documents for processing.
+`POST /payroll/entries/payslips` to submit the uploaded documents for processing.
 
 <RequestExample>
 
 ```bash cURL
 curl --request POST \
-  --url https://api.sandbox.goteal.co/entries/payslips/presign \
+  --url https://api.sandbox.goteal.co/payroll/entries/payslips/presign \
   --header 'Authorization: Bearer <token>' \
   --header 'Content-Type: application/json' \
   --data '{
@@ -27,7 +27,7 @@ import json
 import requests
 
 token = "<token>"
-url = "https://api.sandbox.goteal.co/entries/payslips/presign"
+url = "https://api.sandbox.goteal.co/payroll/entries/payslips/presign"
 
 payload = {
     "files": [
@@ -55,7 +55,7 @@ import axios from 'axios'
 
 const token = '<token>'
 const response = await axios.post(
-  'https://api.sandbox.goteal.co/entries/payslips/presign',
+  'https://api.sandbox.goteal.co/payroll/entries/payslips/presign',
   {
     files: [
       { file_name: 'payslip1.pdf', external_id: 'ext-jan-2024' },
@@ -84,7 +84,7 @@ $payload = json_encode([
   ],
 ]);
 
-$curl = curl_init('https://api.sandbox.goteal.co/entries/payslips/presign');
+$curl = curl_init('https://api.sandbox.goteal.co/payroll/entries/payslips/presign');
 curl_setopt_array($curl, [
   CURLOPT_RETURNTRANSFER => true,
   CURLOPT_CUSTOMREQUEST => 'POST',
@@ -132,7 +132,7 @@ func main() {
 	body, _ := json.Marshal(payload)
 	req, _ := http.NewRequest(
 		"POST",
-		"https://api.sandbox.goteal.co/entries/payslips/presign",
+		"https://api.sandbox.goteal.co/payroll/entries/payslips/presign",
 		bytes.NewBuffer(body),
 	)
 
@@ -161,7 +161,7 @@ import kong.unirest.Unirest;
 
 String token = "<token>";
 
-HttpResponse<String> response = Unirest.post("https://api.sandbox.goteal.co/entries/payslips/presign")
+HttpResponse<String> response = Unirest.post("https://api.sandbox.goteal.co/payroll/entries/payslips/presign")
     .header("Authorization", "Bearer " + token)
     .header("Content-Type", "application/json")
     .body("{\n  \"files\": [\n    {\"file_name\": \"payslip1.pdf\", \"external_id\": \"ext-jan-2024\"},\n    {\"file_name\": \"payslip2.pdf\"}\n  ]\n}")
