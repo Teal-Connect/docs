@@ -41,7 +41,7 @@ To establish an HMRC connection, call `POST /accounts` with `payroll_provider` s
 | `ni_number` | The user's National Insurance number. They can find it on their payslip, P60, or letters from HMRC. |
 
 <Note>
-HMRC connections require fraud prevention headers. See the [Fraud Headers](#fraud-headers) section below for details.
+HMRC connections require fraud prevention headers. See the [Fraud Headers](#fraud-headers) section below for details if using the `hmrc` endpoints. This is already handled for Teal WebApp usage.
 </Note>
 
 ### Example Request
@@ -69,7 +69,7 @@ You can subscribe to the `user-hmrc-data-submitted` webhook to recieve updates o
 
 ## Fraud Headers
 
-HMRC requires fraud prevention headers on API requests to help protect users' confidential data from criminals and fraudsters. This data supports HMRC's transaction monitoring and is [required by law](https://developer.service.hmrc.gov.uk/guides/fraud-prevention/#why-you-must-send-data). 
+HMRC requires fraud prevention headers on API requests to help protect users' confidential data from criminals and fraudsters. This data supports HMRC's transaction [monitoring](https://developer.service.hmrc.gov.uk/guides/fraud-prevention/#why-you-must-send-data). 
 
 You must include the appropriate fraud prevention headers based on how your application connects to Teal. The headers are needed `POST /accounts` when the provider is `hmrc` and on `POST /hmrc/entries/connections` for subsquent post-authorisation fetches. 
 Only the headers that are collected by your client application are needed as described below..
