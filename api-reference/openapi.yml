@@ -2300,6 +2300,8 @@ components:
           example: Annual
         income_period:
           "$ref": "#/components/schemas/IncomePeriod"
+        other_income:
+          "$ref": "#/components/schemas/OtherIncome"
     HmrcEmployment:
       type: object
       properties:
@@ -2339,6 +2341,21 @@ components:
           format: date-time
           description: End of income period
           example: "2025-04-05T12:00:00Z"
+    OtherIncome:
+      type: object
+      properties:
+        pension_and_retirement_annuities:
+          type: string
+          description: Income from pension and retirement annuities
+          example: "36.50"
+        incapacity_benefit:
+          type: string
+          description: Income from incapacity benefit
+          example: "980.45"
+        jobseeker_allowance:
+          type: string
+          description: Income from jobseeker's allowance
+          example: "89.99"
 
   securitySchemes:
     ApiKeyAuth:
