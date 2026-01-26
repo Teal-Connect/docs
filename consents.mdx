@@ -1,0 +1,179 @@
+---
+title: 'Consents'
+description: 'Manage user consent for data sharing and access'
+---
+
+Consent management allows you to track and verify user authorization for data sharing. Teal provides default consent terms, or you can create custom terms tailored to your business requirements.
+
+## Consent Terms
+
+Consent terms define the legal text that users agree to when granting access to their data.
+
+### System Terms vs Custom Terms
+
+| Type | Description |
+|------|-------------|
+| **System Terms** | Default terms provided by Teal, available to all clients. Identified by `is_system_term: true`. |
+| **Custom Terms** | Terms created by your organization for specific use cases. Identified by `is_system_term: false`. |
+
+### Categories
+
+Each term belongs to a category that defines the type of consent:
+
+- **one_time** - Single authorization for a specific action (e.g., one-time income verification)
+- **recurring** - Ongoing authorization for continuous data access (e.g., recurring payroll checks)
+
+### Retrieving Available Terms
+
+```bash
+curl --request GET \
+  --url 'https://api.sandbox.goteal.co/consents/terms' \
+  --header 'X-API-KEY: <api-key>'
+```
+
+Filter by type using query parameters:
+
+```bash
+# Get only system terms
+GET /consents/terms?is_system_term=true
+
+# Get only recurring terms
+GET /consents/terms?consent_category=recurring
+
+# Combine filters
+GET /consents/terms?is_system_term=true&consent_category=recurring
+```
+
+### Creating Custom Terms
+
+If system terms don't meet your requirements, create custom terms:
+
+```bash
+curl --request POST \
+  --url https://api.sandbox.goteal.co/consents/terms \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-KEY: <api-key>' \
+  --data '{
+    "name": "Custom Data Sharing Agreement",
+    "consent_text": "I authorize Example Corp to access my payroll data for income verification purposes.",
+    "consent_category": "recurring"
+  }'
+```
+
+The `consent_version` is automatically assigned and incremented for each new term you create.
+
+### One Active Term Per Category
+
+Only one term can be active per category at any time. When you create a new term for a category, any existing active term in that category is automatically deactivated.
+
+**Example:**
+1. You have an active `recurring` term (version 1)
+2. You create a new `recurring` term
+3. The old term (version 1) is automatically set to `is_active: false`
+4. The new term (version 2) becomes the active `recurring` term
+
+This ensures there's never ambiguity about which term users should accept. Users who previously accepted the old term will need to re-consent to the new term (see [Re-consent Flow](#re-consent-flow)).
+
+## Recording Consent
+
+When a user accepts consent terms, record their acceptance:
+
+```bash
+curl --request POST \
+  --url https://api.sandbox.goteal.co/consents \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-KEY: <api-key>' \
+  --data '{
+    "user_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
+    "term_id": "550e8400-e29b-41d4-a716-446655440000",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  }'
+```
+
+The user's IP address is automatically captured from request headers for audit purposes.
+
+### Consent Record
+
+Each acceptance creates an immutable record containing:
+
+- **id** - Unique consent record identifier
+- **user_id** - The user who gave consent
+- **term_id** - The specific term version accepted
+- **ip_address** - Captured from request headers
+- **user_agent** - Browser or application identifier
+- **accepted_at** - Server timestamp of acceptance
+- **status** - `active` or `revoked`
+
+## Validating Consent
+
+Before performing actions that require consent, verify the user has accepted the current active terms.
+
+### Check User's Consent Status
+
+```bash
+curl --request GET \
+  --url 'https://api.sandbox.goteal.co/consents/95a0e70b-fe02-4f47-aef9-2efff279df71' \
+  --header 'X-API-KEY: <api-key>'
+```
+
+### Validation Logic
+
+A user has valid consent when:
+1. They have a consent record with `status: active`
+2. The associated term has `is_active: true`
+
+If the user's consent points to a term where `is_active: false`, they have accepted an outdated version and need to re-consent.
+
+## Re-consent Flow
+
+When you create a new term version, the old term is automatically deactivated (see [One Active Term Per Category](#one-active-term-per-category)). Users who accepted the old term will need to re-consent.
+
+### Flow
+
+```
+1. Create new term
+   → Old term automatically set to is_active: false
+   → New term becomes is_active: true
+
+2. Check user's consent:
+   - GET /consents/{user_id}
+   - If their term's is_active = false, they need re-consent
+
+3. Prompt user to review and accept new terms
+
+4. Record new consent:
+   - POST /consents with new term_id
+
+5. Old consent record preserved for audit trail
+```
+
+### Example: Detecting Outdated Consent
+
+```bash
+# 1. Get current active term
+curl --request GET \
+  --url 'https://api.sandbox.goteal.co/consents/terms?consent_category=recurring&is_active=true' \
+  --header 'X-API-KEY: <api-key>'
+
+# 2. Get user's consents
+curl --request GET \
+  --url 'https://api.sandbox.goteal.co/consents/95a0e70b-fe02-4f47-aef9-2efff279df71' \
+  --header 'X-API-KEY: <api-key>'
+
+# 3. Compare: if user's term_id doesn't match current active term, prompt for re-consent
+```
+
+## Revoking Consent
+
+Users can revoke their consent at any time. Revocation preserves the record for audit purposes.
+
+```bash
+curl --request PUT \
+  --url https://api.sandbox.goteal.co/consents/7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o/revoke \
+  --header 'X-API-KEY: <api-key>'
+```
+
+After revocation:
+- The consent record's `status` changes to `revoked`
+- The `revoked_at` timestamp is set
+- The record is preserved for compliance and audit purposes
