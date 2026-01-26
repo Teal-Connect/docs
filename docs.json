@@ -99,6 +99,17 @@
             ]
           },
           {
+            "group": "Consents",
+            "pages": [
+              "api-reference/consents/terms-create",
+              "api-reference/consents/terms-list",
+              "api-reference/consents/terms-get",
+              "api-reference/consents/create",
+              "api-reference/consents/list",
+              "api-reference/consents/revoke"
+            ]
+          },
+          {
             "group": "Configuration",
             "pages": [
               "api-reference/configuration/get",

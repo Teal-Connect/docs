@@ -1323,6 +1323,248 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/consents/terms":
+    description: Consent terms define the legal text and versions that users can accept. Lenders can create and manage consent terms.
+    post:
+      summary: Creates a new consent term.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ConsentTerm"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/CreatedConsentTerm"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "409":
+          "$ref": "#/components/responses/ConflictedResource"
+    get:
+      summary: List all consent terms.
+      parameters:
+        - name: consent_category
+          in: query
+          description: Filter by consent category
+          required: false
+          schema:
+            "$ref": "#/components/schemas/ConsentCategory"
+        - name: is_active
+          in: query
+          description: Filter by active status
+          required: false
+          schema:
+            type: boolean
+        - name: is_system_term
+          in: query
+          description: Filter by system term status. True returns only Teal's default terms, false returns only client-created terms.
+          required: false
+          schema:
+            type: boolean
+        - name: offset
+          in: query
+          description: The offset to start at
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: The number of items to return
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pagination:
+                    "$ref": "#/components/schemas/Pagination"
+                  terms:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/CreatedConsentTerm"
+              example:
+                pagination:
+                  offset: 0
+                  limit: 20
+                  count: 2
+                terms:
+                  - id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Teal Data Sharing Agreement"
+                    consent_text: "I agree to share my payroll data with the lender for income verification."
+                    consent_version: 1
+                    consent_category: "recurring"
+                    is_active: true
+                    is_system_term: true
+                    created_at: "2024-01-15T00:00:00.000Z"
+                  - id: "7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o"
+                    name: "Custom Terms v2"
+                    consent_text: "Custom consent text for our lending product."
+                    consent_version: 2
+                    consent_category: "one_time"
+                    is_active: true
+                    is_system_term: false
+                    created_at: "2024-06-01T00:00:00.000Z"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/consents/terms/{term_id}":
+    description: Retrieve a specific consent term by ID.
+    get:
+      summary: Returns a consent term.
+      parameters:
+        - in: path
+          name: term_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the consent term to retrieve
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/CreatedConsentTerm"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
+  "/consents":
+    description: User consent records track when users accept consent terms, including acceptance metadata for audit purposes.
+    post:
+      summary: Records a user accepting a consent term.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ConsentAcceptance"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/CreatedConsent"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          description: User or term not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/NotFound"
+  "/consents/{user_id}":
+    description: Retrieve all consent records for a specific user.
+    get:
+      summary: Returns all consent records for a user.
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the user to get consents for
+        - name: status
+          in: query
+          description: Filter by consent status
+          required: false
+          schema:
+            "$ref": "#/components/schemas/ConsentStatus"
+        - name: term_id
+          in: query
+          description: Filter by consent term ID
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: offset
+          in: query
+          description: The offset to start at
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: The number of items to return
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pagination:
+                    "$ref": "#/components/schemas/Pagination"
+                  consents:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/CreatedConsent"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
+  "/consents/{consent_id}/revoke":
+    description: Revoke a consent record. The record is preserved for audit purposes.
+    put:
+      summary: Revokes a consent.
+      parameters:
+        - in: path
+          name: consent_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the consent to revoke
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/CreatedConsent"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
 components:
   responses:
     UnauthorizedApiKey:
@@ -1413,6 +1655,103 @@ components:
       type: string
       format: date-time
       example: 2019-05-17T00:00:00.000Z
+    ConsentCategory:
+      type: string
+      description: The category of consent
+      enum: [one_time, recurring]
+      example: one_time
+    ConsentStatus:
+      type: string
+      description: The status of a consent record
+      enum: [active, revoked]
+      example: active
+    ConsentTerm:
+      type: object
+      required: [name, consent_text, consent_category]
+      properties:
+        name:
+          type: string
+          description: Human-readable name for the consent term
+          example: "Data Sharing Agreement"
+        consent_text:
+          type: string
+          description: The legal consent text that users will accept
+          example: "I agree to share my payroll data with the lender for the purpose of income verification."
+        consent_category:
+          "$ref": "#/components/schemas/ConsentCategory"
+    CreatedConsentTerm:
+      allOf:
+        - required: [id, created_at, is_active, is_system_term, consent_version]
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Unique identifier for the consent term
+              example: "550e8400-e29b-41d4-a716-446655440000"
+            is_active:
+              type: boolean
+              description: Whether this consent term is currently active and can be accepted
+              default: true
+              example: true
+            is_system_term:
+              type: boolean
+              description: True for Teal's default terms, false for client-created terms
+              readOnly: true
+              example: false
+            consent_version:
+              type: integer
+              format: int32
+              description: Auto-incremented version number for the consent term
+              readOnly: true
+              example: 1
+            created_at:
+              "$ref": "#/components/schemas/Date"
+              description: When the consent term was created
+        - "$ref": "#/components/schemas/ConsentTerm"
+    ConsentAcceptance:
+      type: object
+      required: [user_id, term_id, user_agent]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: The ID of the user accepting the consent
+          example: "95a0e70b-fe02-4f47-aef9-2efff279df71"
+        term_id:
+          type: string
+          format: uuid
+          description: The ID of the consent term being accepted
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        user_agent:
+          type: string
+          description: User agent string of the browser or application
+          example: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    CreatedConsent:
+      allOf:
+        - required: [id, status, accepted_at, created_at, ip_address]
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Unique identifier for the consent record
+              example: "7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o"
+            status:
+              "$ref": "#/components/schemas/ConsentStatus"
+            ip_address:
+              type: string
+              description: IP address of the user at time of acceptance (captured from request headers)
+              example: "192.168.1.1"
+            accepted_at:
+              "$ref": "#/components/schemas/Date"
+              description: Server timestamp when the consent was accepted
+            revoked_at:
+              "$ref": "#/components/schemas/Date"
+              description: Server timestamp when the consent was revoked
+              nullable: true
+            created_at:
+              "$ref": "#/components/schemas/Date"
+              description: When the consent record was created
+        - "$ref": "#/components/schemas/ConsentAcceptance"
     FraudRisk:
       type: string
       description: The fraud risk level assessment. Fraud risk will be present if the payroll data is coming from a payslip source
@@ -1711,6 +2050,12 @@ components:
           format: uuid
           description: The id of the entry
           example: 95a0e70b-fe02-4f47-aef9-2efff279df71
+        consent_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: The id of the consent that authorized this data retrieval
+          example: 7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o
         created_at:
           "$ref": "#/components/schemas/Date"
     DocumentResponse:
