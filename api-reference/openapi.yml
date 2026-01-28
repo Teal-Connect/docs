@@ -1476,12 +1476,10 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/NotFound"
-  "/consents/{user_id}":
-    description: Retrieve all consent records for a specific user.
     get:
       summary: Returns all consent records for a user.
       parameters:
-        - in: path
+        - in: query
           name: user_id
           schema:
             type: string
@@ -1538,8 +1536,6 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
-        "404":
-          "$ref": "#/components/responses/ResourceNotFound"
   "/consents/{consent_id}/revoke":
     description: Revoke a consent record. The record is preserved for audit purposes.
     put:
