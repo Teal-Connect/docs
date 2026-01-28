@@ -1679,6 +1679,11 @@ components:
           example: "I agree to share my payroll data with the lender for the purpose of income verification."
         consent_category:
           "$ref": "#/components/schemas/ConsentCategory"
+        deactivate_previous:
+          type: boolean
+          description: If true, deactivates any existing active term for the same category. Defaults to false.
+          default: false
+          example: true
     CreatedConsentTerm:
       allOf:
         - required: [id, created_at, is_active, is_system_term, consent_version]

@@ -62,17 +62,29 @@ curl --request POST \
 
 The `consent_version` is automatically assigned and incremented for each new term you create.
 
-### One Active Term Per Category
+### Managing Active Terms
 
-Only one term can be active per category at any time. When you create a new term for a category, any existing active term in that category is automatically deactivated.
+By default, creating a new term keeps any existing active terms in the same category active. Use the optional `deactivate_previous` flag to control this behavior:
 
-**Example:**
-1. You have an active `recurring` term (version 1)
-2. You create a new `recurring` term
-3. The old term (version 1) is automatically set to `is_active: false`
-4. The new term (version 2) becomes the active `recurring` term
+```bash
+curl --request POST \
+  --url https://api.sandbox.goteal.co/consents/terms \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-KEY: <api-key>' \
+  --data '{
+    "name": "Updated Data Sharing Agreement",
+    "consent_text": "Updated consent text...",
+    "consent_category": "recurring",
+    "deactivate_previous": true
+  }'
+```
 
-This ensures there's never ambiguity about which term users should accept. Users who previously accepted the old term will need to re-consent to the new term (see [Re-consent Flow](#re-consent-flow)).
+| `deactivate_previous` | Behavior |
+|----------------------|----------|
+| `false` (default) | New term is created. Existing active terms remain active. |
+| `true` | New term is created. Any existing active term for the same category is set to `is_active: false`. |
+
+When you deactivate previous terms, users who accepted the old term will need to re-consent to the new term (see [Re-consent Flow](#re-consent-flow)).
 
 ## Recording Consent
 
@@ -126,14 +138,14 @@ If the user's consent points to a term where `is_active: false`, they have accep
 
 ## Re-consent Flow
 
-When you create a new term version, the old term is automatically deactivated (see [One Active Term Per Category](#one-active-term-per-category)). Users who accepted the old term will need to re-consent.
+When you update your terms, you can deactivate the old term using `deactivate_previous: true` (see [Managing Active Terms](#managing-active-terms)). Users who accepted the deactivated term will need to re-consent.
 
 ### Flow
 
 ```
-1. Create new term
-   → Old term automatically set to is_active: false
-   → New term becomes is_active: true
+1. Create new term with deactivate_previous: true
+   → Old term set to is_active: false
+   → New term created with is_active: true
 
 2. Check user's consent:
    - GET /consents/{user_id}
