@@ -18,7 +18,6 @@
             "pages": [
               "introduction",
               "data",
-              "hmrc",
               "sandbox",
               "recurring-checks"
             ]
@@ -79,15 +78,6 @@
               "api-reference/payroll/get",
               "api-reference/payroll/entries-list",
               "api-reference/payroll/entries-delete"
-            ]
-          },
-          {
-            "group": "HMRC",
-            "pages": [
-              "api-reference/hmrc/connections-create",
-              "api-reference/hmrc/get",
-              "api-reference/hmrc/entries-list",
-              "api-reference/hmrc/entries-delete"
             ]
           },
           {
