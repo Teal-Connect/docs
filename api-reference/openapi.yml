@@ -1449,6 +1449,29 @@ paths:
           "$ref": "#/components/responses/UnauthorizedApiKey"
         "404":
           "$ref": "#/components/responses/ResourceNotFound"
+  "/consents/terms/latest":
+    description: Get the latest active consent term for a user based on their recurring check configuration.
+    get:
+      summary: Returns the latest active consent term for a user.
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the user to get the latest term for
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/CreatedConsentTerm"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
   "/consents":
     description: User consent records track when users accept consent terms, including acceptance metadata for audit purposes.
     post:
@@ -1680,6 +1703,7 @@ components:
           description: If true, deactivates any existing active term for the same category. Defaults to false.
           default: false
           example: true
+          writeOnly: true
     CreatedConsentTerm:
       allOf:
         - required: [id, created_at, is_active, is_system_term, consent_version]
@@ -1711,7 +1735,7 @@ components:
         - "$ref": "#/components/schemas/ConsentTerm"
     ConsentAcceptance:
       type: object
-      required: [user_id, term_id, user_agent]
+      required: [user_id, user_agent]
       properties:
         user_id:
           type: string
@@ -1721,15 +1745,19 @@ components:
         term_id:
           type: string
           format: uuid
-          description: The ID of the consent term being accepted
+          description: The ID of the consent term being accepted. If not provided, auto-resolves to the latest active term based on user's recurring check configuration.
           example: "550e8400-e29b-41d4-a716-446655440000"
         user_agent:
           type: string
           description: User agent string of the browser or application
           example: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        ip_address:
+          type: string
+          description: Optional IP address of the user. If not provided, captured from request headers. Use when recording consent via server-to-server calls.
+          example: "192.168.1.1"
     CreatedConsent:
       allOf:
-        - required: [id, status, accepted_at, created_at, ip_address]
+        - required: [id, status, accepted_at, created_at, ip_address, is_valid]
           properties:
             id:
               type: string
@@ -1740,8 +1768,12 @@ components:
               "$ref": "#/components/schemas/ConsentStatus"
             ip_address:
               type: string
-              description: IP address of the user at time of acceptance (captured from request headers)
+              description: IP address of the user at time of acceptance (captured from request headers or provided in request)
               example: "192.168.1.1"
+            is_valid:
+              type: boolean
+              description: Whether this consent is currently valid. True when status is active AND the associated term is active.
+              example: true
             accepted_at:
               "$ref": "#/components/schemas/Date"
               description: Server timestamp when the consent was accepted

@@ -86,6 +86,18 @@ curl --request POST \
 
 When you deactivate previous terms, users who accepted the old term will need to re-consent to the new term (see [Re-consent Flow](#re-consent-flow)).
 
+## Getting the Latest Term for a User
+
+To get the appropriate consent term for a user based on their recurring check configuration:
+
+```bash
+curl --request GET \
+  --url 'https://api.sandbox.goteal.co/consents/terms/latest?user_id=95a0e70b-fe02-4f47-aef9-2efff279df71' \
+  --header 'X-API-KEY: <api-key>'
+```
+
+This endpoint automatically resolves to either the `one_time` or `recurring` category based on the user's configuration.
+
 ## Recording Consent
 
 When a user accepts consent terms, record their acceptance:
@@ -102,7 +114,12 @@ curl --request POST \
   }'
 ```
 
-The user's IP address is automatically captured from request headers for audit purposes.
+### Optional Fields
+
+| Field | Behavior |
+|-------|----------|
+| `term_id` | Optional. If not provided, auto-resolves to the latest active term based on user's recurring check configuration. |
+| `ip_address` | Optional. If not provided, captured from request headers. Use when recording consent via server-to-server calls. |
 
 ### Consent Record
 
@@ -111,10 +128,11 @@ Each acceptance creates an immutable record containing:
 - **id** - Unique consent record identifier
 - **user_id** - The user who gave consent
 - **term_id** - The specific term version accepted
-- **ip_address** - Captured from request headers
+- **ip_address** - Captured from request headers or provided in request
 - **user_agent** - Browser or application identifier
 - **accepted_at** - Server timestamp of acceptance
 - **status** - `active` or `revoked`
+- **is_valid** - Whether consent is currently valid (status is active AND term is active)
 
 ## Validating Consent
 
@@ -130,11 +148,12 @@ curl --request GET \
 
 ### Validation Logic
 
-A user has valid consent when:
-1. They have a consent record with `status: active`
-2. The associated term has `is_active: true`
+Each consent record includes an `is_valid` field that indicates whether the consent is currently valid:
 
-If the user's consent points to a term where `is_active: false`, they have accepted an outdated version and need to re-consent.
+- `is_valid: true` - Consent status is `active` AND the associated term is active
+- `is_valid: false` - Either consent is revoked OR the term has been deactivated
+
+If `is_valid` is false because the term was deactivated, the user needs to re-consent to the new term.
 
 ## Re-consent Flow
 
