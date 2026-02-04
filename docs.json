@@ -89,6 +89,12 @@
             ]
           },
           {
+            "group": "Providers",
+            "pages": [
+              "api-reference/providers/list"
+            ]
+          },
+          {
             "group": "Configuration",
             "pages": [
               "api-reference/configuration/get",

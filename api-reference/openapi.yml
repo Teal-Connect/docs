@@ -1150,6 +1150,19 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/providers":
+    description: Returns the list of available payroll providers and their metadata
+    get:
+      summary: List all available providers
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ProvidersResponse"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
 components:
   responses:
     UnauthorizedApiKey:
@@ -1183,6 +1196,156 @@ components:
           schema:
             "$ref": "#/components/schemas/NotFound"
   schemas:
+    ProvidersResponse:
+      type: object
+      required: [providers, parent_provider_meta, employers]
+      properties:
+        providers:
+          type: array
+          description: List of available payroll providers
+          items:
+            "$ref": "#/components/schemas/Provider"
+        parent_provider_meta:
+          type: array
+          description: List of parent provider metadata
+          items:
+            "$ref": "#/components/schemas/ParentProviderMeta"
+        employers:
+          type: array
+          description: List of employers and their associated providers
+          items:
+            "$ref": "#/components/schemas/Employer"
+    Provider:
+      type: object
+      required: [id, name, url, logo_url, is_oauth2, is_scraper]
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the provider
+          example: dayforce
+        name:
+          type: string
+          description: Display name of the provider
+          example: Dayforce
+        url:
+          type: string
+          format: uri
+          description: Login URL for the provider
+          example: https://www.dayforcehcm.com/mydayforce/login.aspx
+        reset_url:
+          type: string
+          format: uri
+          description: Password reset URL for the provider
+          example: https://costa.dayforcehcm.com/
+        logo_url:
+          type: string
+          format: uri
+          description: URL to the provider's logo
+          example: https://logourl.com/dayforce.png
+        parent:
+          type: string
+          nullable: true
+          description: ID of the parent provider, if this is a child provider
+          example: null
+        is_oauth2:
+          type: boolean
+          description: Whether the provider uses OAuth2 for authentication
+          example: false
+        is_scraper:
+          type: boolean
+          description: Whether the provider uses scraping for data retrieval
+          example: true
+        max_login_attempts:
+          type: integer
+          description: Maximum number of login attempts allowed
+          example: 3
+        extra_login_params:
+          type: array
+          description: Additional login parameters required by the provider
+          items:
+            "$ref": "#/components/schemas/ExtraLoginParam"
+    ExtraLoginParam:
+      type: object
+      required: [key, display_name, validation]
+      properties:
+        key:
+          type: string
+          description: Parameter key used in the API
+          example: company_name
+        display_name:
+          type: string
+          description: Human-readable name for the parameter
+          example: Company Name
+        validation:
+          "$ref": "#/components/schemas/ExtraLoginParamValidation"
+    ExtraLoginParamValidation:
+      type: object
+      required: [required, type]
+      properties:
+        required:
+          type: boolean
+          description: Whether the parameter is required
+          example: true
+        type:
+          type: string
+          description: The validation type for the parameter
+          example: Text, Date, Number
+        date_format:
+          type: string
+          description: Format of date
+          example: dd/MM/yyyy
+        min_length:
+          type: integer
+          description: Minimum character length of the parameter
+          example: 3
+        max_length:
+          type: integer
+          description: Maximum character length of the parameter
+          example: 10
+    ParentProviderMeta:
+      type: object
+      required: [id, name, logo_url]
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the parent provider
+          example: adp-parent
+        name:
+          type: string
+          description: Display name of the parent provider
+          example: ADP
+        logo_url:
+          type: string
+          format: uri
+          description: URL to the parent provider's logo
+          example: https://logo.net/logos/adp.png
+    Employer:
+      type: object
+      required: [id, name, url, logo_url, providers]
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the employer
+          example: teal
+        name:
+          type: string
+          description: Display name of the employer
+          example: Teal
+        url:
+          type: string
+          description: URL for the employer
+          example: ""
+        logo_url:
+          type: string
+          format: uri
+          description: URL to the employer's logo
+          example: https://d1wfx42f6qh83.cloudfront.net/logos/teal_0d28113814a9.png
+        providers:
+          type: array
+          description: List of provider IDs associated with this employer
+          items:
+            type: string
+          example: ["shape"]
     ApiKey:
       type: object
       required: [id, name, createdAt]
