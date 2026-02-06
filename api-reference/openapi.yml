@@ -239,6 +239,8 @@ paths:
       providing a stream of income and employment data
     post:
       summary: Creates an account for the user e.g. a Xero account
+      parameters:
+        - "$ref": "#/components/parameters/XConsentId"
       requestBody:
         required: true
         content:
@@ -511,6 +513,8 @@ paths:
       the `/payroll/{user_id}` endpoint.
     post:
       summary: Connects a user account to a payroll provider
+      parameters:
+        - "$ref": "#/components/parameters/XConsentId"
       security:
         - BearerAuth: []
       requestBody:
@@ -540,6 +544,8 @@ paths:
   "/payroll/entries/payslips/presign":
     post:
       summary: Generate presigned URLs for payslip uploads
+      parameters:
+        - "$ref": "#/components/parameters/XConsentId"
       description: |
         Generates short-lived presigned URLs that you can use to upload payslip PDFs
         directly to Teal-managed storage. Use this endpoint before uploading any
@@ -566,6 +572,8 @@ paths:
   "/payroll/entries/payslips":
     post:
       summary: Submit previously uploaded payslips for processing
+      parameters:
+        - "$ref": "#/components/parameters/XConsentId"
       description: |
         Uploading payslips is a three-step flow:
           1. Request upload slots with `POST /payroll/entries/payslips/presign`, providing
@@ -1456,6 +1464,16 @@ components:
         applcation/json:
           schema:
             "$ref": "#/components/schemas/NotFound"
+  parameters:
+    XConsentId:
+      name: x-consent-id
+      in: header
+      required: false
+      description: Optional consent ID to associate with this request. If not provided, the system will attempt to resolve a valid consent for the user automatically.
+      schema:
+        type: string
+        format: uuid
+        example: "7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o"
   schemas:
     ProvidersResponse:
       type: object
@@ -2199,6 +2217,12 @@ components:
           type: string
           format: uuid
           description: The id of the entry
+        consent_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: The id of the consent that authorized this data retrieval
+          example: 7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o
         payroll_submissions:
           type: array
           items:

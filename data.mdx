@@ -121,7 +121,18 @@ curl --request PUT \
 
 Use GET `/configuration` to retrieve the current client configuration. Use PUT `/configuration` to create or update configuration; updates are partial—omitted fields keep their existing values. Validation rules: `recurring_check_frequency` must be one of [WEEKLY, MONTHLY]; `recurring_check_end_date` must be a valid ISO8601 UTC datetime. Some user-level settings (see Users API) can override these client-level defaults.
 
-## 2. Data Delivery
+## 2. Consent-Protected Endpoints
+
+Certain endpoints that create or retrieve payroll data on behalf of a user now require a valid consent record before they can be accessed. This applies to:
+
+- `POST /accounts` – creating a new account
+- `POST /payroll/entries/connections` – querying a connection for data
+- `POST /payroll/entries/payslips/presign` – generating presigned upload URLs
+- `POST /payroll/entries/payslips` – submitting payslips for processing
+
+If no active consent exists for the user, these endpoints will reject the request. You can optionally include the `x-consent-id` header to specify which consent to use; otherwise the system will resolve a valid consent automatically. See [Consents](/consents) for full details on creating terms and recording user consent.
+
+## 3. Data Delivery
 
 Data delivery mechanisms are designed to ensure timely, secure, and efficient access to financial data, facilitating seamless integration and real-time processing.
 
@@ -154,7 +165,7 @@ curl --request POST \
 }'
 ```
 
-## 3. Data Security
+## 4. Data Security
 
 Adhering to strict security protocols, our API ensures the integrity and confidentiality of sensitive financial data throughout its lifecycle.
 
