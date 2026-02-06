@@ -1745,6 +1745,10 @@ components:
           type: string
           description: Optional IP address of the user. If not provided, captured from request headers. Use when recording consent via server-to-server calls.
           example: "192.168.1.1"
+        fingerprint:
+          type: string
+          description: Optional device or browser fingerprint for additional verification
+          example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
     CreatedConsent:
       allOf:
         - required: [id, status, accepted_at, created_at, ip_address, is_valid]
