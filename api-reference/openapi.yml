@@ -1414,16 +1414,16 @@ paths:
   "/providers":
     description: Returns the list of available payroll providers and their metadata
     get:
-      summary: List all available providers                
-        responses:
-          "200":
-            description: OK
-            content:
-              application/json:
-                schema:
-                  "$ref": "#/components/schemas/ProvidersResponse"
-          "401":
-              "$ref": "#/components/responses/UnauthorizedApiKey"
+      summary: List all available providers
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ProvidersResponse"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
 components:
   responses:
     UnauthorizedApiKey:

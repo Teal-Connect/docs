@@ -18,11 +18,7 @@
             "pages": [
               "introduction",
               "data",
-<<<<<<< HEAD
               "consents",
-              "hmrc",
-=======
->>>>>>> main
               "sandbox",
               "recurring-checks"
             ]
@@ -94,7 +90,6 @@
             ]
           },
           {
-<<<<<<< HEAD
             "group": "Consents",
             "pages": [
               "api-reference/consents/terms-create",
@@ -104,11 +99,12 @@
               "api-reference/consents/create",
               "api-reference/consents/list",
               "api-reference/consents/revoke"
-=======
+            ]
+          },
+          {
             "group": "Providers",
             "pages": [
               "api-reference/providers/list"
->>>>>>> main
             ]
           },
           {
