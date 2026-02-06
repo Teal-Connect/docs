@@ -18,8 +18,11 @@
             "pages": [
               "introduction",
               "data",
+<<<<<<< HEAD
               "consents",
               "hmrc",
+=======
+>>>>>>> main
               "sandbox",
               "recurring-checks"
             ]
@@ -83,15 +86,6 @@
             ]
           },
           {
-            "group": "HMRC",
-            "pages": [
-              "api-reference/hmrc/connections-create",
-              "api-reference/hmrc/get",
-              "api-reference/hmrc/entries-list",
-              "api-reference/hmrc/entries-delete"
-            ]
-          },
-          {
             "group": "Documents",
             "pages": [
               "api-reference/documents/get",
@@ -100,6 +94,7 @@
             ]
           },
           {
+<<<<<<< HEAD
             "group": "Consents",
             "pages": [
               "api-reference/consents/terms-create",
@@ -109,6 +104,11 @@
               "api-reference/consents/create",
               "api-reference/consents/list",
               "api-reference/consents/revoke"
+=======
+            "group": "Providers",
+            "pages": [
+              "api-reference/providers/list"
+>>>>>>> main
             ]
           },
           {

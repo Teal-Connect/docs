@@ -708,179 +708,6 @@ paths:
                 "$ref": "#/components/schemas/Error"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
-  "/hmrc/entries/connections":
-    description:
-      For an account, a call to the `/hmrc/entries/connections` endpoint will query the
-      HMRC connection for income data. This endpoint is for adhoc data retrieval for an account.
-    post:
-      summary: Connects a user account to HMRC
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [account_id]
-              properties:
-                account_id:
-                  type: string
-                  format: uuid
-                  description: The account id to use to connect to HMRC
-                  example: 95a0e70b-fe02-4f47-aef9-2efff279df71
-      responses:
-        "201":
-          description: Created
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/HmrcIncomeData"
-        "400":
-          "$ref": "#/components/responses/BadRequest"
-        "401":
-          "$ref": "#/components/responses/UnauthorizedBearer"
-  "/hmrc/{user_id}":
-    get:
-      summary: Returns all HMRC income submissions for a user
-      parameters:
-        - in: path
-          name: user_id
-          schema:
-            type: string
-          required: true
-          description: ID of the user to get HMRC income for
-        - name: offset
-          in: query
-          description: The offset to start at
-          required: false
-          schema:
-            type: integer
-            format: int32
-            minimum: 1
-            default: 0
-        - name: limit
-          in: query
-          description: The number of items to return
-          required: false
-          schema:
-            type: integer
-            format: int32
-            minimum: 1
-            maximum: 100
-            default: 20
-        - name: account_id
-          in: query
-          description: The account_id to filter on
-          required: false
-          schema:
-            type: string
-            format: uuid
-        - name: entry_id
-          in: query
-          description: The entry_id to filter on
-          required: false
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: HMRC income response
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [pagination, income_submissions]
-                properties:
-                  pagination:
-                    "$ref": "#/components/schemas/Pagination"
-                  income_submissions:
-                    type: array
-                    items:
-                      "$ref": "#/components/schemas/IncomeSubmission"
-        "400":
-          "$ref": "#/components/responses/BadRequest"
-        "401":
-          "$ref": "#/components/responses/UnauthorizedApiKey"
-  "/hmrc/entries":
-    get:
-      summary: Returns all HMRC entries for a user account sorted desc by created_at
-      parameters:
-        - in: query
-          name: user_id
-          schema:
-            type: string
-          required: true
-          description: ID of the user to get entries for
-        - name: account_id
-          in: query
-          description: The account_id to filter on
-          required: false
-          schema:
-            type: string
-            format: uuid
-        - name: offset
-          in: query
-          description: The offset to start at
-          required: false
-          schema:
-            type: integer
-            format: int32
-            minimum: 1
-            default: 0
-        - name: limit
-          in: query
-          description: The number of items to return
-          required: false
-          schema:
-            type: integer
-            format: int32
-            minimum: 1
-            maximum: 100
-            default: 20
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    "$ref": "#/components/schemas/Pagination"
-                  entries:
-                    type: array
-                    items:
-                      "$ref": "#/components/schemas/Entry"
-        "400":
-          "$ref": "#/components/responses/BadRequest"
-        "401":
-          "$ref": "#/components/responses/UnauthorizedApiKey"
-  "/hmrc/entries/{entry_id}":
-    delete:
-      summary: Deletes an HMRC entry for the user
-      parameters:
-        - in: path
-          name: entry_id
-          schema:
-            type: string
-          required: true
-          description: ID of the entry to delete
-      responses:
-        "204":
-          description: No Content
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Entry deleted successfully.
-        "401":
-          "$ref": "#/components/responses/UnauthorizedApiKey"
-        "404":
-          "$ref": "#/components/responses/ResourceNotFound"
   "/documents/{document_id}":
     get:
       summary: Returns all documents for a user entry
@@ -1584,6 +1411,19 @@ paths:
           "$ref": "#/components/responses/UnauthorizedApiKey"
         "404":
           "$ref": "#/components/responses/ResourceNotFound"
+  "/providers":
+    description: Returns the list of available payroll providers and their metadata
+    get:
+      summary: List all available providers                
+        responses:
+          "200":
+            description: OK
+            content:
+              application/json:
+                schema:
+                  "$ref": "#/components/schemas/ProvidersResponse"
+          "401":
+              "$ref": "#/components/responses/UnauthorizedApiKey"
 components:
   responses:
     UnauthorizedApiKey:
@@ -1617,6 +1457,156 @@ components:
           schema:
             "$ref": "#/components/schemas/NotFound"
   schemas:
+    ProvidersResponse:
+      type: object
+      required: [providers, parent_provider_meta, employers]
+      properties:
+        providers:
+          type: array
+          description: List of available payroll providers
+          items:
+            "$ref": "#/components/schemas/Provider"
+        parent_provider_meta:
+          type: array
+          description: List of parent provider metadata
+          items:
+            "$ref": "#/components/schemas/ParentProviderMeta"
+        employers:
+          type: array
+          description: List of employers and their associated providers
+          items:
+            "$ref": "#/components/schemas/Employer"
+    Provider:
+      type: object
+      required: [id, name, url, logo_url, is_oauth2, is_scraper]
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the provider
+          example: dayforce
+        name:
+          type: string
+          description: Display name of the provider
+          example: Dayforce
+        url:
+          type: string
+          format: uri
+          description: Login URL for the provider
+          example: https://www.dayforcehcm.com/mydayforce/login.aspx
+        reset_url:
+          type: string
+          format: uri
+          description: Password reset URL for the provider
+          example: https://costa.dayforcehcm.com/
+        logo_url:
+          type: string
+          format: uri
+          description: URL to the provider's logo
+          example: https://logourl.com/dayforce.png
+        parent:
+          type: string
+          nullable: true
+          description: ID of the parent provider, if this is a child provider
+          example: null
+        is_oauth2:
+          type: boolean
+          description: Whether the provider uses OAuth2 for authentication
+          example: false
+        is_scraper:
+          type: boolean
+          description: Whether the provider uses scraping for data retrieval
+          example: true
+        max_login_attempts:
+          type: integer
+          description: Maximum number of login attempts allowed
+          example: 3
+        extra_login_params:
+          type: array
+          description: Additional login parameters required by the provider
+          items:
+            "$ref": "#/components/schemas/ExtraLoginParam"
+    ExtraLoginParam:
+      type: object
+      required: [key, display_name, validation]
+      properties:
+        key:
+          type: string
+          description: Parameter key used in the API
+          example: company_name
+        display_name:
+          type: string
+          description: Human-readable name for the parameter
+          example: Company Name
+        validation:
+          "$ref": "#/components/schemas/ExtraLoginParamValidation"
+    ExtraLoginParamValidation:
+      type: object
+      required: [required, type]
+      properties:
+        required:
+          type: boolean
+          description: Whether the parameter is required
+          example: true
+        type:
+          type: string
+          description: The validation type for the parameter
+          example: Text, Date, Number
+        date_format:
+          type: string
+          description: Format of date
+          example: dd/MM/yyyy
+        min_length:
+          type: integer
+          description: Minimum character length of the parameter
+          example: 3
+        max_length:
+          type: integer
+          description: Maximum character length of the parameter
+          example: 10
+    ParentProviderMeta:
+      type: object
+      required: [id, name, logo_url]
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the parent provider
+          example: adp-parent
+        name:
+          type: string
+          description: Display name of the parent provider
+          example: ADP
+        logo_url:
+          type: string
+          format: uri
+          description: URL to the parent provider's logo
+          example: https://logo.net/logos/adp.png
+    Employer:
+      type: object
+      required: [id, name, url, logo_url, providers]
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the employer
+          example: teal
+        name:
+          type: string
+          description: Display name of the employer
+          example: Teal
+        url:
+          type: string
+          description: URL for the employer
+          example: ""
+        logo_url:
+          type: string
+          format: uri
+          description: URL to the employer's logo
+          example: https://d1wfx42f6qh83.cloudfront.net/logos/teal_0d28113814a9.png
+        providers:
+          type: array
+          description: List of provider IDs associated with this employer
+          items:
+            type: string
+          example: ["shape"]
     ApiKey:
       type: object
       required: [id, name, createdAt]
@@ -2626,114 +2616,6 @@ components:
           type: number
           description: The total deductions
           example: 1000
-    HmrcIncomeData:
-      type: object
-      required: [account_id, entry_id, income_submissions]
-      properties:
-        account_id:
-          type: string
-          format: uuid
-          description: The id of the account
-          example: 82b49a09-b352-4a67-abe1-09764417084a
-        entry_id:
-          type: string
-          format: uuid
-          description: The id of the entry
-          example: cd9a4666-6bde-4aea-8ade-bdb9751b848f
-        income_submissions:
-          type: array
-          items:
-            "$ref": "#/components/schemas/IncomeSubmission"
-    IncomeSubmission:
-      type: object
-      required:
-        - id
-        - account_id
-        - entry_id
-        - income_id
-      properties:
-        id:
-          type: string
-          format: uuid
-          example: cefbbff7-f405-467c-8f7e-1421be42c796
-        account_id:
-          type: string
-          format: uuid
-          description: The id of the account
-          example: 82b49a09-b352-4a67-abe1-09764417084a
-        entry_id:
-          type: string
-          format: uuid
-          description: The id of the entry
-          example: b98ee82a-0c24-4dc6-acb3-c8b2735505f4
-        income_id:
-          type: string
-          description: Unqiue identifier for submission calculated from data
-          example: 13de317b69d5d0e3033455a670cb318b
-        employment:
-          "$ref": "#/components/schemas/HmrcEmployment"
-        frequency:
-          type: string
-          description: The frequency of the income submission
-          example: Annual
-        income_period:
-          "$ref": "#/components/schemas/IncomePeriod"
-        other_income:
-          "$ref": "#/components/schemas/OtherIncome"
-    HmrcEmployment:
-      type: object
-      properties:
-        total_income:
-          type: string
-          description: Total income amount
-          example: "31150.00"
-        employers:
-          type: array
-          items:
-            "$ref": "#/components/schemas/HmrcEmployer"
-    HmrcEmployer:
-      type: object
-      properties:
-        employer_name:
-          type: string
-          description: Name of the employer
-          example: Company XYZ
-        income:
-          type: string
-          description: Income from this employer
-          example: "22500.00"
-        tax_paid:
-          type: string
-          description: Tax paid for this employment
-          example: "890.35"
-    IncomePeriod:
-      type: object
-      properties:
-        start:
-          type: string
-          format: date-time
-          description: Start of income period
-          example: "2024-04-06T12:00:00Z"
-        end:
-          type: string
-          format: date-time
-          description: End of income period
-          example: "2025-04-05T12:00:00Z"
-    OtherIncome:
-      type: object
-      properties:
-        pension_and_retirement_annuities:
-          type: string
-          description: Income from pension and retirement annuities
-          example: "36.50"
-        incapacity_benefit:
-          type: string
-          description: Income from incapacity benefit
-          example: "980.45"
-        jobseeker_allowance:
-          type: string
-          description: Income from jobseeker's allowance
-          example: "89.99"
 
   securitySchemes:
     ApiKeyAuth:
