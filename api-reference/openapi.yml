@@ -440,9 +440,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [value]
+              required: [mfa]
               properties:
-                value:
+                mfa:
                   type: string
                   description: The MFA response value (code, date, or password characters depending on the MFA method)
                   example: "123456"
