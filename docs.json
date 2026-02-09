@@ -64,6 +64,7 @@
             "group": "Accounts",
             "pages": [
               "api-reference/accounts/create",
+              "api-reference/accounts/mfa",
               "api-reference/accounts/list",
               "api-reference/accounts/list-recurring",
               "api-reference/accounts/get",

@@ -422,6 +422,43 @@ paths:
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
 
+  "/accounts/{account_id}/mfa":
+    description: Submit an MFA response to complete account authentication after an MFA challenge is returned during account creation.
+    put:
+      summary: Submit an MFA response for an account
+      parameters:
+        - in: path
+          name: account_id
+          schema:
+            type: string
+          required: true
+          description: ID of the account requiring MFA
+        - "$ref": "#/components/parameters/XConsentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [value]
+              properties:
+                value:
+                  type: string
+                  description: The MFA response value (code, date, or password characters depending on the MFA method)
+                  example: "123456"
+      responses:
+        "200":
+          description: MFA response accepted
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AccountsResult"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedBearer"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
   "/payroll/entries":
     get:
       summary: Returns all entries for a user account sorted desc by created_at
