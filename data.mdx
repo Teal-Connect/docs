@@ -123,9 +123,10 @@ Use GET `/configuration` to retrieve the current client configuration. Use PUT `
 
 ## 2. Consent-Protected Endpoints
 
-Certain endpoints that create or retrieve payroll data on behalf of a user now require a valid consent record before they can be accessed. This applies to:
+Certain endpoints that create or retrieve payroll data on behalf of a user require a valid consent record before they can be accessed. This applies to:
 
 - `POST /accounts` – creating a new account
+- `PUT /accounts/{account_id}/mfa` – submitting mfa for an account
 - `POST /payroll/entries/connections` – querying a connection for data
 - `POST /payroll/entries/payslips/presign` – generating presigned upload URLs
 - `POST /payroll/entries/payslips` – submitting payslips for processing
