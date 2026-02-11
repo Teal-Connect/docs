@@ -239,6 +239,8 @@ paths:
       providing a stream of income and employment data
     post:
       summary: Creates an account for the user e.g. a Xero account
+      parameters:
+        - "$ref": "#/components/parameters/XConsentId"
       requestBody:
         required: true
         content:
@@ -420,6 +422,43 @@ paths:
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
 
+  "/accounts/{account_id}/mfa":
+    description: Submit an MFA response to complete account authentication after an MFA challenge is returned during account creation.
+    put:
+      summary: Submit an MFA response for an account
+      parameters:
+        - in: path
+          name: account_id
+          schema:
+            type: string
+          required: true
+          description: ID of the account requiring MFA
+        - "$ref": "#/components/parameters/XConsentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mfa]
+              properties:
+                mfa:
+                  type: string
+                  description: The MFA response value (code, date, or password characters depending on the MFA method)
+                  example: "123456"
+      responses:
+        "200":
+          description: MFA response accepted
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AccountsResult"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedBearer"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
   "/payroll/entries":
     get:
       summary: Returns all entries for a user account sorted desc by created_at
@@ -511,6 +550,8 @@ paths:
       the `/payroll/{user_id}` endpoint.
     post:
       summary: Connects a user account to a payroll provider
+      parameters:
+        - "$ref": "#/components/parameters/XConsentId"
       security:
         - BearerAuth: []
       requestBody:
@@ -540,6 +581,8 @@ paths:
   "/payroll/entries/payslips/presign":
     post:
       summary: Generate presigned URLs for payslip uploads
+      parameters:
+        - "$ref": "#/components/parameters/XConsentId"
       description: |
         Generates short-lived presigned URLs that you can use to upload payslip PDFs
         directly to Teal-managed storage. Use this endpoint before uploading any
@@ -566,6 +609,8 @@ paths:
   "/payroll/entries/payslips":
     post:
       summary: Submit previously uploaded payslips for processing
+      parameters:
+        - "$ref": "#/components/parameters/XConsentId"
       description: |
         Uploading payslips is a three-step flow:
           1. Request upload slots with `POST /payroll/entries/payslips/presign`, providing
@@ -1456,6 +1501,16 @@ components:
         applcation/json:
           schema:
             "$ref": "#/components/schemas/NotFound"
+  parameters:
+    XConsentId:
+      name: x-consent-id
+      in: header
+      required: false
+      description: Optional consent ID to associate with this request. If not provided, the system will attempt to resolve a valid consent for the user automatically.
+      schema:
+        type: string
+        format: uuid
+        example: "7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o"
   schemas:
     ProvidersResponse:
       type: object
@@ -2199,6 +2254,12 @@ components:
           type: string
           format: uuid
           description: The id of the entry
+        consent_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: The id of the consent that authorized this data retrieval
+          example: 7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o
         payroll_submissions:
           type: array
           items:
