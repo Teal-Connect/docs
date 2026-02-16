@@ -4,7 +4,7 @@ openapi: 'POST /accounts'
 ---
 
 <Info>
-This endpoint requires a valid consent for the user. If no active consent exists, the request will be rejected.
-You can optionally pass the `x-consent-id` header to specify which consent to use; otherwise the system will resolve a valid consent automatically.
-See [Consents](/consents) for more details.
+This endpoint requires a valid authorisation for the user. If no active authorisation exists, the request will be rejected.
+You can optionally pass the `x-authorisation-id` header to specify which authorisation to use; otherwise the system will resolve a valid authorisation automatically.
+See [Authorisations](/authorisations) for more details.
 </Info>

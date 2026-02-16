@@ -24,10 +24,10 @@ A users account is eligible for a recurring payroll check if the following are a
 - The account has `Authorised` status
 - Multi-factor authentication is disabled for the account
 - The account is active
-- The user has an active recurring consent
+- The user has an active recurring authorisation
 
 <Warning>
-Users without an active recurring consent will have their accounts ignored during recurring checks, even if all other eligibility criteria are met. Ensure that each user has accepted a valid `recurring` consent term before relying on recurring payroll updates. See [Consents](/consents) for details on recording and managing consent.
+Users without an active recurring authorisation will have their accounts ignored during recurring checks, even if all other eligibility criteria are met. Ensure that each user has accepted a valid `recurring` authorisation term before relying on recurring payroll updates. See [Authorisations](/authorisations) for details on recording and managing authorisations.
 </Warning>
 
 To see which users are eligible for recurring checks you can call the `GET /users/recurring` endpoint. For a user to be eligible for the recurring check they need to have at least one account that matches 

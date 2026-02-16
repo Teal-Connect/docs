@@ -15,7 +15,7 @@ security:
 paths:
   "/users":
     description: A User represents the borrowers and end-users that
-      give consented access and/or upload their payslips to our API.
+      give authorised access and/or upload their payslips to our API.
     post:
       summary: Creates a user.
       requestBody:
@@ -89,7 +89,7 @@ paths:
           "$ref": "#/components/responses/UnauthorizedApiKey"
   "/users/{user_id}":
     description: A User represents the borrowers and end-users that give
-      consented access and/or upload their payslips to our API.
+      authorised access and/or upload their payslips to our API.
     get:
       summary: Creates a user.
       parameters:
@@ -240,7 +240,7 @@ paths:
     post:
       summary: Creates an account for the user e.g. a Xero account
       parameters:
-        - "$ref": "#/components/parameters/XConsentId"
+        - "$ref": "#/components/parameters/XAuthorisationId"
       requestBody:
         required: true
         content:
@@ -433,7 +433,7 @@ paths:
             type: string
           required: true
           description: ID of the account requiring MFA
-        - "$ref": "#/components/parameters/XConsentId"
+        - "$ref": "#/components/parameters/XAuthorisationId"
       requestBody:
         required: true
         content:
@@ -551,7 +551,7 @@ paths:
     post:
       summary: Connects a user account to a payroll provider
       parameters:
-        - "$ref": "#/components/parameters/XConsentId"
+        - "$ref": "#/components/parameters/XAuthorisationId"
       security:
         - BearerAuth: []
       requestBody:
@@ -582,7 +582,7 @@ paths:
     post:
       summary: Generate presigned URLs for payslip uploads
       parameters:
-        - "$ref": "#/components/parameters/XConsentId"
+        - "$ref": "#/components/parameters/XAuthorisationId"
       description: |
         Generates short-lived presigned URLs that you can use to upload payslip PDFs
         directly to Teal-managed storage. Use this endpoint before uploading any
@@ -610,7 +610,7 @@ paths:
     post:
       summary: Submit previously uploaded payslips for processing
       parameters:
-        - "$ref": "#/components/parameters/XConsentId"
+        - "$ref": "#/components/parameters/XAuthorisationId"
       description: |
         Uploading payslips is a three-step flow:
           1. Request upload slots with `POST /payroll/entries/payslips/presign`, providing
@@ -1195,23 +1195,23 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
-  "/consents/terms":
-    description: Consent terms define the legal text and versions that users can accept. Lenders can create and manage consent terms.
+  "/authorisations/terms":
+    description: Authorisation terms define the legal text and versions that users can accept. Lenders can create and manage authorisation terms.
     post:
-      summary: Creates a new consent term.
+      summary: Creates a new authorisation term.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/ConsentTerm"
+              "$ref": "#/components/schemas/AuthorisationTerm"
       responses:
         "201":
           description: Created
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/CreatedConsentTerm"
+                "$ref": "#/components/schemas/CreatedAuthorisationTerm"
         "400":
           "$ref": "#/components/responses/BadRequest"
         "401":
@@ -1219,14 +1219,14 @@ paths:
         "409":
           "$ref": "#/components/responses/ConflictedResource"
     get:
-      summary: List all consent terms.
+      summary: List all authorisation terms.
       parameters:
-        - name: consent_category
+        - name: authorisation_category
           in: query
-          description: Filter by consent category
+          description: Filter by authorisation category
           required: false
           schema:
-            "$ref": "#/components/schemas/ConsentCategory"
+            "$ref": "#/components/schemas/AuthorisationCategory"
         - name: is_active
           in: query
           description: Filter by active status
@@ -1271,7 +1271,7 @@ paths:
                   terms:
                     type: array
                     items:
-                      "$ref": "#/components/schemas/CreatedConsentTerm"
+                      "$ref": "#/components/schemas/CreatedAuthorisationTerm"
               example:
                 pagination:
                   offset: 0
@@ -1280,17 +1280,17 @@ paths:
                 terms:
                   - id: "550e8400-e29b-41d4-a716-446655440000"
                     name: "Teal Data Sharing Agreement"
-                    consent_text: "I agree to share my payroll data with the lender for income verification."
-                    consent_version: 1
-                    consent_category: "recurring"
+                    authorisation_text: "I agree to share my payroll data with the lender for income verification."
+                    authorisation_version: 1
+                    authorisation_category: "recurring"
                     is_active: true
                     is_system_term: true
                     created_at: "2024-01-15T00:00:00.000Z"
                   - id: "7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o"
                     name: "Custom Terms v2"
-                    consent_text: "Custom consent text for our lending product."
-                    consent_version: 2
-                    consent_category: "one_time"
+                    authorisation_text: "Custom authorisation text for our lending product."
+                    authorisation_version: 2
+                    authorisation_category: "one_time"
                     is_active: true
                     is_system_term: false
                     created_at: "2024-06-01T00:00:00.000Z"
@@ -1298,10 +1298,10 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
-  "/consents/terms/{term_id}":
-    description: Retrieve a specific consent term by ID.
+  "/authorisations/terms/{term_id}":
+    description: Retrieve a specific authorisation term by ID.
     get:
-      summary: Returns a consent term.
+      summary: Returns a authorisation term.
       parameters:
         - in: path
           name: term_id
@@ -1309,22 +1309,22 @@ paths:
             type: string
             format: uuid
           required: true
-          description: ID of the consent term to retrieve
+          description: ID of the authorisation term to retrieve
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/CreatedConsentTerm"
+                "$ref": "#/components/schemas/CreatedAuthorisationTerm"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
         "404":
           "$ref": "#/components/responses/ResourceNotFound"
-  "/consents/terms/latest":
-    description: Get the latest active consent term for a user based on their recurring check configuration.
+  "/authorisations/terms/latest":
+    description: Get the latest active authorisation term for a user based on their recurring check configuration.
     get:
-      summary: Returns the latest active consent term for a user.
+      summary: Returns the latest active authorisation term for a user.
       parameters:
         - in: query
           name: user_id
@@ -1339,28 +1339,28 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/CreatedConsentTerm"
+                "$ref": "#/components/schemas/CreatedAuthorisationTerm"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
         "404":
           "$ref": "#/components/responses/ResourceNotFound"
-  "/consents":
-    description: User consent records track when users accept consent terms, including acceptance metadata for audit purposes.
+  "/authorisations":
+    description: User authorisation records track when users accept authorisation terms, including acceptance metadata for audit purposes.
     post:
-      summary: Records a user accepting a consent term.
+      summary: Records a user accepting a authorisation term.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/ConsentAcceptance"
+              "$ref": "#/components/schemas/AuthorisationAcceptance"
       responses:
         "201":
           description: Created
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/CreatedConsent"
+                "$ref": "#/components/schemas/CreatedAuthorisation"
         "400":
           "$ref": "#/components/responses/BadRequest"
         "401":
@@ -1372,7 +1372,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/NotFound"
     get:
-      summary: Returns all consent records for a user.
+      summary: Returns all authorisation records for a user.
       parameters:
         - in: query
           name: user_id
@@ -1380,16 +1380,16 @@ paths:
             type: string
             format: uuid
           required: true
-          description: ID of the user to get consents for
+          description: ID of the user to get authorisations for
         - name: status
           in: query
-          description: Filter by consent status
+          description: Filter by authorisation status
           required: false
           schema:
-            "$ref": "#/components/schemas/ConsentStatus"
+            "$ref": "#/components/schemas/AuthorisationStatus"
         - name: term_id
           in: query
-          description: Filter by consent term ID
+          description: Filter by authorisation term ID
           required: false
           schema:
             type: string
@@ -1423,33 +1423,33 @@ paths:
                 properties:
                   pagination:
                     "$ref": "#/components/schemas/Pagination"
-                  consents:
+                  authorisations:
                     type: array
                     items:
-                      "$ref": "#/components/schemas/CreatedConsent"
+                      "$ref": "#/components/schemas/CreatedAuthorisation"
         "400":
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
-  "/consents/{consent_id}/revoke":
-    description: Revoke a consent record. The record is preserved for audit purposes.
+  "/authorisations/{authorisation_id}/revoke":
+    description: Revoke a authorisation record. The record is preserved for audit purposes.
     put:
-      summary: Revokes a consent.
+      summary: Revokes an authorisation.
       parameters:
         - in: path
-          name: consent_id
+          name: authorisation_id
           schema:
             type: string
             format: uuid
           required: true
-          description: ID of the consent to revoke
+          description: ID of the authorisation to revoke
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/CreatedConsent"
+                "$ref": "#/components/schemas/CreatedAuthorisation"
         "400":
           "$ref": "#/components/responses/BadRequest"
         "401":
@@ -1502,11 +1502,11 @@ components:
           schema:
             "$ref": "#/components/schemas/NotFound"
   parameters:
-    XConsentId:
-      name: x-consent-id
+    XAuthorisationId:
+      name: x-authorisation-id
       in: header
       required: false
-      description: Optional consent ID to associate with this request. If not provided, the system will attempt to resolve a valid consent for the user automatically.
+      description: Optional authorisation ID to associate with this request. If not provided, the system will attempt to resolve a valid authorisation for the user automatically.
       schema:
         type: string
         format: uuid
@@ -1719,48 +1719,48 @@ components:
       type: string
       format: date-time
       example: 2019-05-17T00:00:00.000Z
-    ConsentCategory:
+    AuthorisationCategory:
       type: string
-      description: The category of consent
+      description: The category of authorisation
       enum: [one_time, recurring]
       example: one_time
-    ConsentStatus:
+    AuthorisationStatus:
       type: string
-      description: The status of a consent record
+      description: The status of a authorisation record
       enum: [active, revoked]
       example: active
-    ConsentTerm:
+    AuthorisationTerm:
       type: object
-      required: [name, consent_text, consent_category]
+      required: [name, authorisation_text, authorisation_category]
       properties:
         name:
           type: string
-          description: Human-readable name for the consent term
+          description: Human-readable name for the authorisation term
           example: "Data Sharing Agreement"
-        consent_text:
+        authorisation_text:
           type: string
-          description: The legal consent text that users will accept
+          description: The legal authorisation text that users will accept
           example: "I agree to share my payroll data with the lender for the purpose of income verification."
-        consent_category:
-          "$ref": "#/components/schemas/ConsentCategory"
+        authorisation_category:
+          "$ref": "#/components/schemas/AuthorisationCategory"
         deactivate_previous:
           type: boolean
           description: If true, deactivates any existing active term for the same category. Defaults to false.
           default: false
           example: true
           writeOnly: true
-    CreatedConsentTerm:
+    CreatedAuthorisationTerm:
       allOf:
-        - required: [id, created_at, is_active, is_system_term, consent_version]
+        - required: [id, created_at, is_active, is_system_term, authorisation_version]
           properties:
             id:
               type: string
               format: uuid
-              description: Unique identifier for the consent term
+              description: Unique identifier for the authorisation term
               example: "550e8400-e29b-41d4-a716-446655440000"
             is_active:
               type: boolean
-              description: Whether this consent term is currently active and can be accepted
+              description: Whether this authorisation term is currently active and can be accepted
               default: true
               example: true
             is_system_term:
@@ -1768,29 +1768,29 @@ components:
               description: True for Teal's default terms, false for client-created terms
               readOnly: true
               example: false
-            consent_version:
+            authorisation_version:
               type: integer
               format: int32
-              description: Auto-incremented version number for the consent term
+              description: Auto-incremented version number for the authorisation term
               readOnly: true
               example: 1
             created_at:
               "$ref": "#/components/schemas/Date"
-              description: When the consent term was created
-        - "$ref": "#/components/schemas/ConsentTerm"
-    ConsentAcceptance:
+              description: When the authorisation term was created
+        - "$ref": "#/components/schemas/AuthorisationTerm"
+    AuthorisationAcceptance:
       type: object
       required: [user_id, user_agent]
       properties:
         user_id:
           type: string
           format: uuid
-          description: The ID of the user accepting the consent
+          description: The ID of the user accepting the authorisation
           example: "95a0e70b-fe02-4f47-aef9-2efff279df71"
         term_id:
           type: string
           format: uuid
-          description: The ID of the consent term being accepted. If not provided, auto-resolves to the latest active term based on user's recurring check configuration.
+          description: The ID of the authorisation term being accepted. If not provided, auto-resolves to the latest active term based on user's recurring check configuration.
           example: "550e8400-e29b-41d4-a716-446655440000"
         user_agent:
           type: string
@@ -1798,42 +1798,42 @@ components:
           example: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         ip_address:
           type: string
-          description: Optional IP address of the user. If not provided, captured from request headers. Use when recording consent via server-to-server calls.
+          description: Optional IP address of the user. If not provided, captured from request headers. Use when recording authorisation via server-to-server calls.
           example: "192.168.1.1"
         fingerprint:
           type: string
           description: Optional device or browser fingerprint for additional verification
           example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
-    CreatedConsent:
+    CreatedAuthorisation:
       allOf:
         - required: [id, status, accepted_at, created_at, ip_address, is_valid]
           properties:
             id:
               type: string
               format: uuid
-              description: Unique identifier for the consent record
+              description: Unique identifier for the authorisation record
               example: "7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o"
             status:
-              "$ref": "#/components/schemas/ConsentStatus"
+              "$ref": "#/components/schemas/AuthorisationStatus"
             ip_address:
               type: string
               description: IP address of the user at time of acceptance (captured from request headers or provided in request)
               example: "192.168.1.1"
             is_valid:
               type: boolean
-              description: Whether this consent is currently valid. True when status is active AND the associated term is active.
+              description: Whether this authorisation is currently valid. True when status is active AND the associated term is active.
               example: true
             accepted_at:
               "$ref": "#/components/schemas/Date"
-              description: Server timestamp when the consent was accepted
+              description: Server timestamp when the authorisation was accepted
             revoked_at:
               "$ref": "#/components/schemas/Date"
-              description: Server timestamp when the consent was revoked
+              description: Server timestamp when the authorisation was revoked
               nullable: true
             created_at:
               "$ref": "#/components/schemas/Date"
-              description: When the consent record was created
-        - "$ref": "#/components/schemas/ConsentAcceptance"
+              description: When the authorisation record was created
+        - "$ref": "#/components/schemas/AuthorisationAcceptance"
     FraudRisk:
       type: string
       description: The fraud risk level assessment. Fraud risk will be present if the payroll data is coming from a payslip source
@@ -2132,11 +2132,11 @@ components:
           format: uuid
           description: The id of the entry
           example: 95a0e70b-fe02-4f47-aef9-2efff279df71
-        consent_id:
+        authorisation_id:
           type: string
           format: uuid
           nullable: true
-          description: The id of the consent that authorized this data retrieval
+          description: The id of the authorisation that authorized this data retrieval
           example: 7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o
         created_at:
           "$ref": "#/components/schemas/Date"
@@ -2254,11 +2254,11 @@ components:
           type: string
           format: uuid
           description: The id of the entry
-        consent_id:
+        authorisation_id:
           type: string
           format: uuid
           nullable: true
-          description: The id of the consent that authorized this data retrieval
+          description: The id of the authorisation that authorized this data retrieval
           example: 7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o
         payroll_submissions:
           type: array

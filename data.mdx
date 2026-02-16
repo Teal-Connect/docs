@@ -10,7 +10,7 @@ Our API organizes financial data into several key entities, each tailored for sp
 
 ### Users `/users`
 
-Represents the borrowers and end-users that give consented access and upload their payslips to our API.
+Represents the borrowers and end-users that give authorised access and upload their payslips to our API.
 
 **Example:** Retrieve a new user
 ```bash
@@ -121,9 +121,9 @@ curl --request PUT \
 
 Use GET `/configuration` to retrieve the current client configuration. Use PUT `/configuration` to create or update configuration; updates are partial—omitted fields keep their existing values. Validation rules: `recurring_check_frequency` must be one of [WEEKLY, MONTHLY]; `recurring_check_end_date` must be a valid ISO8601 UTC datetime. Some user-level settings (see Users API) can override these client-level defaults.
 
-## 2. Consent-Protected Endpoints
+## 2. Authorisation-Protected Endpoints
 
-Certain endpoints that create or retrieve payroll data on behalf of a user require a valid consent record before they can be accessed. This applies to:
+Certain endpoints that create or retrieve payroll data on behalf of a user require a valid authorisation record before they can be accessed. This applies to:
 
 - `POST /accounts` – creating a new account
 - `PUT /accounts/{account_id}/mfa` – submitting mfa for an account
@@ -131,7 +131,7 @@ Certain endpoints that create or retrieve payroll data on behalf of a user requi
 - `POST /payroll/entries/payslips/presign` – generating presigned upload URLs
 - `POST /payroll/entries/payslips` – submitting payslips for processing
 
-If no active consent exists for the user, these endpoints will reject the request. You can optionally include the `x-consent-id` header to specify which consent to use; otherwise the system will resolve a valid consent automatically. See [Consents](/consents) for full details on creating terms and recording user consent.
+If no active authorisation exists for the user, these endpoints will reject the request. You can optionally include the `x-authorisation-id` header to specify which authorisation to use; otherwise the system will resolve a valid authorisation automatically. See [Authorisations](/authorisations) for full details on creating terms and recording user authorisation.
 
 ## 3. Data Delivery
 
@@ -172,7 +172,7 @@ Adhering to strict security protocols, our API ensures the integrity and confide
 
 ### Data Sharing
 
-Access to data through our API is regulated by user permissions alongside OAuth 2.0 protocols, allowing us to securely access user-authorized data. Upon obtaining this data, we then facilitate its secure transfer to the third party requesting this information. This process ensures that data sharing is both compliant with user consent and adheres to stringent privacy standards, safeguarding data integrity during transmission.
+Access to data through our API is regulated by user permissions alongside OAuth 2.0 protocols, allowing us to securely access user-authorized data. Upon obtaining this data, we then facilitate its secure transfer to the third party requesting this information. This process ensures that data sharing is both compliant with user authorisation and adheres to stringent privacy standards, safeguarding data integrity during transmission.
 
 ### Data Deletion Requests
 

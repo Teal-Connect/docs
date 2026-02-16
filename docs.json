@@ -18,7 +18,7 @@
             "pages": [
               "introduction",
               "data",
-              "consents",
+              "authorisations",
               "sandbox",
               "recurring-checks"
             ]
@@ -91,15 +91,15 @@
             ]
           },
           {
-            "group": "Consents",
+            "group": "Authorisations",
             "pages": [
-              "api-reference/consents/terms-create",
-              "api-reference/consents/terms-list",
-              "api-reference/consents/terms-get",
-              "api-reference/consents/terms-latest",
-              "api-reference/consents/create",
-              "api-reference/consents/list",
-              "api-reference/consents/revoke"
+              "api-reference/authorisations/terms-create",
+              "api-reference/authorisations/terms-list",
+              "api-reference/authorisations/terms-get",
+              "api-reference/authorisations/terms-latest",
+              "api-reference/authorisations/create",
+              "api-reference/authorisations/list",
+              "api-reference/authorisations/revoke"
             ]
           },
           {
