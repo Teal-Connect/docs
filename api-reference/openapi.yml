@@ -1475,12 +1475,6 @@ components:
           description: National Insurance number of the user. Used for direct connections.
           type: string
           example: "QQ123456C"
-        post_codes:
-          description: Post codes of the user over the period of the check. Used for direct connections where we need to verify payroll data matches the user given current and past post codes.
-          type: array
-          items:
-            type: string
-          example: ["SW1A 1AA", "SW1A 1AB"]
         dob:
           description: Date of birth of the user. Used for direct connections.
           "$ref": "#/components/schemas/Date"
@@ -1492,6 +1486,12 @@ components:
           description: Surname of the user. Used for direct connections.
           type: string
           example: Smith
+        post_codes:
+          description: Post codes of the user over the period of the check. Used for direct connections where we need to verify payroll data matches the user given current and past post codes.
+          type: array
+          items:
+            type: string
+          example: ["SW1A 1AA", "SW1A 1AB"]
     CreatedUser:
       allOf:
         - required: [user_id, created_at]
