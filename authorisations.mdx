@@ -114,6 +114,11 @@ curl --request POST \
   }'
 ```
 
+`term_id` is optional. If it is absent in the request, then the latest active term is searched against the user's current setting. For example, if 
+they have reucrring checks enabled then it will resolve to the latest active term matching this category. If the `term_id` is 
+supplied you can choose which term the user is accepting, provided it is active. No category matching is done currently for an 
+explcitly provided term.
+
 ### Optional Fields
 
 | Field | Behavior |
