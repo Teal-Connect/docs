@@ -1503,7 +1503,7 @@ components:
             "$ref": "#/components/schemas/NotFound"
   parameters:
     XAuthorisationId:
-      name: x-authorisation-id
+      name: x-teal-authorisation-id
       in: header
       required: false
       description: Optional authorisation ID to associate with this request. If not provided, the system will attempt to resolve a valid authorisation for the user automatically.

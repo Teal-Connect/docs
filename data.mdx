@@ -131,7 +131,7 @@ Certain endpoints that create or retrieve payroll data on behalf of a user requi
 - `POST /payroll/entries/payslips/presign` – generating presigned upload URLs
 - `POST /payroll/entries/payslips` – submitting payslips for processing
 
-If no active authorisation exists for the user, these endpoints will reject the request. You can optionally include the `x-authorisation-id` header to specify which authorisation to use; otherwise the system will resolve a valid authorisation automatically. See [Authorisations](/authorisations) for full details on creating terms and recording user authorisation.
+If no active authorisation exists for the user, these endpoints will reject the request. You can optionally include the `x-teal-authorisation-id` header to specify which authorisation to use; otherwise the system will resolve a valid authorisation automatically. See [Authorisations](/authorisations) for full details on creating terms and recording user authorisation.
 
 ## 3. Data Delivery
 
