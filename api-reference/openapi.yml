@@ -459,6 +459,40 @@ paths:
           "$ref": "#/components/responses/UnauthorizedBearer"
         "404":
           "$ref": "#/components/responses/ResourceNotFound"
+  "/accounts/direct-connections":
+    post:
+      summary: Creates a direct connection for a user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id:
+                  type: string
+                  description: The id of the user
+                  example: 95a0e70b-fe02-4f47-aef9-2efff279df71
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [pagination, payroll_submissions]
+                properties:
+                  pagination:
+                    "$ref": "#/components/schemas/Pagination"
+                  payroll_submissions:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/PayrollSubmission"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
   "/payroll/entries":
     get:
       summary: Returns all entries for a user account sorted desc by created_at
@@ -658,7 +692,7 @@ paths:
           "$ref": "#/components/responses/UnauthorizedBearer"
   "/payroll/{user_id}":
     get:
-      summary: Returns all plants from the system that the user has access to
+      summary: Returns all payroll from the system that the user has access to
       parameters:
         - in: path
           name: user_id
@@ -1915,7 +1949,7 @@ components:
           description: National Insurance number of the user. Used for direct connections.
           type: string
           example: "QQ123456C"
-        dob:
+        date_of_birth:
           description: Date of birth of the user. Used for direct connections.
           "$ref": "#/components/schemas/Date"
         forename:
