@@ -18,6 +18,7 @@
             "pages": [
               "introduction",
               "data",
+              "authorisations",
               "sandbox",
               "recurring-checks"
             ]
@@ -63,6 +64,7 @@
             "group": "Accounts",
             "pages": [
               "api-reference/accounts/create",
+              "api-reference/accounts/mfa",
               "api-reference/accounts/list",
               "api-reference/accounts/list-recurring",
               "api-reference/accounts/get",
@@ -86,6 +88,18 @@
               "api-reference/documents/get",
               "api-reference/documents/list",
               "api-reference/documents/delete"
+            ]
+          },
+          {
+            "group": "Authorisations",
+            "pages": [
+              "api-reference/authorisations/terms-create",
+              "api-reference/authorisations/terms-list",
+              "api-reference/authorisations/terms-get",
+              "api-reference/authorisations/terms-latest",
+              "api-reference/authorisations/create",
+              "api-reference/authorisations/list",
+              "api-reference/authorisations/revoke"
             ]
           },
           {

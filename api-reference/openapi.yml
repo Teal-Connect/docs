@@ -15,7 +15,7 @@ security:
 paths:
   "/users":
     description: A User represents the borrowers and end-users that
-      give consented access and/or upload their payslips to our API.
+      give authorised access and/or upload their payslips to our API.
     post:
       summary: Creates a user.
       requestBody:
@@ -89,7 +89,7 @@ paths:
           "$ref": "#/components/responses/UnauthorizedApiKey"
   "/users/{user_id}":
     description: A User represents the borrowers and end-users that give
-      consented access and/or upload their payslips to our API.
+      authorised access and/or upload their payslips to our API.
     get:
       summary: Creates a user.
       parameters:
@@ -239,6 +239,8 @@ paths:
       providing a stream of income and employment data
     post:
       summary: Creates an account for the user e.g. a Xero account
+      parameters:
+        - "$ref": "#/components/parameters/XAuthorisationId"
       requestBody:
         required: true
         content:
@@ -420,6 +422,43 @@ paths:
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
 
+  "/accounts/{account_id}/mfa":
+    description: Submit an MFA response to complete account authentication after an MFA challenge is returned during account creation.
+    put:
+      summary: Submit an MFA response for an account
+      parameters:
+        - in: path
+          name: account_id
+          schema:
+            type: string
+          required: true
+          description: ID of the account requiring MFA
+        - "$ref": "#/components/parameters/XAuthorisationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mfa]
+              properties:
+                mfa:
+                  type: string
+                  description: The MFA response value (code, date, or password characters depending on the MFA method)
+                  example: "123456"
+      responses:
+        "200":
+          description: MFA response accepted
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AccountsResult"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedBearer"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
   "/payroll/entries":
     get:
       summary: Returns all entries for a user account sorted desc by created_at
@@ -511,6 +550,8 @@ paths:
       the `/payroll/{user_id}` endpoint.
     post:
       summary: Connects a user account to a payroll provider
+      parameters:
+        - "$ref": "#/components/parameters/XAuthorisationId"
       security:
         - BearerAuth: []
       requestBody:
@@ -540,6 +581,8 @@ paths:
   "/payroll/entries/payslips/presign":
     post:
       summary: Generate presigned URLs for payslip uploads
+      parameters:
+        - "$ref": "#/components/parameters/XAuthorisationId"
       description: |
         Generates short-lived presigned URLs that you can use to upload payslip PDFs
         directly to Teal-managed storage. Use this endpoint before uploading any
@@ -566,6 +609,8 @@ paths:
   "/payroll/entries/payslips":
     post:
       summary: Submit previously uploaded payslips for processing
+      parameters:
+        - "$ref": "#/components/parameters/XAuthorisationId"
       description: |
         Uploading payslips is a three-step flow:
           1. Request upload slots with `POST /payroll/entries/payslips/presign`, providing
@@ -1150,6 +1195,267 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/authorisations/terms":
+    description: Authorisation terms define the legal text and versions that users can accept. Lenders can create and manage authorisation terms.
+    post:
+      summary: Creates a new authorisation term.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/AuthorisationTerm"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/CreatedAuthorisationTerm"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "409":
+          "$ref": "#/components/responses/ConflictedResource"
+    get:
+      summary: List all authorisation terms.
+      parameters:
+        - name: authorisation_category
+          in: query
+          description: Filter by authorisation category
+          required: false
+          schema:
+            "$ref": "#/components/schemas/AuthorisationCategory"
+        - name: is_active
+          in: query
+          description: Filter by active status
+          required: false
+          schema:
+            type: boolean
+        - name: is_system_term
+          in: query
+          description: Filter by system term status. True returns only Teal's default terms, false returns only client-created terms.
+          required: false
+          schema:
+            type: boolean
+        - name: offset
+          in: query
+          description: The offset to start at
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: The number of items to return
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pagination:
+                    "$ref": "#/components/schemas/Pagination"
+                  terms:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/CreatedAuthorisationTerm"
+              example:
+                pagination:
+                  offset: 0
+                  limit: 20
+                  count: 2
+                terms:
+                  - id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Teal Data Sharing Agreement"
+                    authorisation_text: "I agree to share my payroll data with the lender for income verification."
+                    authorisation_version: 1
+                    authorisation_category: "recurring"
+                    is_active: true
+                    is_system_term: true
+                    created_at: "2024-01-15T00:00:00.000Z"
+                  - id: "7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o"
+                    name: "Custom Terms v2"
+                    authorisation_text: "Custom authorisation text for our lending product."
+                    authorisation_version: 2
+                    authorisation_category: "one_time"
+                    is_active: true
+                    is_system_term: false
+                    created_at: "2024-06-01T00:00:00.000Z"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/authorisations/terms/{term_id}":
+    description: Retrieve a specific authorisation term by ID.
+    get:
+      summary: Returns a authorisation term.
+      parameters:
+        - in: path
+          name: term_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the authorisation term to retrieve
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/CreatedAuthorisationTerm"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
+  "/authorisations/terms/latest":
+    description: Get the latest active authorisation term for a user based on their recurring check configuration.
+    get:
+      summary: Returns the latest active authorisation term for a user.
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the user to get the latest term for
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/CreatedAuthorisationTerm"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
+  "/authorisations":
+    description: User authorisation records track when users accept authorisation terms, including acceptance metadata for audit purposes.
+    post:
+      summary: Records a user accepting a authorisation term.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/AuthorisationAcceptance"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/CreatedAuthorisation"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          description: User or term not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/NotFound"
+    get:
+      summary: Returns all authorisation records for a user.
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the user to get authorisations for
+        - name: status
+          in: query
+          description: Filter by authorisation status
+          required: false
+          schema:
+            "$ref": "#/components/schemas/AuthorisationStatus"
+        - name: term_id
+          in: query
+          description: Filter by authorisation term ID
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: offset
+          in: query
+          description: The offset to start at
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: The number of items to return
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pagination:
+                    "$ref": "#/components/schemas/Pagination"
+                  authorisations:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/CreatedAuthorisation"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/authorisations/{authorisation_id}/revoke":
+    description: Revoke a authorisation record. The record is preserved for audit purposes.
+    put:
+      summary: Revokes an authorisation.
+      parameters:
+        - in: path
+          name: authorisation_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the authorisation to revoke
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/CreatedAuthorisation"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
   "/providers":
     description: Returns the list of available payroll providers and their metadata
     get:
@@ -1195,6 +1501,16 @@ components:
         applcation/json:
           schema:
             "$ref": "#/components/schemas/NotFound"
+  parameters:
+    XAuthorisationId:
+      name: x-teal-authorisation-id
+      in: header
+      required: false
+      description: Optional authorisation ID to associate with this request. If not provided, the system will attempt to resolve a valid authorisation for the user automatically.
+      schema:
+        type: string
+        format: uuid
+        example: "7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o"
   schemas:
     ProvidersResponse:
       type: object
@@ -1403,6 +1719,121 @@ components:
       type: string
       format: date-time
       example: 2019-05-17T00:00:00.000Z
+    AuthorisationCategory:
+      type: string
+      description: The category of authorisation
+      enum: [one_time, recurring]
+      example: one_time
+    AuthorisationStatus:
+      type: string
+      description: The status of a authorisation record
+      enum: [active, revoked]
+      example: active
+    AuthorisationTerm:
+      type: object
+      required: [name, authorisation_text, authorisation_category]
+      properties:
+        name:
+          type: string
+          description: Human-readable name for the authorisation term
+          example: "Data Sharing Agreement"
+        authorisation_text:
+          type: string
+          description: The legal authorisation text that users will accept
+          example: "I agree to share my payroll data with the lender for the purpose of income verification."
+        authorisation_category:
+          "$ref": "#/components/schemas/AuthorisationCategory"
+        deactivate_previous:
+          type: boolean
+          description: If true, deactivates any existing active term for the same category. Defaults to false.
+          default: false
+          example: true
+          writeOnly: true
+    CreatedAuthorisationTerm:
+      allOf:
+        - required: [id, created_at, is_active, is_system_term, authorisation_version]
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Unique identifier for the authorisation term
+              example: "550e8400-e29b-41d4-a716-446655440000"
+            is_active:
+              type: boolean
+              description: Whether this authorisation term is currently active and can be accepted
+              default: true
+              example: true
+            is_system_term:
+              type: boolean
+              description: True for Teal's default terms, false for client-created terms
+              readOnly: true
+              example: false
+            authorisation_version:
+              type: integer
+              format: int32
+              description: Auto-incremented version number for the authorisation term
+              readOnly: true
+              example: 1
+            created_at:
+              "$ref": "#/components/schemas/Date"
+              description: When the authorisation term was created
+        - "$ref": "#/components/schemas/AuthorisationTerm"
+    AuthorisationAcceptance:
+      type: object
+      required: [user_id, user_agent]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: The ID of the user accepting the authorisation
+          example: "95a0e70b-fe02-4f47-aef9-2efff279df71"
+        term_id:
+          type: string
+          format: uuid
+          description: The ID of the authorisation term being accepted. If not provided, auto-resolves to the latest active term based on user's recurring check configuration.
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        user_agent:
+          type: string
+          description: User agent string of the browser or application
+          example: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        ip_address:
+          type: string
+          description: Optional IP address of the user. If not provided, captured from request headers. Use when recording authorisation via server-to-server calls.
+          example: "192.168.1.1"
+        fingerprint:
+          type: string
+          description: Optional device or browser fingerprint for additional verification
+          example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+    CreatedAuthorisation:
+      allOf:
+        - required: [id, status, accepted_at, created_at, ip_address, is_valid]
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Unique identifier for the authorisation record
+              example: "7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o"
+            status:
+              "$ref": "#/components/schemas/AuthorisationStatus"
+            ip_address:
+              type: string
+              description: IP address of the user at time of acceptance (captured from request headers or provided in request)
+              example: "192.168.1.1"
+            is_valid:
+              type: boolean
+              description: Whether this authorisation is currently valid. True when status is active AND the associated term is active.
+              example: true
+            accepted_at:
+              "$ref": "#/components/schemas/Date"
+              description: Server timestamp when the authorisation was accepted
+            revoked_at:
+              "$ref": "#/components/schemas/Date"
+              description: Server timestamp when the authorisation was revoked
+              nullable: true
+            created_at:
+              "$ref": "#/components/schemas/Date"
+              description: When the authorisation record was created
+        - "$ref": "#/components/schemas/AuthorisationAcceptance"
     FraudRisk:
       type: string
       description: The fraud risk level assessment. Fraud risk will be present if the payroll data is coming from a payslip source
@@ -1471,6 +1902,15 @@ components:
           description: Lookback period of the payroll to search on account creation. Overrides the same setting if present in client level configuration.
           type: integer
           format: int32
+        hmrc_enabled:
+          type: boolean
+          description: Determines if HMRC provider is enabled for this user. Overrides the same setting if present in client level configuration.
+        payslip_upload_enabled:
+          type: boolean
+          description: Determines if payslip upload is enabled for this user. Overrides the same setting if present in client level configuration.
+        payroll_connections_enabled:
+          type: boolean
+          description: Determines if payroll connections feature is enabled for this user. Overrides the same setting if present in client level configuration.
         ni_number:
           description: National Insurance number of the user. Used for direct connections.
           type: string
@@ -1549,6 +1989,19 @@ components:
         recurring_check_end_date:
           "$ref": "#/components/schemas/Date"
           description: End date of the recurring check schedule client-wide
+        hmrc_enabled:
+          type: boolean
+          description: Determines if HMRC provider is enabled for this client. When disabled, HMRC provider will not be available in the providers list and HMRC connection endpoints will return an error.
+          example: true
+        payroll_connections_enabled:
+          type: boolean
+          description: Determines if payroll connections feature is enabled for this client. When disabled, the payroll connections endpoint will return an error.
+          example: true
+        client_display_name:
+          type: string
+          nullable: true
+          description: Editable display name for the client. This can be customized and is separate from the internal client name.
+          example: "Acme Corporation"
     Accounts:
       type: object
       required: [payroll_provider]
@@ -1722,6 +2175,12 @@ components:
           format: uuid
           description: The id of the entry
           example: 95a0e70b-fe02-4f47-aef9-2efff279df71
+        authorisation_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: The id of the authorisation that authorized this data retrieval
+          example: 7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o
         created_at:
           "$ref": "#/components/schemas/Date"
     DocumentResponse:
@@ -1838,6 +2297,12 @@ components:
           type: string
           format: uuid
           description: The id of the entry
+        authorisation_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: The id of the authorisation that authorized this data retrieval
+          example: 7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o
         payroll_submissions:
           type: array
           items:

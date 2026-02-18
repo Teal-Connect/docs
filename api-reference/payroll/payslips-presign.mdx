@@ -3,6 +3,12 @@ title: 'Generate presigned payslip URLs'
 openapi: 'POST /payroll/entries/payslips/presign'
 ---
 
+<Info>
+This endpoint requires a valid authorisation for the user. If no active authorisation exists, the request will be rejected.
+You can optionally pass the `x-teal-authorisation-id` header to specify which authorisation to use; otherwise the system will resolve a valid authorisation automatically.
+See [Authorisations](/authorisations) for more details.
+</Info>
+
 Request short-lived URLs to upload payslip PDFs directly to Teal managed storage.
 Use the returned `presigned_url` values with HTTP `PUT`, then call
 `POST /payroll/entries/payslips` to submit the uploaded documents for processing.
