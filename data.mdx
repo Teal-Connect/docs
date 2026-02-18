@@ -43,6 +43,7 @@ curl --request POST \
 ```
 
 A user can have multiple accounts to the same provider depending on the type of connection. The `POST /accounts` endpoint is a way to initialize a connection to a provider for a given user; Teal offers a separate provider flow for users via the WebUI as documented in [Introduction](./introduction.mdx). 
+Alternatively, `POST /accounts/direct-connections` can be used to establish a connection directly by providing a user ID.
 The status of a account determines if it is able to recieve data, needs authorisation or if it is invalid or expired. An account connected via OAuth will not require credentials to be passed into the account creation request. Any credentials that are passed to Teal are encrypted securely. An account creation
 will do an initial payroll retrieval using the optional dates supplied; if none are sent with the request we then check for the client specific duration for which to lookback - if this is not configured, we take a default of 36 months.
 
@@ -127,6 +128,7 @@ Certain endpoints that create or retrieve payroll data on behalf of a user requi
 
 - `POST /accounts` – creating a new account
 - `PUT /accounts/{account_id}/mfa` – submitting mfa for an account
+- `POST /accounts/direct-connections` – establishing a direct connection
 - `POST /payroll/entries/connections` – querying a connection for data
 - `POST /payroll/entries/payslips/presign` – generating presigned upload URLs
 - `POST /payroll/entries/payslips` – submitting payslips for processing

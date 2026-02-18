@@ -5,7 +5,7 @@ openapi: 'POST /users'
 
 **Direct Connection Requirements**
 These fields are required for direct connections to happen. Provide one of these identity sets:
-1. `ni_number` plus at least one of `forename`, `surname`, `post_codes`, or `dob`.
-2. All four fields `forename`, `surname`, `post_codes`, and `dob` without `ni_number`.
+1. `ni_number` plus at least one of `forename`, `surname`, `post_codes`, or `date_of_birth`.
+2. All four fields `forename`, `surname`, `post_codes`, and `date_of_birth` without `ni_number`.
 
 If neither set is provided, direct connection validation will fail.

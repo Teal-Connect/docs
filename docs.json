@@ -65,6 +65,7 @@
             "pages": [
               "api-reference/accounts/create",
               "api-reference/accounts/mfa",
+              "api-reference/accounts/direct-connections-create",
               "api-reference/accounts/list",
               "api-reference/accounts/list-recurring",
               "api-reference/accounts/get",
