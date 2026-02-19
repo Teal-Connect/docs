@@ -462,6 +462,8 @@ paths:
   "/accounts/direct-connections":
     post:
       summary: Creates a direct connection for a user.
+      parameters:
+        - "$ref": "#/components/parameters/XAuthorisationId"
       requestBody:
         required: true
         content:
