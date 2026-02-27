@@ -1,100 +1,111 @@
 ---
 title: Introduction
-description: 'Welcome to Teal'
+description: 'Welcome to the Teal API'
 ---
 
-## How it works
-Our modular API gives you access to one of the richest sources of data to improve your underwriting process - payroll data. This data is acquired with user authorisation either via payroll-linked access or with payslip upload.
+Teal is the unified data layer for income and employment verification. Our API allows lenders, proptechs, and background screening platforms to instantly verify an applicant's financial identity and affordability.
 
-<img
-  src="/images/how-it-works.svg"
-  alt="How it works"
-/>
+Whether the data is retrieved automatically via Direct Connections, through a User Connection (payroll login), or extracted from an uploaded payslip via Doc Scan, Teal normalises the output into a single, standardised JSON schema. Write your underwriting logic once, and let Teal handle the data ingestion.
 
-### Connecting payroll account
+# The Teal Ecosystem
 
-By connecting to our API you will have access to authorisation based access to a user’s historical payroll data. Teal's API enables lenders to receive income data safely from their users, fully embedded within lending flows.
+Integrating with Teal typically involves a hybrid approach, leveraging our backend endpoints alongside our drop-in frontend and management tools.
 
-The user will be walked through a permission flow, where they will allow to connect to their payroll provider. Teal will extract their data, and then expose via API to your services.
+## 1. Core API
 
-<img
-  src="/images/payroll-connection-flow.png"
-  alt="Payroll Connection Flow"
-/>
+The backbone of your integration. You will use our REST API from your secure backend to create user sessions, trigger frictionless Direct Connections, and retrieve the final, normalised JSON payloads. _Note: For teams that want absolute control, you can bypass our UI entirely and build a custom native frontend that passes credentials directly to these endpoints._
+[Explore the API Reference ->](https://docs.goteal.co/api-reference/quickstart)
 
-### Uploading payslips
+## 2. Hosted webapp
 
-Our API also supports the upload of payslip documents. Thus, enabling the automatic extraction of payslips information and instant data share. We use state of the art LLMs in combination with our own models for maximum accuracy of the extracted data.
+The fastest path to live for interactive flows. Instead of building your own UI for payroll logins and document uploads, embed our conversion-tested modal into your frontend. The Webapp securely handles the employer search directory, consent screens, User Connections, and Doc Scan routing, seamlessly syncing the results back to your API.
 
-Borrowers will be able to upload their payslips in a webflow hosted by Teal. The payslips will be parsed and data such as identity, income and employment information will be extracted, encrypted and securely stored in the database. The documents are verified for authenticity, controlling for visual inconsistencies and changes in the meta data.
+## 3. The Teal Console
 
-<img
-  src="/images/payslip-extraction-flow.png"
-  alt="Upload Payslip FLow"
-/>
+Your team's command center. While your code talks to our API, your Risk, Operations, and Developer teams can log into the Teal Console. Use it to visually track applicant timelines, inspect raw parsed data, manage API keys, and configure your webhook endpoints without writing database queries.
 
-## Accessing user data
+# How Teal Works
 
-The data is securely exposed via our API. By default, the data is extracted in JSON format after the request is done. The data will be exposed via our API, so lenders can receive it immediately and take a decision based on the shared data.
+By default, Teal uses an intelligent waterfall approach to guarantee the highest possible conversion rate for your applicants. However, this routing is entirely configurable. You have the flexibility to enable or disable specific paths—such as turning off document uploads or restricting flows to Direct Connections only—to perfectly match your compliance and user experience requirements.
 
-Example of payroll submission retrieval:
+## 1. Direct Connections
+
+The lowest-friction path. Where available, Teal interacts directly with payroll and HRIS systems via server-to-server APIs to instantly pull verified employment and income data without requiring the user to log in.
+
+## 2. User Connections
+
+If a direct API connection isn't available, Teal prompts the user to securely authenticate with their employer or payroll provider. The user searches for their provider, enters their credentials, and Teal securely retrieves their verified history.
+
+## 3. Doc Scan
+
+If digital connections fail or the user cannot remember their credentials, Teal seamlessly falls back to document upload. Unlike generic OCR, Teal's purpose-built extraction models interrogate the uploaded payslip's metadata, validate the mathematics (Gross vs. Net), and check for pixel anomalies to prevent sophisticated fraud.
+
+# Real-Time Updates via Webhooks
+
+To keep your application in sync without continuous polling, Teal provides secure Webhooks. As soon as an applicant's data is processed—whether from an API connection or a parsed document—we instantly fire a user-payroll-submitted event to your backend.
+Our webhooks support HMAC-SHA512 signature verification and AES/GCM payload encryption, ensuring that sensitive financial data is transmitted with enterprise-grade security.
+[Learn more about Webhooks ->](https://docs.goteal.co/api-reference/webhooks)
+
+# Standardized Output
+
+Regardless of which path the user takes in the waterfall, the data always arrives in your system normalized into the exact same schema. Here is an example of what you will receive:
 
 ``````JSON
 {
-  "pagination": {
-    "count": 14,
-    "limit": 25,
-    "offset": 75,
-    "total_count": 89
-  },
   "payroll_submissions": [
     {
-      "id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
-      "account_id": "e920bcba-85bb-4a8d-9ce2-0b29e5217e4d",
-      "entry_id": "f630296a-3046-46ea-86e5-689f08085f1b",
-      "created_at": "2019-05-17T00:00:00.000Z",
-      "document_external_id": null,
-      "document_filename": null,
-      "employment_information": {
-        "employer_name": "Acme Ltd",
-        "leave_date": "2019-05-17T00:00:00.000Z",
-        "role": "Software Engineer",
-        "start_date": "2019-05-17T00:00:00.000Z",
-        "status": "Active",
-        "type": "Full-time"
-      },
+      "id": "8f3b2a1c-9d4e-48b2-b1c3-7f6e5d4c3b2a",
+      "account_id": "c9a8b7c6-d5e4-4f3a-9b2c-1d0e9f8a7b6c",
+      "entry_id": "e5d4c3b2-a1b2-4c3d-8e7f-6a5b4c3d2e1f",
+      "created_at": "2023-11-28T08:15:32.000Z",
       "identity_information": {
-        "NI_number": "AB123456C",
+        "name": "David Sterling",
+        "date_of_birth": "1988-08-22T00:00:00.000Z",
         "address": {
-          "city": "London",
-          "country": "United Kingdom",
-          "county": "Greater London",
-          "post_code": "SW1A 1AA",
-          "street": "123 Main Street"
+          "street": "42 Highfield Road",
+          "county": "Greater Manchester",
+          "city": "Manchester",
+          "post_code": "M19 3LW",
+          "country": "United Kingdom"
         },
-        "date_of_birth": "2019-05-17T00:00:00.000Z",
-        "email": "john.smith@company.com",
-        "name": "John Smith",
-        "phone": 447123456789
+        "email": "david.sterling@techflow.co.uk",
+        "phone": 447700900451,
+        "NI_number": "JL654321D"
+      },
+      "employment_information": {
+        "employer_name": "TechFlow Solutions Ltd",
+        "role": "Senior Product Manager",
+        "type": "Full-time",
+        "status": "active",
+        "start_date": "2020-03-15T00:00:00.000Z",
+        "leave_date": null
       },
       "income_information": {
-        "deductions": {
-          "employee_ni": 200,
-          "employee_pension": 300,
-          "income_tax": 500,
-          "total_deductions": 1000
-        },
-        "earnings": {
-          "base_salary": 3000,
-          "bonus": 500,
-          "gross_pay": 3500,
-          "net_pay": 2500
-        },
-        "pay_date": "2019-05-17T00:00:00.000Z",
+        "pay_date": "2023-11-28T00:00:00.000Z",
+        "pay_interval_start": "2023-11-01T00:00:00.000Z",
+        "pay_interval_end": "2023-11-30T00:00:00.000Z",
         "pay_frequency": "Monthly",
-        "pay_interval_end": "2019-05-17T00:00:00.000Z",
-        "pay_interval_start": "2019-05-17T00:00:00.000Z"
+        "earnings": {
+          "gross_pay": 5500,
+          "net_pay": 3850,
+          "base_salary": 5000,
+          "bonus": 500
+        },
+        "deductions": {
+          "income_tax": 950,
+          "employee_ni": 350,
+          "employee_pension": 350,
+          "total_deductions": 1650
+        }
       }
     }
   ]
 }
+``````
+
+# Next Steps
+
+Ready to start building? Here is how to get your first test data flowing.
+- Get your API Keys: Contact our team at hello@goteal.co to schedule a quick intro call, and we will provision your Sandbox keys.
+
+- [Explore the Sandbox](https://docs.goteal.co/sandbox): Learn how to use our test credentials to simulate successful User Connections, direct connections, and fraudulent document uploads.
