@@ -1912,18 +1912,34 @@ components:
           format: int32
           example: 89
     User:
-      required: [name, email]
+      required: [forename, surname, date_of_birth, post_codes, payroll_period_months]
       type: object
       properties:
-        name:
-          description: The full name of the user. It doesn't have to be unique for the client.
+        forename:
+          description: Forename of the user.
           type: string
-          example: John Smith
-        email:
-          description: The email of the user. The field does not have to be a real email address. It can be the user's identifier in your system.
+          example: John
+        surname:
+          description: Surname of the user.
           type: string
-          format: email
-          example: john.smith@company.com
+          example: Smith
+        middle_names:
+          description: Middle names of the user.
+          type: string
+          example: Smith
+        ni_number:
+          description: National Insurance number of the user. Used for direct connections.
+          type: string
+          example: "QQ123456C"
+        date_of_birth:
+          description: Date of birth of the user. Used for direct connections.
+          "$ref": "#/components/schemas/Date"
+        post_codes:
+          description: One or more post codes of the user over the period of the check. Used for direct connections where we need to verify payroll data matches the user given current and past post codes.
+          type: array
+          items:
+            type: string
+          example: ["SW1A 1AA", "SW1A 1AB"]
         recurring_checks_enabled:
           description: Determines if recurring checks are enabled for this user. Overrides the same setting if present in client level configuration.
           type: boolean
@@ -1938,36 +1954,12 @@ components:
           description: Lookback period of the payroll to search on account creation. Overrides the same setting if present in client level configuration.
           type: integer
           format: int32
-        hmrc_enabled:
-          type: boolean
-          description: Determines if HMRC provider is enabled for this user. Overrides the same setting if present in client level configuration.
         payslip_upload_enabled:
           type: boolean
           description: Determines if payslip upload is enabled for this user. Overrides the same setting if present in client level configuration.
         payroll_connections_enabled:
           type: boolean
           description: Determines if payroll connections feature is enabled for this user. Overrides the same setting if present in client level configuration.
-        ni_number:
-          description: National Insurance number of the user. Used for direct connections.
-          type: string
-          example: "QQ123456C"
-        date_of_birth:
-          description: Date of birth of the user. Used for direct connections.
-          "$ref": "#/components/schemas/Date"
-        forename:
-          description: Forename of the user. Used for direct connections.
-          type: string
-          example: John
-        surname:
-          description: Surname of the user. Used for direct connections.
-          type: string
-          example: Smith
-        post_codes:
-          description: Post codes of the user over the period of the check. Used for direct connections where we need to verify payroll data matches the user given current and past post codes.
-          type: array
-          items:
-            type: string
-          example: ["SW1A 1AA", "SW1A 1AB"]
     CreatedUser:
       allOf:
         - required: [user_id, created_at]
@@ -2025,10 +2017,6 @@ components:
         recurring_check_end_date:
           "$ref": "#/components/schemas/Date"
           description: End date of the recurring check schedule client-wide
-        hmrc_enabled:
-          type: boolean
-          description: Determines if HMRC provider is enabled for this client. When disabled, HMRC provider will not be available in the providers list and HMRC connection endpoints will return an error.
-          example: true
         payroll_connections_enabled:
           type: boolean
           description: Determines if payroll connections feature is enabled for this client. When disabled, the payroll connections endpoint will return an error.
