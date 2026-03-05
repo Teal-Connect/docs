@@ -1940,6 +1940,11 @@ components:
           items:
             type: string
           example: ["SW1A 1AA", "SW1A 1AB"]
+        ext_id:
+          description: External ID for the user. This is an optional identifier that can be used to reference the user in external systems.
+          type: string
+          nullable: true
+          example: "ext-12345"
         recurring_checks_enabled:
           description: Determines if recurring checks are enabled for this user. Overrides the same setting if present in client level configuration.
           type: boolean
