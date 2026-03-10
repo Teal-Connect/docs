@@ -1071,9 +1071,195 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/members/initial-signin":
+    post:
+      summary: Initial Sign In
+      description: |
+        Completes the initial sign in using the temporary password provided during member creation.
+        Returns either a JWT token or an MFA session token if MFA_SETUP is required.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, tmp_password, password, name]
+              properties:
+                username:
+                  type: string
+                  description: The email or username of the member
+                tmp_password:
+                  type: string
+                  description: The temporary password provided during invitation
+                password:
+                  type: string
+                  description: The new password to be set
+                name:
+                  type: string
+                  description: The member's full name
+      responses:
+        "200":
+          description: Successful signin (MFA not enabled)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/MemberSignInResponse"
+        "202":
+          description: MFA Required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/MemberSignInMfaResponse"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/members/password-reset/initiate":
+    post:
+      summary: Initiate Password Reset
+      description: Initiates a password reset for a member by sending a confirmation code to their email.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+  "/members/password-reset/confirm":
+    post:
+      summary: Confirm Password Reset
+      description: Confirms the password reset using the code sent to the member's email.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, new_password, confirmation_code]
+              properties:
+                email:
+                  type: string
+                  format: email
+                new_password:
+                  type: string
+                confirmation_code:
+                  type: string
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+  "/members/mfa/setup":
+    post:
+      summary: Set up initial MFA code
+      operationId: members-mfa-setup
+      description: Generate the initial MFA code during initial sign-in when an MFA_SETUP challenge is triggered.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session]
+              properties:
+                session:
+                  type: string
+                  description: The session string returned by the login challenge
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  secret:
+                    type: string
+                    description: TOTP Secret (for QR code generation)
+                  session:
+                    type: string
+                    description: New session token to be used in verify
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+  "/members/mfa/verify":
+    post:
+      summary: Verify and save initial MFA code
+      description: Verify and save the initial MFA code, completing the mandatory MFA setup during initial sign-in.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, mfa_code, session]
+              properties:
+                username:
+                  type: string
+                  description: The member's username or email
+                mfa_code:
+                  type: string
+                  description: The 6-digit TOTP code generated from the authenticator app
+                session:
+                  type: string
+                  description: The new session token returned by the /members/mfa/setup endpoint
+      responses:
+        "200":
+          description: MFA validation successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberSignInResponse"
+        "202":
+          description: Additional Challenge Required (if any)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberSignInMfaResponse"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
   "/members/signin":
     post:
       summary: Sign in a member
+      description: |
+        Authenticates a member and returns either a JWT token or an MFA session token.
+        
+        **Response depends on MFA status:**
+        
+        - **200 OK** (MFA disabled): Returns `jwt` token and `member` object
+          - Use the `jwt` value in `Authorization: Bearer <jwt>` header for authenticated requests
+          - Use the `jwt` value as `access_token` in MFA setup/verify endpoints
+        
+        - **202 Accepted** (MFA enabled): Returns `session` token
+          - Use the `session` value in `POST /members/mfa/validate` to complete login
+          - Must provide a 6-digit MFA code from the authenticator app
       security: []  # This declares that no authorization is required for this endpoint
       requestBody:
         required: true
@@ -1083,13 +1269,131 @@ paths:
               $ref: "#/components/schemas/MemberSignInRequest"
       responses:
         "200":
-          description: Successful signin
+          description: Successful signin (MFA not enabled) - Returns JWT token and member profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberSignInResponse"
+        "202":
+          description: MFA required - Returns session token for MFA validation. Use this session in POST /members/mfa/validate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberSignInMfaResponse"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+  "/members/mfa/change":
+    post:
+      summary: Generate TOTP secret to change MFA code
+      description: |
+        Generates a new TOTP (Time-Based One-Time Password) secret for a member to change their MFA code after it was already setup.
+        
+        **Authentication:** Requires the JWT token from `/members/signin` response in the Authorization header:
+        - Header: `Authorization: Bearer <jwt_token>`
+        - Body: Also include the same `jwt` value in the `access_token` field
+        
+        The returned secret should be used to generate a QR code or manually entered into an authenticator app (e.g., Google Authenticator, Authy).
+      security:
+        - MemberBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MfaSetupRequest"
+      responses:
+        "200":
+          description: TOTP secret generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaSetupResponse"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/UnauthorizedBearer"
+  "/members/mfa/change-verify":
+    post:
+      summary: Verify and save new MFA code for a member
+      description: |
+        Verifies the TOTP code from the member's authenticator app and saves the new MFA preferences after changing their MFA code.
+        
+        **Authentication:** Requires the JWT token from `/members/signin` response:
+        - Header: `Authorization: Bearer <jwt_token>`
+        - Header: `X-Member-Username: <email>`
+        - Body: Include the same `jwt` value in the `access_token` field
+        
+        The member must provide a valid 6-digit code generated by their authenticator app using the secret from the `/members/mfa/change` endpoint.
+      security:
+        - MemberBearerAuth: []
+      parameters:
+        - name: X-Member-Username
+          in: header
+          required: true
+          description: The email/username of the member configuring MFA
+          schema:
+            type: string
+            format: email
+            example: john.smith@goteal.co
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MfaVerifyRequest"
+      responses:
+        "201":
+          description: MFA verified and enabled successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaVerifyResponse"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          description: Unauthorized - Invalid TOTP code or expired access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+  "/members/mfa/validate":
+    post:
+      summary: Validate MFA code during login
+      description: |
+        Completes the login process for members with MFA enabled.
+        
+        **Input (from previous endpoints):**
+        - `username`: Same value used in `POST /members/signin` request
+        - `session`: The `session` value from the 202 response of `POST /members/signin`
+        - `mfa_code`: 6-digit code from the user's authenticator app
+        
+        **Output (on success):**
+        - `jwt`: Use this in `Authorization: Bearer <jwt>` header for authenticated requests
+        - `member`: Member profile object containing id, email, role, name, status, and mfa_status
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MfaValidateRequest"
+      responses:
+        "200":
+          description: |
+            MFA validation successful - Returns the same response as a successful signin (200 OK from POST /members/signin).
+            Contains `jwt` token for authentication and `member` profile object.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/MemberSignInResponse"
         "400":
-          $ref: "#/components/responses/BadRequest"
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          description: Unauthorized - Invalid MFA code or expired session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
   "/members/{member_id}":
     get:
       summary: Returns a Member.
@@ -2475,10 +2779,97 @@ components:
       properties:
         jwt:
           type: string
-          description: JSON Web Token for authentication
+          description: |
+            JSON Web Token for authentication. Use this token in the `Authorization: Bearer <jwt>` header for authenticated endpoints.
+            This token is also used as the `access_token` parameter in `/members/mfa/change` and `/members/mfa/change-verify` endpoints.
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
         member:
           $ref: '#/components/schemas/MemberResponse'
+    MemberSignInMfaResponse:
+      type: object
+      required:
+        - session
+      properties:
+        session:
+          type: string
+          description: |
+            Temporary session token returned when the member has MFA enabled. 
+            Use this value as the `session` parameter in the `POST /members/mfa/validate` endpoint to complete the login process.
+          example: "mfa_session_abc123xyz789"
+    MfaSetupRequest:
+      type: object
+      required:
+        - access_token
+      properties:
+        access_token:
+          type: string
+          description: The JWT token from the `jwt` field in the `/members/signin` response. This is the same token used in the Authorization header.
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+    MfaSetupResponse:
+      type: object
+      required:
+        - secret
+      properties:
+        secret:
+          type: string
+          description: |
+            Base32-encoded TOTP secret seed. Use this to:
+            1. Generate a QR code for the user to scan with their authenticator app, OR
+            2. Display for manual entry into the authenticator app
+            
+            After the user adds this to their authenticator app, they will generate a 6-digit code to use in the `POST /members/mfa/change-verify` endpoint.
+          example: "JBSWY3DPEHPK3PXP"
+    MfaVerifyRequest:
+      type: object
+      required:
+        - user_code
+        - access_token
+      properties:
+        user_code:
+          type: string
+          description: |
+            The 6-digit TOTP code generated by the user's authenticator app using the `secret` from the `POST /members/mfa/change` response.
+            The user should enter this code from their authenticator app (Google Authenticator, Authy, etc.).
+          pattern: '^\d{6}$'
+          example: "123456"
+        access_token:
+          type: string
+          description: The JWT token from the `jwt` field in the `POST /members/signin` response. This is the same token used in the Authorization header.
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+    MfaVerifyResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          description: Indicates MFA was successfully verified and enabled
+          example: true
+    MfaValidateRequest:
+      type: object
+      required:
+        - username
+        - mfa_code
+        - session
+      properties:
+        username:
+          type: string
+          description: |
+            The email/username of the member trying to log in. This should be the same value used in the `username` field of the original `POST /members/signin` request,
+            or you can use the `member.email` value from the member object if available.
+          format: email
+          example: "john.smith@goteal.co"
+        mfa_code:
+          type: string
+          description: The 6-digit TOTP code from the user's authenticator app (generated using the secret from `/members/mfa/change`)
+          pattern: '^\d{6}$'
+          example: "123456"
+        session:
+          type: string
+          description: |
+            The session token from the `session` field in the 202 response from `POST /members/signin`.
+            This is returned only when the member has MFA enabled.
+          example: "mfa_session_abc123xyz789"
     MemberResponse:
       type: object
       required:
@@ -2762,8 +3153,18 @@ components:
     MemberBearerAuth:
       type: http
       scheme: bearer
-      description: Bearer token for authentication. The token should be the one returned by the "/members/signin"
+      description: |
+        Bearer token for member authentication. Use the `jwt` field from the `/members/signin` response (or `/members/mfa/validate` for MFA-enabled members).
+        
+        **Header format:** `Authorization: Bearer <jwt_token>`
+        
+        **Example:** `Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
     BearerAuth:
       type: http
       scheme: bearer
-      description: Bearer token for authentication. The token should be the one returned by the /user-tokens endpoint.
+      description: |
+        Bearer token for user authentication. Use the `token` field from the `/user-tokens` endpoint response.
+        
+        **Header format:** `Authorization: Bearer <token>`
+        
+        **Example:** `Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
