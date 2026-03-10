@@ -20,7 +20,8 @@
               "data",
               "authorisations",
               "sandbox",
-              "recurring-checks"
+              "recurring-checks",
+              "mfa-flow"
             ]
           }
         ]
@@ -136,12 +137,11 @@
               "api-reference/members/signin",
               "api-reference/members/password-reset-initiate",
               "api-reference/members/password-reset-confirm",
-              "api-reference/members/mfa-flow",
-              "api-reference/members/mfa-change",
-              "api-reference/members/mfa-change-verify",
-              "api-reference/members/mfa-validate",
               "api-reference/members/mfa-setup",
-              "api-reference/members/mfa-verify"
+              "api-reference/members/mfa-verify",
+              "api-reference/members/mfa-validate",
+              "api-reference/members/mfa-change",
+              "api-reference/members/mfa-change-verify"
             ]
           }
         ]
