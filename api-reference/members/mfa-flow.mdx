@@ -1,0 +1,290 @@
+---
+title: 'MFA and Login Flow'
+description: 'How to understand and integrate Teal Member MFA and Login flows'
+---
+
+## Overview
+
+Teal provides robust MFA capabilities to secure member accounts. This guide explains how to integrate our login and MFA setup flows, especially when mandatory MFA is configured for new members.
+
+### Standard Login Flow
+
+When a member logs in using `POST /members/signin`, the API will return one of the following based on their MFA status:
+
+- **200 OK**: The user was successfully authenticated. The response contains a `jwt` token and the member profile.
+- **202 Accepted**: The user has MFA enabled and requires a second factor. The response contains a `session` token and the challenge type (`SOFTWARE_TOKEN_MFA`).
+
+If the challenge is `SOFTWARE_TOKEN_MFA`, you must subsequently call `POST /members/mfa/validate` with the `session` token, the member's `username`, and the 6-digit `mfa_code` from the user's authenticator app.
+
+### Initial Sign-In Flow
+
+When an admin invites a member, that member receives a temporary password. Their first login must be completed through the `POST /members/initial-signin` endpoint.
+
+This endpoint accepts the `username` and `tmp_password`, and allows the user to set a new password by providing `password` and `name`.
+
+If mandatory MFA is required upon first login, the response will be **202 Accepted** with a `session` token and the challenge type (`MFA_SETUP`).
+
+### Mandatory MFA Setup During Login
+
+If you receive an `MFA_SETUP` challenge (typically from `initial-signin`), you must proceed with the session-based MFA setup flow:
+
+1. **Get Secret**: Call `POST /members/mfa/setup` passing the `session` string from the challenge. The response includes a new `session` string and a `secret` that the member inputs into their authenticator app (or scans via a generated QR code using tools like Google Authenticator or Authy).
+2. **Verify Code**: After the user generates their first token, input the 6-digit TOTP code. Your application must call `POST /members/mfa/verify` with the `username`, `mfa_code`, and the **new** `session` received from the previous step.
+3. This final call completes the login and setup simultaneously, returning the authenticated JWT token inside a 200 OK response.
+
+### Standard MFA Change (Post Login)
+
+If a member wants to change their MFA code after it was already setup:
+
+1. Send an authenticated request to `POST /members/mfa/change`. The user's `jwt` implicitly acts as the context. The endpoint returns a new `secret`.
+2. The user registers the new secret in their authenticator app.
+3. Call `POST /members/mfa/change-verify` with the `mfa_code` they supply and their credentials to confirm and lock in their new MFA configuration.
+
+### Examples: Chaining Requests for Initial MFA Setup
+
+Below are examples in several languages demonstrating the complete chain of requests to log in for the first time, generate a session MFA secret, and submit the generated TOTP to finalize MFA setup and log in.
+
+<CodeGroup>
+```bash cURL
+# 1. Initial Login
+LOGIN_RES=$(curl -s -X POST https://api.sandbox.goteal.co/members/initial-signin \
+  -H "Content-Type: application/json" \
+  -d '{"username": "user@example.com", "tmp_password": "TempPassword123!", "password": "NewPassword123!", "name": "John Doe"}')
+SESSION_1=$(echo $LOGIN_RES | jq -r '.session')
+
+# 2. MFA Setup (Session)
+SETUP_RES=$(curl -s -X POST https://api.sandbox.goteal.co/members/mfa/setup \
+  -H "Content-Type: application/json" \
+  -d "{\"session\": \"$SESSION_1\"}")
+SECRET=$(echo $SETUP_RES | jq -r '.secret')
+SESSION_2=$(echo $SETUP_RES | jq -r '.session')
+
+# (Generate TOTP code using $SECRET via your Authenticator app)
+MFA_CODE="123456"
+
+# 3. Verify MFA Setup
+curl -s -X POST https://api.sandbox.goteal.co/members/mfa/verify \
+  -H "Content-Type: application/json" \
+  -d "{\"username\": \"user@example.com\", \"session\": \"$SESSION_2\", \"mfa_code\": \"$MFA_CODE\"}"
+```
+
+```kotlin Kotlin
+import io.ktor.client.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import kotlinx.serialization.json.*
+
+suspend fun setupMfa(client: HttpClient, username: String) {
+    val apiUrl = "https://api.sandbox.goteal.co"
+    
+    // 1. Initial Login
+    val res1: HttpResponse = client.post("$apiUrl/members/initial-signin") {
+        contentType(ContentType.Application.Json)
+        setBody(buildJsonObject {
+            put("username", username)
+            put("tmp_password", "TempPassword123!")
+            put("password", "NewPassword123!")
+            put("name", "John Doe")
+        }.toString())
+    }
+    val session1 = Json.parseToJsonElement(res1.bodyAsText()).jsonObject["session"]!!.jsonPrimitive.content
+    
+    // 2. MFA Setup
+    val res2: HttpResponse = client.post("$apiUrl/members/mfa/setup") {
+        contentType(ContentType.Application.Json)
+        setBody(buildJsonObject { put("session", session1) }.toString())
+    }
+    val setupData = Json.parseToJsonElement(res2.bodyAsText()).jsonObject
+    val secret = setupData["secret"]!!.jsonPrimitive.content
+    val session2 = setupData["session"]!!.jsonPrimitive.content
+    
+    // 3. Prompt user for TOTP
+    println("Enter TOTP for secret $secret:")
+    val mfaCode = readlnOrNull() ?: return
+    
+    // 4. Verify & Complete Sign In
+    val res3: HttpResponse = client.post("$apiUrl/members/mfa/verify") {
+        contentType(ContentType.Application.Json)
+        setBody(buildJsonObject {
+            put("username", username)
+            put("session", session2)
+            put("mfa_code", mfaCode)
+        }.toString())
+    }
+    val finalData = Json.parseToJsonElement(res3.bodyAsText()).jsonObject
+    println("Login successful! JWT: ${finalData["jwt"]?.jsonPrimitive?.content}")
+}
+```
+
+```python Python
+import requests
+
+API_URL = "https://api.sandbox.goteal.co"
+username = "user@example.com"
+
+# 1. Initial Login
+resp1 = requests.post(f"{API_URL}/members/initial-signin", json={
+    "username": username,
+    "tmp_password": "TempPassword123!",
+    "password": "NewPassword123!",
+    "name": "John Doe"
+})
+session_1 = resp1.json()["session"] # 202 Accepted, challenge: MFA_SETUP
+
+# 2. MFA Setup
+resp2 = requests.post(f"{API_URL}/members/mfa/setup", json={
+    "session": session_1
+})
+setup_data = resp2.json()
+secret = setup_data["secret"]
+session_2 = setup_data["session"]
+
+# 3. Get TOTP (Prompt user for code from their app)
+mfa_code = input(f"Enter 6-digit code for secret {secret}: ")
+
+# 4. Verify & Complete Sign In
+resp3 = requests.post(f"{API_URL}/members/mfa/verify", json={
+    "username": username,
+    "session": session_2,
+    "mfa_code": mfa_code
+})
+jwt_token = resp3.json()["jwt"]
+print(f"Login successful! JWT: {jwt_token}")
+```
+
+```typescript TypeScript
+const API_URL = "https://api.sandbox.goteal.co";
+const username = "user@example.com";
+
+// 1. Initial Login
+const res1 = await fetch(`${API_URL}/members/initial-signin`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    username,
+    tmp_password: 'TempPassword123!',
+    password: 'NewPassword123!',
+    name: 'John Doe'
+  })
+});
+const data1 = await res1.json();
+const session1 = data1.session;
+
+// 2. MFA Setup
+const res2 = await fetch(`${API_URL}/members/mfa/setup`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ session: session1 })
+});
+const setupData = await res2.json();
+const secret = setupData.secret;
+const session2 = setupData.session;
+
+// 3. Prompt user for TOTP code generated using the secret
+// (mfaCode placeholder) => const mfaCode = await promptUserForCode(secret);
+const mfaCode = "123456";
+
+// 4. Verify & Complete Sign In
+const res3 = await fetch(`${API_URL}/members/mfa/verify`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    username,
+    session: session2,
+    mfa_code: mfaCode
+  })
+});
+const finalData = await res3.json();
+console.log('Login successful! JWT:', finalData.jwt);
+```
+
+```go Go
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+)
+
+func main() {
+	apiUrl := "https://api.sandbox.goteal.co"
+	username := "user@example.com"
+
+	// 1. Initial Login
+	initLogin := map[string]string{
+		"username":     username,
+		"tmp_password": "TempPassword123!",
+		"password":     "NewPassword123!",
+		"name":         "John Doe",
+	}
+	body, _ := json.Marshal(initLogin)
+	resp1, _ := http.Post(apiUrl+"/members/initial-signin", "application/json", bytes.NewBuffer(body))
+	var data1 map[string]interface{}
+	json.NewDecoder(resp1.Body).Decode(&data1)
+	session1 := data1["session"].(string)
+
+	// 2. MFA Setup
+	setupReq := map[string]string{"session": session1}
+	body, _ = json.Marshal(setupReq)
+	resp2, _ := http.Post(apiUrl+"/members/mfa/setup", "application/json", bytes.NewBuffer(body))
+	var setupData map[string]interface{}
+	json.NewDecoder(resp2.Body).Decode(&setupData)
+	secret := setupData["secret"].(string)
+	session2 := setupData["session"].(string)
+
+	// 3. Prompt user
+	var mfaCode string
+	fmt.Printf("Enter 6-digit TOTP for secret %s: ", secret)
+	fmt.Scanln(&mfaCode)
+
+	// 4. Verify & Complete Sign In
+	verifyReq := map[string]string{
+		"username": username,
+		"session":  session2,
+		"mfa_code": mfaCode,
+	}
+	body, _ = json.Marshal(verifyReq)
+	resp3, _ := http.Post(apiUrl+"/members/mfa/verify", "application/json", bytes.NewBuffer(body))
+	b, _ := ioutil.ReadAll(resp3.Body)
+	fmt.Println("Login result:", string(b))
+}
+```
+
+```ruby Ruby
+require 'net/http'
+require 'json'
+require 'uri'
+
+api_url = URI("https://api.sandbox.goteal.co")
+username = "user@example.com"
+
+# 1. Initial Login
+res1 = Net::HTTP.post(URI("#{api_url}/members/initial-signin"), 
+  { username: username, tmp_password: "TempPassword123!", password: "NewPassword123!", name: "John Doe" }.to_json,
+  "Content-Type" => "application/json")
+session1 = JSON.parse(res1.body)["session"]
+
+# 2. MFA Setup
+res2 = Net::HTTP.post(URI("#{api_url}/members/mfa/setup"), 
+  { session: session1 }.to_json,
+  "Content-Type" => "application/json")
+setup_data = JSON.parse(res2.body)
+secret = setup_data["secret"]
+session2 = setup_data["session"]
+
+# 3. Prompt user
+puts "Enter 6-digit TOTP for secret #{secret}: "
+mfa_code = gets.chomp
+
+# 4. Verify & Complete Sign In
+res3 = Net::HTTP.post(URI("#{api_url}/members/mfa/verify"), 
+  { username: username, session: session2, mfa_code: mfa_code }.to_json,
+  "Content-Type" => "application/json")
+final_data = JSON.parse(res3.body)
+puts "Login successful! JWT: #{final_data["jwt"]}"
+```
+</CodeGroup>
