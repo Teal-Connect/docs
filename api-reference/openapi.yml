@@ -41,15 +41,6 @@ paths:
     get:
       summary: List all users.
       parameters:
-        - name: orederd_by
-          in: query
-          description: The field of the user to order by
-          required: false
-          schema:
-            type: string
-            enum: [name, email, created_at]
-            default: created_at
-            example: name
         - name: offset
           in: query
           description: The offset to start at
@@ -78,7 +69,7 @@ paths:
                 type: object
                 properties:
                   pagination:
-                    "$ref": "#/components/schemas/PaginationWithOrderedBy"
+                    "$ref": "#/components/schemas/Pagination"
                   users:
                     type: array
                     items:
@@ -254,6 +245,16 @@ paths:
                       type: string
                       description: The id of the user
                       example: 95a0e70b-fe02-4f47-aef9-2efff279df71
+                    from:
+                      type: string
+                      format: date-time
+                      description: Optional start date filter for payroll data retrieval
+                      example: 2019-05-17T00:00:00.000Z
+                    to:
+                      type: string
+                      format: date-time
+                      description: Optional end date filter for payroll data retrieval
+                      example: 2019-05-17T00:00:00.000Z
                 - "$ref": "#/components/schemas/Accounts"
       responses:
         "201":
@@ -532,8 +533,8 @@ paths:
             maximum: 100
             default: 20
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
           content:
             application/json:
               schema:
@@ -702,15 +703,6 @@ paths:
             type: string
           required: true
           description: ID of the user to get payroll for
-        - name: orederd_by
-          in: query
-          description: The field of the user to order by
-          required: false
-          schema:
-            type: string
-            enum: [account_id, entry_id, created_at]
-            default: created_at
-            example: name
         - name: offset
           in: query
           description: The offset to start at
@@ -729,7 +721,7 @@ paths:
             format: int32
             minimum: 1
             maximum: 100
-            default: 20
+            default: 100
         - name: account_id
           in: query
           description: The account_id to fileter on
@@ -867,8 +859,8 @@ paths:
             type: integer
             format: int32
             minimum: 1
-            maximum: 100
-            default: 50
+            maximum: 500
+            default: 500
       responses:
         "200":
           description: Document response
@@ -920,15 +912,6 @@ paths:
     get:
       summary: Lists all the webhooks
       parameters:
-        - name: orederd_by
-          in: query
-          description: The field of the user to order by
-          required: false
-          schema:
-            type: string
-            enum: [name, url, created_at]
-            default: created_at
-            example: name
         - name: offset
           in: query
           description: The offset to start at
@@ -977,8 +960,8 @@ paths:
           required: true
           description: ID of the webhook to get
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
           content:
             application/json:
               schema:
@@ -1101,8 +1084,8 @@ paths:
           required: true
           description: ID of the Member to get
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
           content:
             application/json:
               schema:
@@ -1145,12 +1128,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  api_keys:
-                    type: array
-                    items:
-                      "$ref": "#/components/schemas/ApiKey"
+                type: array
+                items:
+                  "$ref": "#/components/schemas/ApiKey"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
     post:
@@ -1700,7 +1680,7 @@ components:
           example: ["shape"]
     ApiKey:
       type: object
-      required: [id, name, createdAt]
+      required: [id, name, created_at]
       properties:
         id:
           type: string
@@ -1716,14 +1696,14 @@ components:
           nullable: true
           description: The API key secret. Only returned when creating a key, null for list operations.
           example: null
-        createdAt:
+        created_at:
           type: string
           format: date-time
           description: When the API key was created
           example: "2019-05-17T00:00:00.000Z"
     ApiKeyWithSecret:
       type: object
-      required: [id, name, secret, createdAt]
+      required: [id, name, secret, created_at]
       properties:
         id:
           type: string
@@ -1738,7 +1718,7 @@ components:
           type: string
           description: The API key secret. Only shown once at creation time.
           example: "a1b2c3d4e5f6g7h8i9j0"
-        createdAt:
+        created_at:
           type: string
           format: date-time
           description: When the API key was created
@@ -2215,7 +2195,7 @@ components:
     DocumentResponse:
       type: object
       required:
-        ["document_id", "file_name", "type", "upload_time", "file_contents"]
+        ["document_id", "file_name", "type", "uploaded_at", "file_contents"]
       properties:
         document_id:
           type: string
@@ -2238,7 +2218,7 @@ components:
           type: string
           description: The type of document
           example: "Payslip"
-        upload_time:
+        uploaded_at:
           "$ref": "#/components/schemas/Date"
     EntriesPayslipsPresignRequest:
       type: object
