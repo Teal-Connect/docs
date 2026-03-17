@@ -53,14 +53,6 @@
             ]
           },
           {
-            "group": "API Keys",
-            "pages": [
-              "api-reference/api-keys/create",
-              "api-reference/api-keys/list",
-              "api-reference/api-keys/delete"
-            ]
-          },
-          {
             "group": "Accounts",
             "pages": [
               "api-reference/accounts/create",
@@ -123,16 +115,6 @@
               "api-reference/webhooks/get",
               "api-reference/webhooks/list",
               "api-reference/webhooks/delete"
-            ]
-          },
-          {
-            "group": "Members",
-            "pages": [
-              "api-reference/members/create",
-              "api-reference/members/get",
-              "api-reference/members/list",
-              "api-reference/members/delete",
-              "api-reference/members/signin"
             ]
           }
         ]
