@@ -1895,16 +1895,17 @@ components:
       required: [forename, surname, date_of_birth, post_codes, payroll_period_months]
       type: object
       properties:
+        ext_id:
+          description: External ID or any string there might be a need for saving alongside the User information. This is an optional identifier that can be used to reference the user in external systems.
+          type: string
+          nullable: true
+          example: "ext-12345"
         forename:
           description: Forename of the user.
           type: string
           example: John
         surname:
           description: Surname of the user.
-          type: string
-          example: Smith
-        middle_names:
-          description: Middle names of the user.
           type: string
           example: Smith
         ni_number:
@@ -1920,21 +1921,6 @@ components:
           items:
             type: string
           example: ["SW1A 1AA", "SW1A 1AB"]
-        ext_id:
-          description: External ID or any string there might be a need for saving alongside the User information. This is an optional identifier that can be used to reference the user in external systems.
-          type: string
-          nullable: true
-          example: "ext-12345"
-        recurring_checks_enabled:
-          description: Determines if recurring checks are enabled for this user. Overrides the same setting if present in client level configuration.
-          type: boolean
-        recurring_check_frequency:
-          description: Frequency of the recurring check for this user. Overrides the same setting if present in client level configuration. Available frequencies in production are [WEEKLY, DAILY]. Sandbox allows HOURLY frequency in addition.
-          type: string
-          example: WEEKLY
-        recurring_check_end_date:
-          description: End date of the recurring check schedule. Overrides the same setting if present in client level configuration.
-          "$ref": "#/components/schemas/Date"
         payroll_period_months:
           description: Lookback period of the payroll to search on account creation. Overrides the same setting if present in client level configuration.
           type: integer
@@ -1945,6 +1931,16 @@ components:
         payroll_connections_enabled:
           type: boolean
           description: Determines if payroll connections feature is enabled for this user. Overrides the same setting if present in client level configuration.
+        recurring_checks_enabled:
+          description: Determines if recurring checks are enabled for this user. Overrides the same setting if present in client level configuration.
+          type: boolean
+        recurring_check_frequency:
+          description: Frequency of the recurring check for this user. Overrides the same setting if present in client level configuration. Available frequencies in production are [WEEKLY, DAILY]. Sandbox allows HOURLY frequency in addition.
+          type: string
+          example: WEEKLY
+        recurring_check_end_date:
+          description: End date of the recurring check schedule. Overrides the same setting if present in client level configuration.
+          "$ref": "#/components/schemas/Date"
     CreatedUser:
       allOf:
         - required: [user_id, created_at]
