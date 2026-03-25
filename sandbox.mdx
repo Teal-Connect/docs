@@ -1,6 +1,6 @@
 ---
-title: 'Sandbox'
-description: 'Learn how to preview changes locally'
+title: "Sandbox"
+description: "Using the sandbox environment"
 ---
 
 ## Introduction
@@ -12,6 +12,11 @@ This environment employs mock payroll providers and payslip readers in order to 
 ## Test Personas
 
 The sandbox environment includes three pre-configured test personas with corresponding mock data in the backend. Use these personas to test different workflows throughout this guide.
+
+<Note>
+  These test personas currently return mock data for direct connections only.
+  Support for other endpoints is coming soon.
+</Note>
 
 **Persona 1: Sarah Chen**
 
@@ -55,7 +60,6 @@ The sandbox environment includes three pre-configured test personas with corresp
 }
 ```
 
-
 ## Initial Setup
 
 ### API Key & Callback URL
@@ -77,7 +81,6 @@ curl --request POST \
   --data '{
   "events": [
     "user-payroll-submitted",
-    "user-hmrc-data-submitted"
   ],
   "name": "user-payroll-submitted",
   "url": "https://webhooks.company.com"
@@ -85,7 +88,8 @@ curl --request POST \
 ```
 
 <Note>
-Optional fields: `signing_secret` (for HMAC verification), `encryption_key` (for AES/GCM payload encryption).
+  Optional fields: `signing_secret` (for HMAC verification), `encryption_key`
+  (for AES/GCM payload encryption).
 </Note>
 
 **Response Example:**
@@ -93,10 +97,7 @@ Optional fields: `signing_secret` (for HMAC verification), `encryption_key` (for
 ```json
 {
   "webhook_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
-  "events": [
-    "user-payroll-submitted",
-    "user-hmrc-data-submitted"
-  ],
+  "events": ["user-payroll-submitted"],
   "name": "user-payroll-submitted",
   "url": "https://webhooks.company.com",
   "created_at": "2019-05-17T00:00:00.000Z"
@@ -137,7 +138,7 @@ curl --request PUT \
 ```
 
 <Note>
-In sandbox, you can test the HOURLY frequency (not available in production).
+  In sandbox, you can test the HOURLY frequency (not available in production).
 </Note>
 
 ## User Setup
@@ -216,7 +217,9 @@ curl --request POST \
 ```
 
 <Note>
-Optional fields: `term_id` (auto-resolves to latest active term if omitted), `ip_address` (captured from headers if omitted), `fingerprint` (device/browser fingerprint).
+  Optional fields: `term_id` (auto-resolves to latest active term if omitted),
+  `ip_address` (captured from headers if omitted), `fingerprint` (device/browser
+  fingerprint).
 </Note>
 
 **Response Example:**
@@ -323,7 +326,7 @@ This endpoint:
 - Creates accounts automatically for any provider with data
 - Returns payroll data directly (no separate `/payroll/entries/connections` call needed)
 
-### Payroll Provider Connection
+### User Connection
 
 This journey describes connecting to a specific payroll provider. Use this when you need to connect to a particular provider or when the simplified direct connection doesn't meet your needs.
 
@@ -347,7 +350,8 @@ curl --request POST \
 ```
 
 <Note>
-Optional fields: `user_name`, `password`, `extra_login_params` (e.g. `company_name` for Dayforce).
+  Optional fields: `user_name`, `password`, `extra_login_params` (e.g.
+  `company_name` for Dayforce).
 </Note>
 
 **Response Example:**
@@ -383,148 +387,148 @@ curl --location --request POST 'https://api.sandbox.goteal.co/payroll/entries/co
 
 ```json
 {
-    "account_id": "552300dd-1e91-48d4-958b-41736c2c0167",
-    "entry_id": "bdc420fe-5e48-4802-a753-659979a2a346",
-    "payroll_submissions": [
-        {
-            "id": "0187c66e-e7e5-811c-b006-2232f00f426a",
-            "account_id": "552300dd-1e91-48d4-958b-41736c2c0167",
-            "entry_id": "bdc420fe-5e48-4802-a753-659979a2a346",
-            "created_at": "2024-05-03T14:00:13.804Z",
-            "identity_information": {
-                "name": "Sarah Chen",
-                "date_of_birth": "1990-04-22T00:00:00.000Z",
-                "address": {
-                    "street": "45 Commercial Road",
-                    "county": "Greater London",
-                    "city": "London",
-                    "post_code": "E1 6PG",
-                    "country": "United Kingdom"
-                },
-                "email": "sarah.chen@example.com",
-                "phone": "+447700900123",
-                "NI_number": "AB654321C"
-            },
-            "employment_information": {
-                "employer_name": "Acme Corp",
-                "role": "Software Developer",
-                "type": "Full-Time",
-                "status": "Active",
-                "start_date": "2018-06-01",
-                "leave_date": null
-            },
-            "income_information": {
-                "pay_date": "2024-02-15",
-                "pay_interval_start": "2024-02-01T00:00:00.000Z",
-                "pay_interval_end": "2024-02-15T00:00:00.000Z",
-                "pay_frequency": "weekly",
-                "earnings": {
-                    "gross_pay": 2000,
-                    "net_pay": 1500,
-                    "base_salary": 1900,
-                    "bonus": 100
-                },
-                "deductions": {
-                    "income_tax": 300,
-                    "employee_ni": 150,
-                    "employee_pension": 50,
-                    "total_deductions": 500
-                }
-            }
+  "account_id": "552300dd-1e91-48d4-958b-41736c2c0167",
+  "entry_id": "bdc420fe-5e48-4802-a753-659979a2a346",
+  "payroll_submissions": [
+    {
+      "id": "0187c66e-e7e5-811c-b006-2232f00f426a",
+      "account_id": "552300dd-1e91-48d4-958b-41736c2c0167",
+      "entry_id": "bdc420fe-5e48-4802-a753-659979a2a346",
+      "created_at": "2024-05-03T14:00:13.804Z",
+      "identity_information": {
+        "name": "Sarah Chen",
+        "date_of_birth": "1990-04-22T00:00:00.000Z",
+        "address": {
+          "street": "45 Commercial Road",
+          "county": "Greater London",
+          "city": "London",
+          "post_code": "E1 6PG",
+          "country": "United Kingdom"
         },
-        {
-            "id": "0187c66e-e7e5-811c-b006-2232f00f426a",
-            "account_id": "552300dd-1e91-48d4-958b-41736c2c0167",
-            "entry_id": "bdc420fe-5e48-4802-a753-659979a2a346",
-            "created_at": "2024-05-03T14:00:13.804Z",
-            "identity_information": {
-                "name": "Sarah Chen",
-                "date_of_birth": "1990-04-22T00:00:00.000Z",
-                "address": {
-                    "street": "45 Commercial Road",
-                    "county": "Greater London",
-                    "city": "London",
-                    "post_code": "E1 6PG",
-                    "country": "United Kingdom"
-                },
-                "email": "sarah.chen@example.com",
-                "phone": "+447700900123",
-                "NI_number": "AB654321C"
-            },
-            "employment_information": {
-                "employer_name": "Acme Corp",
-                "role": "Software Developer",
-                "type": "Full-Time",
-                "status": "Active",
-                "start_date": "2018-06-01",
-                "leave_date": null
-            },
-            "income_information": {
-                "pay_date": "2024-02-15",
-                "pay_interval_start": "2024-02-01T00:00:00.000Z",
-                "pay_interval_end": "2024-02-15T00:00:00.000Z",
-                "pay_frequency": "weekly",
-                "earnings": {
-                    "gross_pay": 2000,
-                    "net_pay": 1500,
-                    "base_salary": 1900,
-                    "bonus": 100
-                },
-                "deductions": {
-                    "income_tax": 300,
-                    "employee_ni": 150,
-                    "employee_pension": 50,
-                    "total_deductions": 500
-                }
-            }
+        "email": "sarah.chen@example.com",
+        "phone": "+447700900123",
+        "NI_number": "AB654321C"
+      },
+      "employment_information": {
+        "employer_name": "Acme Corp",
+        "role": "Software Developer",
+        "type": "Full-Time",
+        "status": "Active",
+        "start_date": "2018-06-01",
+        "leave_date": null
+      },
+      "income_information": {
+        "pay_date": "2024-02-15",
+        "pay_interval_start": "2024-02-01T00:00:00.000Z",
+        "pay_interval_end": "2024-02-15T00:00:00.000Z",
+        "pay_frequency": "weekly",
+        "earnings": {
+          "gross_pay": 2000,
+          "net_pay": 1500,
+          "base_salary": 1900,
+          "bonus": 100
         },
-        {
-            "id": "0187c66e-e7e5-811c-b006-2232f00f426a",
-            "account_id": "552300dd-1e91-48d4-958b-41736c2c0167",
-            "entry_id": "bdc420fe-5e48-4802-a753-659979a2a346",
-            "created_at": "2024-05-03T14:00:13.804Z",
-            "identity_information": {
-                "name": "Sarah Chen",
-                "date_of_birth": "1990-04-22T00:00:00.000Z",
-                "address": {
-                    "street": "45 Commercial Road",
-                    "county": "Greater London",
-                    "city": "London",
-                    "post_code": "E1 6PG",
-                    "country": "United Kingdom"
-                },
-                "email": "sarah.chen@example.com",
-                "phone": "+447700900123",
-                "NI_number": "AB654321C"
-            },
-            "employment_information": {
-                "employer_name": "Acme Corp",
-                "role": "Software Developer",
-                "type": "Full-Time",
-                "status": "Active",
-                "start_date": "2018-06-01",
-                "leave_date": null
-            },
-            "income_information": {
-                "pay_date": "2024-02-15",
-                "pay_interval_start": "2024-02-01T00:00:00.000Z",
-                "pay_interval_end": "2024-02-15T00:00:00.000Z",
-                "pay_frequency": "weekly",
-                "earnings": {
-                    "gross_pay": 2000,
-                    "net_pay": 1500,
-                    "base_salary": 1900,
-                    "bonus": 100
-                },
-                "deductions": {
-                    "income_tax": 300,
-                    "employee_ni": 150,
-                    "employee_pension": 50,
-                    "total_deductions": 500
-                }
-            }
+        "deductions": {
+          "income_tax": 300,
+          "employee_ni": 150,
+          "employee_pension": 50,
+          "total_deductions": 500
         }
-    ]
+      }
+    },
+    {
+      "id": "0187c66e-e7e5-811c-b006-2232f00f426a",
+      "account_id": "552300dd-1e91-48d4-958b-41736c2c0167",
+      "entry_id": "bdc420fe-5e48-4802-a753-659979a2a346",
+      "created_at": "2024-05-03T14:00:13.804Z",
+      "identity_information": {
+        "name": "Sarah Chen",
+        "date_of_birth": "1990-04-22T00:00:00.000Z",
+        "address": {
+          "street": "45 Commercial Road",
+          "county": "Greater London",
+          "city": "London",
+          "post_code": "E1 6PG",
+          "country": "United Kingdom"
+        },
+        "email": "sarah.chen@example.com",
+        "phone": "+447700900123",
+        "NI_number": "AB654321C"
+      },
+      "employment_information": {
+        "employer_name": "Acme Corp",
+        "role": "Software Developer",
+        "type": "Full-Time",
+        "status": "Active",
+        "start_date": "2018-06-01",
+        "leave_date": null
+      },
+      "income_information": {
+        "pay_date": "2024-02-15",
+        "pay_interval_start": "2024-02-01T00:00:00.000Z",
+        "pay_interval_end": "2024-02-15T00:00:00.000Z",
+        "pay_frequency": "weekly",
+        "earnings": {
+          "gross_pay": 2000,
+          "net_pay": 1500,
+          "base_salary": 1900,
+          "bonus": 100
+        },
+        "deductions": {
+          "income_tax": 300,
+          "employee_ni": 150,
+          "employee_pension": 50,
+          "total_deductions": 500
+        }
+      }
+    },
+    {
+      "id": "0187c66e-e7e5-811c-b006-2232f00f426a",
+      "account_id": "552300dd-1e91-48d4-958b-41736c2c0167",
+      "entry_id": "bdc420fe-5e48-4802-a753-659979a2a346",
+      "created_at": "2024-05-03T14:00:13.804Z",
+      "identity_information": {
+        "name": "Sarah Chen",
+        "date_of_birth": "1990-04-22T00:00:00.000Z",
+        "address": {
+          "street": "45 Commercial Road",
+          "county": "Greater London",
+          "city": "London",
+          "post_code": "E1 6PG",
+          "country": "United Kingdom"
+        },
+        "email": "sarah.chen@example.com",
+        "phone": "+447700900123",
+        "NI_number": "AB654321C"
+      },
+      "employment_information": {
+        "employer_name": "Acme Corp",
+        "role": "Software Developer",
+        "type": "Full-Time",
+        "status": "Active",
+        "start_date": "2018-06-01",
+        "leave_date": null
+      },
+      "income_information": {
+        "pay_date": "2024-02-15",
+        "pay_interval_start": "2024-02-01T00:00:00.000Z",
+        "pay_interval_end": "2024-02-15T00:00:00.000Z",
+        "pay_frequency": "weekly",
+        "earnings": {
+          "gross_pay": 2000,
+          "net_pay": 1500,
+          "base_salary": 1900,
+          "bonus": 100
+        },
+        "deductions": {
+          "income_tax": 300,
+          "employee_ni": 150,
+          "employee_pension": 50,
+          "total_deductions": 500
+        }
+      }
+    }
+  ]
 }
 ```
 
@@ -550,56 +554,56 @@ curl --location --request POST 'https://api.sandbox.goteal.co/payroll/entries/pa
 
 ```json
 {
-    "account_id": "f2a8e9c1-d3b4-4f5a-9e8d-7c6b5a4f3e2d",
-    "entry_id": "f5e0a310-d4d0-4db0-b5c3-895a81e26e03",
-    "payroll_submissions": [
-        {
-            "id": "0187c66e-e7e5-811c-b006-2232f00f426a",
-            "account_id": null,
-            "entry_id": "f5e0a310-d4d0-4db0-b5c3-895a81e26e03",
-            "created_at": "2024-05-03T12:48:54.886Z",
-            "identity_information": {
-                "name": "James O'Connor",
-                "date_of_birth": "1985-09-10T00:00:00.000Z",
-                "address": {
-                    "street": "12 Oxford Road",
-                    "county": "Greater Manchester",
-                    "city": "Manchester",
-                    "post_code": "M13 9WL",
-                    "country": "United Kingdom"
-                },
-                "email": "james.oconnor@example.com",
-                "phone": "+447700900456",
-                "NI_number": "BC765432D"
-            },
-            "employment_information": {
-                "employer_name": "Acme Corp",
-                "role": "Software Developer",
-                "type": "Full-Time",
-                "status": "Active",
-                "start_date": "2018-06-01",
-                "leave_date": null
-            },
-            "income_information": {
-                "pay_date": "2024-02-15",
-                "pay_interval_start": "2024-02-01T00:00:00.000Z",
-                "pay_interval_end": "2024-02-15T00:00:00.000Z",
-                "pay_frequency": "weekly",
-                "earnings": {
-                    "gross_pay": 2000,
-                    "net_pay": 1500,
-                    "base_salary": 1900,
-                    "bonus": 100
-                },
-                "deductions": {
-                    "income_tax": 300,
-                    "employee_ni": 150,
-                    "employee_pension": 50,
-                    "total_deductions": 500
-                }
-            }
+  "account_id": "f2a8e9c1-d3b4-4f5a-9e8d-7c6b5a4f3e2d",
+  "entry_id": "f5e0a310-d4d0-4db0-b5c3-895a81e26e03",
+  "payroll_submissions": [
+    {
+      "id": "0187c66e-e7e5-811c-b006-2232f00f426a",
+      "account_id": null,
+      "entry_id": "f5e0a310-d4d0-4db0-b5c3-895a81e26e03",
+      "created_at": "2024-05-03T12:48:54.886Z",
+      "identity_information": {
+        "name": "James O'Connor",
+        "date_of_birth": "1985-09-10T00:00:00.000Z",
+        "address": {
+          "street": "12 Oxford Road",
+          "county": "Greater Manchester",
+          "city": "Manchester",
+          "post_code": "M13 9WL",
+          "country": "United Kingdom"
+        },
+        "email": "james.oconnor@example.com",
+        "phone": "+447700900456",
+        "NI_number": "BC765432D"
+      },
+      "employment_information": {
+        "employer_name": "Acme Corp",
+        "role": "Software Developer",
+        "type": "Full-Time",
+        "status": "Active",
+        "start_date": "2018-06-01",
+        "leave_date": null
+      },
+      "income_information": {
+        "pay_date": "2024-02-15",
+        "pay_interval_start": "2024-02-01T00:00:00.000Z",
+        "pay_interval_end": "2024-02-15T00:00:00.000Z",
+        "pay_frequency": "weekly",
+        "earnings": {
+          "gross_pay": 2000,
+          "net_pay": 1500,
+          "base_salary": 1900,
+          "bonus": 100
+        },
+        "deductions": {
+          "income_tax": 300,
+          "employee_ni": 150,
+          "employee_pension": 50,
+          "total_deductions": 500
         }
-    ]
+      }
+    }
+  ]
 }
 ```
 
@@ -631,16 +635,6 @@ curl --request GET \
       "account_id": "0988b4bd-42dd-4556-95ae-27a906c066ec",
       "entry_id": "0d2bcb9b-a7ec-463f-bd7e-aacaa1a190a4",
       "created_at": "2019-05-17T00:00:00.000Z",
-      "document_external_id": null,
-      "document_filename": null,
-      "employment_information": {
-        "employer_name": "Acme Ltd",
-        "leave_date": "2019-05-17T00:00:00.000Z",
-        "role": "Software Engineer",
-        "start_date": "2019-05-17T00:00:00.000Z",
-        "status": "Active",
-        "type": "Full-time"
-      },
       "identity_information": {
         "NI_number": "CD876543E",
         "address": {
@@ -654,6 +648,14 @@ curl --request GET \
         "email": "amina.diallo@example.com",
         "name": "Amina Diallo",
         "phone": 447700900789
+      },
+      "employment_information": {
+        "employer_name": "Acme Ltd",
+        "role": "Software Engineer",
+        "type": "Full-time",
+        "status": "active",
+        "start_date": "2019-05-17T00:00:00.000Z",
+        "leave_date": "2019-05-17T00:00:00.000Z"
       },
       "income_information": {
         "deductions": {
@@ -672,7 +674,11 @@ curl --request GET \
         "pay_frequency": "Monthly",
         "pay_interval_end": "2019-05-17T00:00:00.000Z",
         "pay_interval_start": "2019-05-17T00:00:00.000Z"
-      }
+      },
+      "document_external_id": null,
+      "document_filename": null,
+      "document_filename": "file1-payslip.pdf",
+      "fraud_risk": "Low"
     }
   ]
 }
@@ -686,11 +692,19 @@ You can test the webapp with any of the three personas defined at the top of thi
 
 **Connect a Payroll:**
 
-<img src="/images/webapp/payroll-connection.gif" alt="payroll connection" width="100%"/>
+<img
+  src="/images/webapp/payroll-connection.gif"
+  alt="payroll connection"
+  width="100%"
+/>
 
-**Submit a Payroll:**
+**Submit a Payslip:**
 
-<img src="/images/webapp/payslip-submission.gif" alt="payslip submission" width="100%"/>
+<img
+  src="/images/webapp/payslip-submission.gif"
+  alt="payslip submission"
+  width="100%"
+/>
 
 ## Cleanup
 
@@ -722,6 +736,6 @@ The user will be redirected back to teal after authorising.
 
 To test the providers that have the OAuth2 flow available, you can use the following credentials.
 
-| provider | username | password | Extra login params |
-| --- | --- | --- | --- |
-| `freeagent` | arun@goteal.co | mPxD9Tt3hBV5j39 |  |
+| provider    | username       | password        | Extra login params |
+| ----------- | -------------- | --------------- | ------------------ |
+| `freeagent` | arun@goteal.co | mPxD9Tt3hBV5j39 |                    |
