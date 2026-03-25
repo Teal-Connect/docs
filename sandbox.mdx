@@ -2,21 +2,70 @@
 title: 'Sandbox'
 description: 'Learn how to preview changes locally'
 ---
+
 ## Introduction
 
-The sandbox environment functions as a simulated version of the actual system, designed for testing and development
-purposes without interacting with real data.
+The sandbox environment functions as a simulated version of the actual system, designed for testing and development purposes without interacting with real data.
 
-This environment employs mock payroll providers and payslip readers in order to allow developers to evaluate
-the API interface without compromising real data privacy.
+This environment employs mock payroll providers and payslip readers in order to allow developers to evaluate the API interface without compromising real data privacy.
 
-## Setting Up for Testing
+## Test Personas
+
+The sandbox environment includes three pre-configured test personas with corresponding mock data in the backend. Use these personas to test different workflows throughout this guide.
+
+**Persona 1: Sarah Chen**
+
+```json
+{
+  "forename": "sarah",
+  "surname": "chen",
+  "ni_number": "AB654321C",
+  "date_of_birth": "1990-04-22T00:00:00.000Z",
+  "post_codes": ["E1 6PG"],
+  "payroll_period_months": 12,
+  "ext_id": "ext-sarah-chen-001"
+}
+```
+
+**Persona 2: James O'Connor**
+
+```json
+{
+  "forename": "james",
+  "surname": "oconnor",
+  "ni_number": "BC765432D",
+  "date_of_birth": "1985-09-10T00:00:00.000Z",
+  "post_codes": ["M13 9WL"],
+  "payroll_period_months": 12,
+  "ext_id": "ext-james-oconnor-002"
+}
+```
+
+**Persona 3: Amina Diallo**
+
+```json
+{
+  "forename": "amina",
+  "surname": "diallo",
+  "ni_number": "CD876543E",
+  "date_of_birth": "1978-12-03T00:00:00.000Z",
+  "post_codes": ["B1 1TT"],
+  "payroll_period_months": 12,
+  "ext_id": "ext-amina-diallo-003"
+}
+```
+
+
+## Initial Setup
+
+### API Key & Callback URL
 
 Before you begin testing, ensure you have the following:
+
 - An API key for authentication: please ask your Teal connection to supply you with an API key
 - A callback URL for receiving webhook notifications: generate your URL in [webhook.site](https://webhook.site/)
 
-## 1. Webhooks Setup `/webhooks`
+### Webhooks Setup `/webhooks`
 
 Configure webhooks to receive notifications for events such as new payroll submissions.
 
@@ -28,13 +77,17 @@ curl --request POST \
   --data '{
   "events": [
     "user-payroll-submitted",
-    "user-payroll-created"
+    "user-hmrc-data-submitted"
   ],
   "name": "user-payroll-submitted",
-  "secret": "very-secret",
   "url": "https://webhooks.company.com"
 }'
 ```
+
+<Note>
+Optional fields: `signing_secret` (for HMAC verification), `encryption_key` (for AES/GCM payload encryption).
+</Note>
+
 **Response Example:**
 
 ```json
@@ -42,7 +95,7 @@ curl --request POST \
   "webhook_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
   "events": [
     "user-payroll-submitted",
-    "user-payroll-created"
+    "user-hmrc-data-submitted"
   ],
   "name": "user-payroll-submitted",
   "url": "https://webhooks.company.com",
@@ -50,7 +103,7 @@ curl --request POST \
 }
 ```
 
-## 2 Configure Client Settings `/configuration`
+### Configure Client Settings `/configuration`
 
 Configure client-wide settings that affect sandbox behavior, such as payroll lookback periods and recurring checks.
 
@@ -64,7 +117,7 @@ curl --request PUT \
   "payroll_period_months": 12,
   "recurring_checks_enabled": true,
   "recurring_check_frequency": "HOURLY",
-  "recurring_check_end_date": "2025-01-10T00:00Z"
+  "recurring_check_end_date": "2027-01-10T00:00Z"
 }'
 ```
 
@@ -74,19 +127,26 @@ curl --request PUT \
 {
   "payslip_upload_enabled": true,
   "payroll_period_months": 12,
-  "client_logo": null,
-  "client_callback_url": null,
+  "client_logo": "",
   "recurring_checks_enabled": true,
   "recurring_check_frequency": "HOURLY",
-  "recurring_check_end_date": "2025-01-10T00:00:00.000Z"
+  "recurring_check_end_date": "2027-01-10T00:00:00.000Z",
+  "hmrc_enabled": true,
+  "payroll_connections_enabled": true
 }
 ```
 
-In sandbox, you can test the `HOURLY` frequency (not available in production).
+<Note>
+In sandbox, you can test the HOURLY frequency (not available in production).
+</Note>
 
-## 3. Create a user `/users`
+## User Setup
 
-Now you need to create a user selecting a user ID from the following users:
+Before starting any journey, complete the Initial Setup (Webhooks and Configuration) and User Setup steps below. These steps only need to be done once.
+
+#### Create a User `/users`
+
+Create a user using one of the test personas defined above. Include the `ni_number` to match the mock data for that persona. In this example, we'll create Sarah Chen:
 
 ```bash
 curl --request POST \
@@ -94,27 +154,33 @@ curl --request POST \
   --header 'Content-Type: application/json' \
   --header 'X-API-KEY: <api-key>' \
   --data '{
-  "name": "John Smith",
-  "email": "john.smith@company.com"
+  "forename": "sarah",
+  "surname": "chen",
+  "ni_number": "AB654321C",
+  "date_of_birth": "1990-04-22T00:00:00.000Z",
+  "post_codes": ["E1 6PG"],
+  "payroll_period_months": 12
 }'
 ```
-
-The field `email` does not have to be a real email address. It can be the user's identifier in your system.
 
 **Response Example:**
 
 ```json
 {
   "user_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
-  "name": "John Smith",
-  "email": "john.smith@company.com",
+  "forename": "Sarah",
+  "surname": "Chen",
+  "ni_number": "AB654321C",
+  "date_of_birth": "1990-04-22T00:00:00.000Z",
+  "post_codes": ["E1 6PG"],
+  "payroll_period_months": 12,
   "created_at": "2019-05-17T00:00:00.000Z"
 }
 ```
 
-## 4. Generating a user token `/user-tokens`
+#### Generate a User Token `/user-tokens`
 
-After creating a webhook, generate a token to authenticate subsequent actions for that user. The token ensures that actions such as account connection and payslip uploads are securely attributed to the correct user.
+After creating a user, generate a token to authenticate subsequent actions for that user. The token ensures that actions such as account connection and payslip uploads are securely attributed to the correct user.
 
 ```bash
 curl --request POST \
@@ -130,12 +196,140 @@ curl --request POST \
 
 ```json
 {
-  "created_at": "2019-05-17T00:00:00.000Z",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTVhMGU3MGItZmUwMi00ZjQ3LWFlZjktMmVmZmYyNzlkZjcxIiwiaWF0IjoxNTE2MjM5MDIyfQ.4S5J"
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfbmFtZSI6ImNsaWVudC1uYW1lIiwidXNlcl9pZCI6Ijk1YTBlNzBiLWZlMDItNGY0Ny1hZWY5LTJlZmZmMjc5ZGY3MSIsImlzcyI6ImFwcC5zYW5kYm94LmdvdGVhbC5jbyIsImV4cCI6MTc3NTA0MjQzOH0.abc123"
 }
 ```
 
-## 5. Connecting a Payroll Account `/accounts`
+#### Authorisation Terms Request `/authorisations`
+
+Before connecting a payroll account, users must accept your terms and conditions. This request records the user's consent:
+
+```bash
+curl --request POST \
+  --url https://api.sandbox.goteal.co/authorisations \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-KEY: <api-key>' \
+  --data '{
+  "user_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+}'
+```
+
+<Note>
+Optional fields: `term_id` (auto-resolves to latest active term if omitted), `ip_address` (captured from headers if omitted), `fingerprint` (device/browser fingerprint).
+</Note>
+
+**Response Example:**
+
+```json
+{
+  "id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
+  "user_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
+  "term_id": "550e8400-e29b-41d4-a716-446655440000",
+  "accepted_text": "Teal will securely access and share information periodically from your payroll or payslip with your client, for the duration of your loan term.",
+  "ip_address": "192.168.1.1",
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  "status": "active",
+  "is_valid": true,
+  "accepted_at": "2019-05-17T00:00:00.000Z",
+  "revoked_at": null
+}
+```
+
+## User Journeys
+
+### Direct Connection
+
+This is the simplest way to get started with sandbox direct connections. The `/accounts/direct-connections` endpoint automatically checks all available providers and returns payroll data directly.
+
+**Prerequisites:** Complete Initial Setup (Webhooks, Configuration) and User Setup above.
+
+#### Direct Connection `/accounts/direct-connections`
+
+For sandbox direct connections, use this simplified endpoint that automatically checks all available direct connection providers and returns payroll data directly.
+
+```bash
+curl --request POST \
+  --url https://api.sandbox.goteal.co/accounts/direct-connections \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-KEY: <api-key>' \
+  --data '{
+  "user_id": "95a0e70b-fe02-4f47-aef9-2efff279df71"
+}'
+```
+
+**Response Example:**
+
+```json
+{
+  "pagination": {
+    "offset": 0,
+    "limit": 12,
+    "count": 12,
+    "total_count": 12
+  },
+  "payroll_submissions": [
+    {
+      "id": "0187c66e-e7e5-811c-b006-2232f00f426a",
+      "account_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
+      "entry_id": "ddbb2453-1202-4ae8-9024-4365a223e548",
+      "created_at": "2024-05-03T14:00:13.804Z",
+      "authorisation_id": "5a299940-9753-4f36-8611-9aa02ba457f6",
+      "identity_information": {
+        "name": "Sarah Chen",
+        "date_of_birth": "1990-04-22T00:00:00.000Z",
+        "address": {
+          "street": "45 Commercial Road",
+          "city": "London",
+          "post_code": "E1 6PG"
+        },
+        "phone": "+44 7700 900123",
+        "NI_number": "AB654321C"
+      },
+      "employment_information": {
+        "employer_name": "Acme Corp",
+        "role": "Software Developer",
+        "type": "Full_Time",
+        "status": "Active",
+        "start_date": "2018-06-01"
+      },
+      "income_information": {
+        "pay_date": "2024-02-15",
+        "pay_interval_start": "2024-02-01",
+        "pay_interval_end": "2024-02-15",
+        "pay_frequency": "Weekly",
+        "earnings": {
+          "gross_pay": "2000.00",
+          "net_pay": "1500.00",
+          "base_salary": "1900.00",
+          "bonus": "100.00"
+        },
+        "deductions": {
+          "income_tax": "300.00",
+          "employee_ni": "150.00",
+          "employee_pension": "50.00",
+          "total_deductions": "500.00"
+        }
+      }
+    }
+  ]
+}
+```
+
+This endpoint:
+
+- Takes just a `user_id` (no provider selection needed)
+- Automatically checks all available direct connection providers
+- Creates accounts automatically for any provider with data
+- Returns payroll data directly (no separate `/payroll/entries/connections` call needed)
+
+### Payroll Provider Connection
+
+This journey describes connecting to a specific payroll provider. Use this when you need to connect to a particular provider or when the simplified direct connection doesn't meet your needs.
+
+**Prerequisites:** Complete Initial Setup (Webhooks, Configuration) and User Setup above.
+
+#### Connect a Payroll Account `/accounts`
 
 This simulates the user connecting their payroll account for automatic data retrieval.
 
@@ -146,35 +340,33 @@ curl --request POST \
   --header 'X-API-KEY: <api-key>' \
   --data '{
   "user_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
-  "password": "very-secret-password",
   "payroll_provider": "quickbooks",
   "user_name": "john.smith@company.com",
-  "extra_login_params": {
-    "company_name": "ACME Corp"
-  }
+  "password": "example-password"
 }'
 ```
+
+<Note>
+Optional fields: `user_name`, `password`, `extra_login_params` (e.g. `company_name` for Dayforce).
+</Note>
 
 **Response Example:**
 
 ```json
 {
   "account_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
-  "created_at": "2019-05-17T00:00:00.000Z",
   "payroll_provider": "quickbooks",
-  "user_name": "john.smith@company.com"
+  "user_name": "john.smith@company.com",
+  "created_at": "2019-05-17T00:00:00.000Z",
+  "status": "Authorised"
 }
 ```
 
-- Use the optional `extra_login_params` object for provider-specific login fields (omit it when it isn't required).
-- Dayforce connections require setting `extra_login_params.company_name`.
+Use the optional `extra_login_params` object for provider-specific login fields (omit it when it isn't required). Dayforce connections require setting `extra_login_params.company_name`.
 
-As with production accounts, when connecting we will retrieve payroll immediately. For sandbox, the number of payroll submissions generated
-matches the `payroll_period_months` configuration. If this is set on both the client and user configuration, the user level config takes 
-precedence. For example, if it is set to 7 months, we'll return 8 payroll submissions (including the current month). If it is not set we'll
-take a default of 36 months. To simulate a gap in the payroll, the `Shape` provider will leave a 3 month gap from the time of the request. 
+As with production accounts, when connecting we will retrieve payroll immediately. For sandbox, the number of payroll submissions generated matches the `payroll_period_months` configuration. If this is set on both the client and user configuration, the user level config takes precedence. For example, if it is set to 7 months, we'll return 8 payroll submissions (including the current month). If it is not set we'll take a default of 36 months. To simulate a gap in the payroll, the `Shape` provider will leave a 3 month gap from the time of the request.
 
-## 6. Retrieve submitted Payroll information `/payroll/entries/connections`
+#### Retrieve Submitted Payroll Information `/payroll/entries/connections`
 
 Retrieve latest payroll for a connected account. For sandbox, we'll always return new payroll where the `pay_date` is set to the current day. For `Shape` provider we will still maintain a 3 month gap.
 
@@ -188,6 +380,7 @@ curl --location --request POST 'https://api.sandbox.goteal.co/payroll/entries/co
 ```
 
 **Response Example:**
+
 ```json
 {
     "account_id": "552300dd-1e91-48d4-958b-41736c2c0167",
@@ -199,18 +392,18 @@ curl --location --request POST 'https://api.sandbox.goteal.co/payroll/entries/co
             "entry_id": "bdc420fe-5e48-4802-a753-659979a2a346",
             "created_at": "2024-05-03T14:00:13.804Z",
             "identity_information": {
-                "name": "Jane Doe",
-                "date_of_birth": "1990-04-01",
+                "name": "Sarah Chen",
+                "date_of_birth": "1990-04-22T00:00:00.000Z",
                 "address": {
-                    "street": "123 Main St",
-                    "county": "Anyshire",
-                    "city": "Anycity",
-                    "post_code": "AB12 3CD",
-                    "country": "Countryland"
+                    "street": "45 Commercial Road",
+                    "county": "Greater London",
+                    "city": "London",
+                    "post_code": "E1 6PG",
+                    "country": "United Kingdom"
                 },
-                "email": "jane.doe@example.com",
-                "phone": "+1234567890",
-                "NI_number": "AB123456C"
+                "email": "sarah.chen@example.com",
+                "phone": "+447700900123",
+                "NI_number": "AB654321C"
             },
             "employment_information": {
                 "employer_name": "Acme Corp",
@@ -245,18 +438,18 @@ curl --location --request POST 'https://api.sandbox.goteal.co/payroll/entries/co
             "entry_id": "bdc420fe-5e48-4802-a753-659979a2a346",
             "created_at": "2024-05-03T14:00:13.804Z",
             "identity_information": {
-                "name": "Jane Doe",
-                "date_of_birth": "1990-04-01",
+                "name": "Sarah Chen",
+                "date_of_birth": "1990-04-22T00:00:00.000Z",
                 "address": {
-                    "street": "123 Main St",
-                    "county": "Anyshire",
-                    "city": "Anycity",
-                    "post_code": "AB12 3CD",
-                    "country": "Countryland"
+                    "street": "45 Commercial Road",
+                    "county": "Greater London",
+                    "city": "London",
+                    "post_code": "E1 6PG",
+                    "country": "United Kingdom"
                 },
-                "email": "jane.doe@example.com",
-                "phone": "+1234567890",
-                "NI_number": "AB123456C"
+                "email": "sarah.chen@example.com",
+                "phone": "+447700900123",
+                "NI_number": "AB654321C"
             },
             "employment_information": {
                 "employer_name": "Acme Corp",
@@ -291,18 +484,18 @@ curl --location --request POST 'https://api.sandbox.goteal.co/payroll/entries/co
             "entry_id": "bdc420fe-5e48-4802-a753-659979a2a346",
             "created_at": "2024-05-03T14:00:13.804Z",
             "identity_information": {
-                "name": "Jane Doe",
-                "date_of_birth": "1990-04-01",
+                "name": "Sarah Chen",
+                "date_of_birth": "1990-04-22T00:00:00.000Z",
                 "address": {
-                    "street": "123 Main St",
-                    "county": "Anyshire",
-                    "city": "Anycity",
-                    "post_code": "AB12 3CD",
-                    "country": "Countryland"
+                    "street": "45 Commercial Road",
+                    "county": "Greater London",
+                    "city": "London",
+                    "post_code": "E1 6PG",
+                    "country": "United Kingdom"
                 },
-                "email": "jane.doe@example.com",
-                "phone": "+1234567890",
-                "NI_number": "AB123456C"
+                "email": "sarah.chen@example.com",
+                "phone": "+447700900123",
+                "NI_number": "AB654321C"
             },
             "employment_information": {
                 "employer_name": "Acme Corp",
@@ -335,11 +528,17 @@ curl --location --request POST 'https://api.sandbox.goteal.co/payroll/entries/co
 }
 ```
 
-## 7. Extract Payroll information from a payslip `/payroll/entries/payslips`
+### Payslip Upload
 
-This request simulates the user uploading a payslip to extract payroll information.
-Extracting payslip information can be done using the endpoint below but will usually
-be done by the user through the WebApp as per section 8
+This journey outlines the process for extracting payroll information by uploading a payslip.
+
+**Prerequisites:** Complete Initial Setup (Webhooks, Configuration) and User Setup above.
+
+#### Upload Payslip `/payroll/entries/payslips`
+
+This request simulates the user uploading a payslip to extract payroll information. Extracting payslip information can be done using the endpoint below but will usually be done by the user through the WebApp.
+
+This example uses James O'Connor:
 
 ```bash
 curl --location --request POST 'https://api.sandbox.goteal.co/payroll/entries/payslips' \
@@ -351,7 +550,7 @@ curl --location --request POST 'https://api.sandbox.goteal.co/payroll/entries/pa
 
 ```json
 {
-    "account_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
+    "account_id": "f2a8e9c1-d3b4-4f5a-9e8d-7c6b5a4f3e2d",
     "entry_id": "f5e0a310-d4d0-4db0-b5c3-895a81e26e03",
     "payroll_submissions": [
         {
@@ -360,43 +559,43 @@ curl --location --request POST 'https://api.sandbox.goteal.co/payroll/entries/pa
             "entry_id": "f5e0a310-d4d0-4db0-b5c3-895a81e26e03",
             "created_at": "2024-05-03T12:48:54.886Z",
             "identity_information": {
-                "name": "Jane Doe",
-                "date_of_birth": "1990-04-01",
+                "name": "James O'Connor",
+                "date_of_birth": "1985-09-10T00:00:00.000Z",
                 "address": {
-                    "street": "123 Main St",
-                    "county": "Anyshire",
-                    "city": "Anycity",
-                    "post_code": "AB12 3CD",
-                    "country": "Countryland"
+                    "street": "12 Oxford Road",
+                    "county": "Greater Manchester",
+                    "city": "Manchester",
+                    "post_code": "M13 9WL",
+                    "country": "United Kingdom"
                 },
-                "email": "jane.doe@example.com",
-                "phone": "+1234567890",
-                "NI_number": "AB123456C",
-                "employment_information": {
-                    "employer_name": "Acme Corp",
-                    "role": "Software Developer",
-                    "type": "Full-Time",
-                    "status": "Active",
-                    "start_date": "2018-06-01",
-                    "leave_date": null
+                "email": "james.oconnor@example.com",
+                "phone": "+447700900456",
+                "NI_number": "BC765432D"
+            },
+            "employment_information": {
+                "employer_name": "Acme Corp",
+                "role": "Software Developer",
+                "type": "Full-Time",
+                "status": "Active",
+                "start_date": "2018-06-01",
+                "leave_date": null
+            },
+            "income_information": {
+                "pay_date": "2024-02-15",
+                "pay_interval_start": "2024-02-01T00:00:00.000Z",
+                "pay_interval_end": "2024-02-15T00:00:00.000Z",
+                "pay_frequency": "weekly",
+                "earnings": {
+                    "gross_pay": 2000,
+                    "net_pay": 1500,
+                    "base_salary": 1900,
+                    "bonus": 100
                 },
-                "income_information": {
-                    "pay_date": "2024-02-15",
-                    "pay_interval_start": "2024-02-01T00:00:00.000Z",
-                    "pay_interval_end": "2024-02-15T00:00:00.000Z",
-                    "pay_frequency": "weekly",
-                    "earnings": {
-                        "gross_pay": 2000,
-                        "net_pay": 1500,
-                        "base_salary": 1900,
-                        "bonus": 100
-                    },
-                    "deductions": {
-                        "income_tax": 300,
-                        "employee_ni": 150,
-                        "employee_pension": 50,
-                        "total_deductions": 500
-                    }
+                "deductions": {
+                    "income_tax": 300,
+                    "employee_ni": 150,
+                    "employee_pension": 50,
+                    "total_deductions": 500
                 }
             }
         }
@@ -404,15 +603,18 @@ curl --location --request POST 'https://api.sandbox.goteal.co/payroll/entries/pa
 }
 ```
 
-## 8. Retrieving Payroll Data `/payroll`
+## General Data Retrieval
 
-Retrieve the payroll data submitted through the connected account or document upload.
+#### Retrieve Payroll Data `/payroll`
+
+Retrieve the payroll data submitted through a connected account or document upload. This example retrieves payroll for Amina Diallo:
 
 ```bash
 curl --request GET \
   --url https://api.sandbox.goteal.co/payroll/{user_id} \
   --header 'X-API-KEY: <api-key>'
 ```
+
 **Response Example:**
 
 ```json
@@ -440,18 +642,18 @@ curl --request GET \
         "type": "Full-time"
       },
       "identity_information": {
-        "NI_number": "AB123456C",
+        "NI_number": "CD876543E",
         "address": {
-          "city": "London",
+          "city": "Birmingham",
           "country": "United Kingdom",
-          "county": "Greater London",
-          "post_code": "SW1A 1AA",
-          "street": "123 Main Street"
+          "county": "West Midlands",
+          "post_code": "B1 1TT",
+          "street": "78 Victoria Square"
         },
-        "date_of_birth": "2019-05-17T00:00:00.000Z",
-        "email": "john.smith@company.com",
-        "name": "John Smith",
-        "phone": 447123456789
+        "date_of_birth": "1978-12-03T00:00:00.000Z",
+        "email": "amina.diallo@example.com",
+        "name": "Amina Diallo",
+        "phone": 447700900789
       },
       "income_information": {
         "deductions": {
@@ -476,23 +678,25 @@ curl --request GET \
 }
 ```
 
-## 9. WebApp usage
+## WebApp Usage
 
-Teal's webapp can be tested by accessing ```https://app.sandbox.goteal.co/``` in the browser. Use the generated bearer
-token in order to identify the user ```https://app.sandbox.goteal.co/?jwt=<bearer-token>```. The webapp uses the same API
-mechanism as the mentioned above, therefore the data will be retrieved in the same way.
+Teal's webapp can be tested by accessing `https://app.sandbox.goteal.co/` in the browser. Use the generated bearer token in order to identify the user `https://app.sandbox.goteal.co/?jwt=<bearer-token>`. The webapp uses the same API mechanism as mentioned above, therefore the data will be retrieved in the same way.
+
+You can test the webapp with any of the three personas defined at the top of this guide (Sarah Chen, James O'Connor, or Amina Diallo).
 
 **Connect a Payroll:**
 
-<img src="/images/webapp/payroll-connection.gif" alt="payroll connection"  width="100%"/>
+<img src="/images/webapp/payroll-connection.gif" alt="payroll connection" width="100%"/>
 
 **Submit a Payroll:**
 
 <img src="/images/webapp/payslip-submission.gif" alt="payslip submission" width="100%"/>
 
-## 10. Cleanup: Deleting a User `/users`
+## Cleanup
 
-After testing, clean up by deleting the test user and their associated data.
+#### Deleting a User `/users`
+
+After testing, clean up by deleting the test user and their associated data. Use the `user_id` returned when you created the user (from any of the test personas).
 
 ```bash
 curl --request DELETE \
@@ -508,20 +712,16 @@ curl --request DELETE \
 }
 ```
 
-## Sandbox credentials
+## OAuth2 Test Credentials
 
-Some of our providers use an authorisation flow know as OAuth2. This allows the the end user to be redirected to their
-payroll provider login screen, where they can grant authorisation to share their data. Below is an example login page:
+Some of our providers use an authorisation flow known as OAuth2. This allows the end user to be redirected to their payroll provider login screen, where they can grant authorisation to share their data. Below is an example login page:
 
-<img
-  src="/images/oauth2-example-login.png"
-  alt="OAuth2 Login"
-/>
+<img src="/images/oauth2-example-login.png" alt="OAuth2 Login" />
 
 The user will be redirected back to teal after authorising.
 
 To test the providers that have the OAuth2 flow available, you can use the following credentials.
 
-| provider    | username        | password         | Extra login params                |
-| ----------- | --------------- | ---------------- | ----------------------------------|
-| `freeagent` | arun@goteal.co  | mPxD9Tt3hBV5j39  |                                   |
+| provider | username | password | Extra login params |
+| --- | --- | --- | --- |
+| `freeagent` | arun@goteal.co | mPxD9Tt3hBV5j39 |  |
