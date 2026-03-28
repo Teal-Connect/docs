@@ -183,7 +183,16 @@ paths:
             format: int32
             minimum: 1
             maximum: 500
-            default: 100
+            default: 500
+        - name: type
+          in: query
+          description: Filter by document type
+          required: false
+          schema:
+            type: string
+            enum:
+              - Payslip
+              - Bank Statement
       responses:
         "200":
           description: OK
@@ -890,56 +899,6 @@ paths:
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
   "/documents/bank-statements":
-    get:
-      summary: List bank statement records for a user.
-      description: |
-        Returns a paginated list of bank statement records extracted from
-        uploaded bank statement PDFs. Each record contains the extracted
-        data and a reference to the raw document.
-      parameters:
-        - in: query
-          name: user_id
-          schema:
-            type: string
-          required: true
-          description: ID of the user to get bank statements for
-        - name: offset
-          in: query
-          description: The offset to start at
-          required: false
-          schema:
-            type: integer
-            format: int32
-            minimum: 0
-            default: 0
-        - name: limit
-          in: query
-          description: The number of items to return
-          required: false
-          schema:
-            type: integer
-            format: int32
-            minimum: 1
-            maximum: 500
-            default: 500
-      responses:
-        "200":
-          description: Bank statement records
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  pagination:
-                    "$ref": "#/components/schemas/Pagination"
-                  bank_statements:
-                    type: array
-                    items:
-                      "$ref": "#/components/schemas/BankStatementResponse"
-        "400":
-          "$ref": "#/components/responses/BadRequest"
-        "401":
-          "$ref": "#/components/responses/UnauthorizedApiKey"
     put:
       summary: Submit previously uploaded bank statements for processing
       parameters:
