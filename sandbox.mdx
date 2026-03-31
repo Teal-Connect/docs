@@ -334,7 +334,7 @@ This journey describes connecting to a specific payroll provider. Use this when 
 
 #### Scenario-Based Testing
 
-For certain providers, you can test realistic flows by sending specific usernames that match predefined scenarios. These scenarios simulate real-world conditions such as MFA challenges, incorrect credentials, and successful logins.
+For certain providers, you can test realistic flows by sending specific usernames that match predefined scenarios. These scenarios simulate real-world conditions such as MFA challenges, incorrect credentials, and successful logins. The user you create does not need to match the test user names listed below. The password can be set to any value.
 
 If you send a `user_name` that does **not** match a scenario username, the sandbox will return fake data as normal.
 
@@ -342,16 +342,16 @@ If you send a `user_name` that does **not** match a scenario username, the sandb
   If you use a scenario username but do **not** supply the corresponding payroll date range, no payroll data will be returned.
 </Warning>
 
-| Provider | Test User | Scenario | Username | Payroll Date Range | MFA | MFA Type | MFA Code |
-|---|---|---|---|---|---|---|---|
-| BrightPayCloud | Sarah Mitchell | happy_no_mfa | `happy_no_mfa` | 2025-08-01 to 2025-08-31 | No | — | — |
-| CGI | David Patel | happy_mfa | `happy_mfa` | 2025-10-01 to 2025-10-31 | Yes | PasswordWithPositions — Pin Code (positions 2, 4, 6) | `123` |
-| AdpMyAdp | Emma Richardson | happy_no_mfa | `happy_no_mfa` | 2025-05-01 to 2025-05-31 | No | — | — |
-| Hero | Marcus Thompson | happy_mfa | `happy_mfa` | 2025-05-01 to 2025-05-31 | Yes | Code — Authenticator App | `140295` |
+| Provider | Employer | Test User | Scenario | Username | Payroll Date Range | MFA | MFA Type | MFA Code |
+|---|---|---|---|---|---|---|---|---|
+| BrightPayCloud | Aim Smarter | Sarah Mitchell | happy_no_mfa | `happy_no_mfa` | 2025-08-01 to 2025-08-31 | No | — | — |
+| CGI | Department for Environment, Food and Rural Affairs | David Patel | happy_mfa | `happy_mfa` | 2025-10-01 to 2025-10-31 | Yes | PasswordWithPositions — Pin Code (positions 2, 4, 6) | `123` |
+| AdpMyAdp | Brightwell | Emma Richardson | happy_no_mfa | `happy_no_mfa` | 2025-05-01 to 2025-05-31 | No | — | — |
+| Hero | — | Marcus Thompson | happy_mfa | `happy_mfa` | 2025-05-01 to 2025-05-31 | Yes | Code — Authenticator App | `140295` |
 
-The available scenario usernames are: `happy_mfa`, `happy_no_mfa`, `wrong_mfa`, `wrong_username`, and `wrong_password`.
+The available scenario usernames are: `happy_mfa`, `happy_no_mfa`, `wrong_mfa`, `wrong_username`, and `wrong_password`. When sending date filters via the API, ensure they are in ISO 8601 format (e.g. `2025-08-01T00:00:00Z`).
 
-These scenarios can also be used on the [sandbox webapp](https://app.sandbox.goteal.co/). When testing via the webapp, ensure the user's `payroll_period_months` is set large enough to cover the scenario's payroll date range.
+These scenarios can also be used on the sandbox webapp. When testing via the webapp, ensure the user's `payroll_period_months` lookback is set large enough to cover the scenario's payroll date range.
 
 #### Connect a Payroll Account `/accounts`
 
