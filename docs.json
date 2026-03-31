@@ -78,9 +78,11 @@
           {
             "group": "Documents",
             "pages": [
-              "api-reference/documents/get",
               "api-reference/documents/list",
-              "api-reference/documents/delete"
+              "api-reference/documents/get",
+              "api-reference/documents/delete",
+              "api-reference/documents/bank-statements-presign",
+              "api-reference/documents/bank-statements-upload"
             ]
           },
           {
