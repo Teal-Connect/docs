@@ -334,7 +334,7 @@ This journey describes connecting to a specific payroll provider. Use this when 
 
 #### Scenario-Based Testing
 
-For certain providers, you can test realistic flows by sending specific usernames that match predefined scenarios. These scenarios simulate real-world conditions such as MFA challenges, incorrect credentials, and successful logins. These scenarios can also be used on the [sandbox webapp](https://app.sandbox.goteal.co/).
+For certain providers, you can test realistic flows by sending specific usernames that match predefined scenarios. These scenarios simulate real-world conditions such as MFA challenges, incorrect credentials, and successful logins.
 
 If you send a `user_name` that does **not** match a scenario username, the sandbox will return fake data as normal.
 
@@ -350,6 +350,8 @@ If you send a `user_name` that does **not** match a scenario username, the sandb
 | Hero | Marcus Thompson | happy_mfa | `happy_mfa` | 2025-05-01 to 2025-05-31 | Yes | Code — Authenticator App | `140295` |
 
 The available scenario usernames are: `happy_mfa`, `happy_no_mfa`, `wrong_mfa`, `wrong_username`, and `wrong_password`.
+
+These scenarios can also be used on the [sandbox webapp](https://app.sandbox.goteal.co/). When testing via the webapp, ensure the user's `payroll_period_months` is set large enough to cover the scenario's payroll date range.
 
 #### Connect a Payroll Account `/accounts`
 
