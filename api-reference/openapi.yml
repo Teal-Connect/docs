@@ -101,7 +101,7 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
-    put:
+    patch:
       description: Update a user and its config. If a field is sent as null then it is considered an unset or removal.
       summary: Updates a user.
       parameters:
@@ -1191,7 +1191,7 @@ paths:
           "$ref": "#/components/responses/UnauthorizedApiKey"
         "404":
           "$ref": "#/components/responses/ResourceNotFound"
-    put:
+    patch:
       summary: Updates the client configuration
       description: Partial updates supported; omitted fields preserve their existing values.
       requestBody:
