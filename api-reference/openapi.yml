@@ -1743,7 +1743,7 @@ components:
     AuthorisationStatus:
       type: string
       description: The status of a authorisation record
-      enum: [active, revoked]
+      enum: [active, revoked, expired]
       example: active
     AuthorisationTerm:
       type: object
