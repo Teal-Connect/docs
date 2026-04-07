@@ -1846,6 +1846,10 @@ components:
               "$ref": "#/components/schemas/Date"
               description: Server timestamp when the authorisation was revoked
               nullable: true
+            expires_at:
+              "$ref": "#/components/schemas/Date"
+              description: Expiry timestamp for the authorisation. Present for one-time authorisations, which expire 1 day after acceptance. Null for recurring authorisations.
+              nullable: true
             created_at:
               "$ref": "#/components/schemas/Date"
               description: When the authorisation record was created
