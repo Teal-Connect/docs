@@ -20,7 +20,7 @@ Authorisation terms define the legal text that users agree to when granting acce
 
 Each term belongs to a category that defines the type of authorisation:
 
-- **one_time** - Single authorisation for a specific action (e.g., one-time income verification)
+- **one_time** - Single authorisation for a specific action (e.g., one-time income verification). One-time authorisations expire after 1 day, after which the user must re-authorise.
 - **recurring** - Ongoing authorisation for continuous data access (e.g., recurring payroll checks)
 
 ### Retrieving Available Terms
@@ -136,7 +136,8 @@ Each acceptance creates an immutable record containing:
 - **ip_address** - Captured from request headers or provided in request
 - **user_agent** - Browser or application identifier
 - **accepted_at** - Server timestamp of acceptance
-- **status** - `active` or `revoked`
+- **expires_at** - Expiry timestamp for the authorisation. Present for one-time authorisations.
+- **status** - `active`, `revoked`, or `expired`
 
 ## Validating Authorisation
 
@@ -154,10 +155,14 @@ curl --request GET \
 
 Each authorisation record includes an `is_valid` field that indicates whether the authorisation is currently valid:
 
-- `is_valid: true` - Authorisation status is `active` AND the associated term is active
-- `is_valid: false` - Either authorisation is revoked OR the term has been deactivated
+- `is_valid: true` - Authorisation status is `active` AND the associated term is active AND the authorisation has not expired
+- `is_valid: false` - Either authorisation is revoked, the term has been deactivated, or the authorisation has expired
 
 If `is_valid` is false because the term was deactivated, the user needs to re-authorise to the new term.
+
+<Note>
+One-time authorisations automatically expire. Once expired, the user must re-authorise before any further actions can be performed. Check the `expires_at` field on the authorisation record to see when it expires.
+</Note>
 
 ## Re-authorisation Flow
 
