@@ -183,7 +183,16 @@ paths:
             format: int32
             minimum: 1
             maximum: 500
-            default: 100
+            default: 500
+        - name: type
+          in: query
+          description: Filter by document type
+          required: false
+          schema:
+            type: string
+            enum:
+              - Payslip
+              - Bank Statement
       responses:
         "200":
           description: OK
@@ -889,6 +898,123 @@ paths:
                 "$ref": "#/components/schemas/Error"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/documents/bank-statements":
+    put:
+      summary: Submit previously uploaded bank statements for processing
+      parameters:
+        - "$ref": "#/components/parameters/XAuthorisationId"
+      description: |
+        Uploading bank statements is a three-step flow:
+          1. Request upload slots with `PUT /documents/bank-statements/presign`,
+             providing each PDF file name (and optional external identifier).
+             The response includes `presigned_url` and `path` values for every
+             requested file.
+          2. Upload the PDF content to every `presigned_url` using an HTTP `PUT`
+             request with `Content-Type: application/octet-stream`.
+          3. Call this endpoint with the JSON payload returned in step one,
+             echoing the `path` (and optional `external_document_id`) for every
+             uploaded file so Teal can extract and store the bank statement data.
+        The `path` values you submit must match the ones returned by the presign
+        step. Any files that failed validation or extraction are reported in the
+        `bank_statement_errors` array.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/BankStatementJsonRequestFileRequest"
+      responses:
+        "201":
+          description: Created — bank statement(s) extracted and saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bank_statement_submissions:
+                    type: array
+                    description: Successfully processed bank statements
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        created_at:
+                          "$ref": "#/components/schemas/Date"
+                        document_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        document_external_id:
+                          type: string
+                          nullable: true
+                        document_filename:
+                          type: string
+                          nullable: true
+                  bank_statement_errors:
+                    type: array
+                    description: Files that failed extraction
+                    items:
+                      type: object
+                      properties:
+                        file_name:
+                          type: string
+                        error:
+                          type: string
+        "200":
+          description: OK — all files successfully extracted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bank_statement_submissions:
+                    type: array
+                    items: {}
+                  bank_statement_errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        file_name:
+                          type: string
+                        error:
+                          type: string
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedBearer"
+  "/documents/bank-statements/presign":
+    put:
+      summary: Generate presigned URLs for bank statement uploads
+      parameters:
+        - "$ref": "#/components/parameters/XAuthorisationId"
+      description: |
+        Generates short-lived presigned URLs that you can use to upload bank
+        statement PDFs directly to Teal-managed storage. Use this endpoint
+        before uploading any files and submitting them for processing.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/BankStatementPresignRequest"
+      responses:
+        "200":
+          description: Presigned URLs generated successfully
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/BankStatementPresignResponse"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedBearer"
   "/webhooks":
     post:
       summary: Creates a webhook.
@@ -2220,7 +2346,7 @@ components:
           example: payslip123456
         type:
           type: string
-          description: The type of document
+          description: The type of document (Payslip, Bank Statement, or Document)
           example: "Payslip"
         uploaded_at:
           "$ref": "#/components/schemas/Date"
@@ -2297,6 +2423,108 @@ components:
           type: string
           description: Optional identifier shown in payroll submissions when present.
           example: ext-payslip-2024-05
+    BankStatementPresignRequest:
+      type: object
+      required: [files]
+      properties:
+        files:
+          type: array
+          description: Bank statement files that require presigned upload URLs
+          minItems: 1
+          items:
+            "$ref": "#/components/schemas/BankStatementPresignRequestFile"
+    BankStatementPresignRequestFile:
+      type: object
+      required: [file_name]
+      properties:
+        file_name:
+          type: string
+          description: File name including extension. Must be a PDF.
+          example: hsbc-january-2024.pdf
+        external_id:
+          type: string
+          description: Optional identifier echoed back in the presign response.
+          example: ext-stmt-2024-01
+    BankStatementPresignResponse:
+      type: object
+      required: [presigned_urls]
+      properties:
+        presigned_urls:
+          type: array
+          description: Generated URLs and metadata for uploading the requested files.
+          items:
+            "$ref": "#/components/schemas/BankStatementPresignResponseFile"
+    BankStatementPresignResponseFile:
+      type: object
+      required: [file_name, presigned_url, path]
+      properties:
+        file_name:
+          type: string
+          description: The requested file name.
+          example: hsbc-january-2024.pdf
+        external_id:
+          type: string
+          description: Optional identifier provided in the presign request.
+          example: ext-stmt-2024-01
+        presigned_url:
+          type: string
+          format: uri
+          description: The URL to upload the file content to via HTTP PUT.
+          example: https://s3.amazonaws.com/bucket/presigned-upload-key?signature=abc123
+        path:
+          type: string
+          description: The storage path that must be echoed when submitting the bank statements.
+          example: client/acct123/users/user456/stmt1.pdf
+    BankStatementJsonRequestFileRequest:
+      type: object
+      required: [files]
+      properties:
+        files:
+          type: array
+          minItems: 1
+          items:
+            "$ref": "#/components/schemas/BankStatementJsonRequestFile"
+    BankStatementJsonRequestFile:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+          description: Storage path returned by the presign endpoint.
+          example: client/acct123/users/user456/stmt1.pdf
+        external_document_id:
+          type: string
+          description: Optional identifier shown in submissions when present.
+          example: ext-stmt-2024-01
+    BankStatementResponse:
+      type: object
+      required: [id, created_at, updated_at, bank_statement_data]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique bank statement identifier
+          example: 95a0e70b-fe02-4f47-aef9-2efff279df71
+        created_at:
+          "$ref": "#/components/schemas/Date"
+        updated_at:
+          "$ref": "#/components/schemas/Date"
+        bank_statement_data:
+          type: string
+          description: JSON string containing the extracted bank statement data
+        document_id:
+          type: string
+          format: uuid
+          description: ID of the linked raw document, if available
+          nullable: true
+        document_external_id:
+          type: string
+          description: External ID provided during upload, if any
+          nullable: true
+        document_filename:
+          type: string
+          description: File name of the uploaded document
+          nullable: true
     PayrollData:
       type: object
       required: [account_id, entry_id, pagination, payroll_submissions]
