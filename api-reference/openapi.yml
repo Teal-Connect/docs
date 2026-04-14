@@ -965,7 +965,7 @@ paths:
                         error:
                           type: string
         "200":
-          description: OK — all files failed extraction
+          description: OK — all files successfully extracted
           content:
             application/json:
               schema:
