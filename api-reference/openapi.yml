@@ -2825,6 +2825,14 @@ components:
         fraud_risk:
           "$ref": "#/components/schemas/FraudRisk"
           nullable: true
+        source:
+          type: string
+          description: The source of the payroll data
+          example: Payroll (via Direct Connection)
+          enum:
+            - Payroll (via Direct Connection)
+            - Payroll (via User Connection)
+            - Payslip (via Doc Scan)
     IdentityInformation:
       type: object
       properties:
