@@ -471,10 +471,14 @@ System.out.println(submitResponse.getBody());
           "employee_pension": 300,
           "total_deductions": 1000
         }
-      }
-    },
-    "fraud_risk": "Low"
-    ],
+      },
+      "fraud_risk": "Medium",
+      "fraud_details": [
+        { "rule": "DOCUMENT_MODIFIED_INCONSISTENT_DATES_MID", "probability": 0.2, "description": "Creation date 2024-01-01, modification date 2023-06-15" },
+        { "rule": "OVERLAPPING_BOUNDING_BOXES", "probability": 0.6, "description": "Detected overlapping text layers on page 1" }
+      ]
+    }
+  ],
   "payslip_errors" : [{
     "error" : "File is not a payslip",
     "file_name" : "Payslip3.pdf"
