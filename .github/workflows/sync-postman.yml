@@ -1,0 +1,36 @@
+name: Sync Postman collection
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'api-reference/openapi.yml'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Convert OpenAPI to Postman collection
+        run: |
+          npx --yes openapi-to-postmanv2 \
+            -s api-reference/openapi.yml \
+            -o /tmp/collection.json \
+            -p
+
+      - name: Push to Postman API
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+          POSTMAN_COLLECTION_UID: ${{ secrets.POSTMAN_COLLECTION_UID }}
+        run: |
+          COLLECTION=$(cat /tmp/collection.json)
+          curl --fail -s -X PUT \
+            "https://api.getpostman.com/collections/$POSTMAN_COLLECTION_UID" \
+            -H "X-Api-Key: $POSTMAN_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"collection\": $COLLECTION}"
