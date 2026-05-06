@@ -82,7 +82,8 @@
               "api-reference/documents/get",
               "api-reference/documents/delete",
               "api-reference/documents/bank-statements-presign",
-              "api-reference/documents/bank-statements-upload"
+              "api-reference/documents/bank-statements-upload",
+              "api-reference/documents/bank-statements-get"
             ]
           },
           {
