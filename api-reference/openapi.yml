@@ -2040,6 +2040,23 @@ components:
       description: The fraud risk level assessment. Fraud risk will be present if the payroll data is coming from a payslip source
       enum: [Low, Medium, High]
       example: Low
+    FraudDetail:
+      type: object
+      required: [rule, probability, description]
+      properties:
+        rule:
+          type: string
+          description: The fraud rule that was triggered
+          example: OVERLAPPING_BOUNDING_BOXES
+        probability:
+          type: number
+          format: double
+          description: The weight/probability of this rule (0.0 to 1.0)
+          example: 0.6
+        description:
+          type: string
+          description: Human-readable explanation of what was detected
+          example: Detected overlapping text layers on page 1
     PaginationWithOrderedBy:
       type: object
       allOf:
@@ -3005,6 +3022,12 @@ components:
         fraud_risk:
           "$ref": "#/components/schemas/FraudRisk"
           nullable: true
+        fraud_details:
+          type: array
+          nullable: true
+          description: Detailed breakdown of individual fraud checks that were triggered. Present when fraud_risk is not null.
+          items:
+            "$ref": "#/components/schemas/FraudDetail"
         source:
           type: string
           description: The source of the payroll data
