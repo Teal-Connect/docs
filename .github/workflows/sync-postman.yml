@@ -26,11 +26,10 @@ jobs:
       - name: Push to Postman API
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
-          POSTMAN_COLLECTION_UID: ${{ secrets.POSTMAN_COLLECTION_UID }}
         run: |
           jq '{collection: .}' /tmp/collection.json > /tmp/body.json
           curl --fail -s -X PUT \
-            "https://api.getpostman.com/collections/$POSTMAN_COLLECTION_UID" \
+            "https://api.getpostman.com/collections/34133704-ca42908e-fbb8-4a53-9cde-681b4486dc49" \
             -H "X-Api-Key: $POSTMAN_API_KEY" \
             -H "Content-Type: application/json" \
             -d @/tmp/body.json
