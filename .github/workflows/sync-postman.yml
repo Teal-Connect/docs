@@ -29,7 +29,7 @@ jobs:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
         run: |
           jq '{collection: .}' /tmp/collection.json > /tmp/body.json
-          curl --fail -s -X PUT \
+          curl --fail -X PUT \
             "https://api.getpostman.com/collections/34096189-b77feaba-4ca9-4456-a365-6a771e02ccad" \
             -H "X-Api-Key: $POSTMAN_API_KEY" \
             -H "Content-Type: application/json" \
