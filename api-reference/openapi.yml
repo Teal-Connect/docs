@@ -1666,6 +1666,82 @@ paths:
                 "$ref": "#/components/schemas/ProvidersResponse"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/console/billing/details":
+    description: Returns billing tracking records for payroll verifications.
+      Each record represents a billable event where payroll data was successfully
+      persisted for a client's user.
+    get:
+      summary: List billing details for payroll verifications
+      parameters:
+        - name: from
+          in: query
+          description: Start of date range (ISO8601 format)
+          required: true
+          schema:
+            type: string
+            format: date-time
+            example: "2026-01-01T00:00:00Z"
+        - name: to
+          in: query
+          description: End of date range (ISO8601 format)
+          required: true
+          schema:
+            type: string
+            format: date-time
+            example: "2026-03-31T23:59:59Z"
+        - name: connection_type
+          in: query
+          description: Filter by connection type
+          required: false
+          schema:
+            type: string
+            enum: [direct, reverse_engineered, payslip]
+        - name: payroll_provider
+          in: query
+          description: Filter by payroll provider (lowercase AccountProvider.Id name).
+            Must be consistent with connection_type if both are provided.
+          required: false
+          schema:
+            type: string
+            example: "iris"
+        - name: offset
+          in: query
+          description: The offset to start at
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: The number of items to return
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 500
+            default: 50
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/BillingPayrollRecord"
+                  pagination:
+                    "$ref": "#/components/schemas/Pagination"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
 components:
   responses:
     UnauthorizedApiKey:
@@ -1709,6 +1785,66 @@ components:
         format: uuid
         example: "7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o"
   schemas:
+    BillingPayrollRecord:
+      type: object
+      required: [id, user_id, entry_id, created_at, connection_type, payroll_id, required_periods, obtained_periods]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the billing record
+        user_id:
+          type: string
+          format: uuid
+          description: The user whose payroll was verified
+        entry_id:
+          type: string
+          format: uuid
+          description: Groups payroll records from the same verification event
+        session_id:
+          type: string
+          nullable: true
+          description: Webapp session ID for correlation
+        created_at:
+          type: string
+          format: date-time
+          description: When the payroll data was persisted
+        connection_type:
+          type: string
+          enum: [direct, reverse_engineered, payslip]
+          description: How the payroll data was obtained
+        payroll_provider:
+          type: string
+          nullable: true
+          description: Lowercase provider name (e.g. sagehr, xero, iris). Null for payslip uploads.
+        payroll_id:
+          type: string
+          format: uuid
+          description: Reference to the payroll record
+        required_periods:
+          type: array
+          description: Periods that were required at the time of verification (snapshot from user config)
+          items:
+            "$ref": "#/components/schemas/BillingPeriod"
+        obtained_periods:
+          type: array
+          description: Periods that were actually obtained in this verification event
+          items:
+            "$ref": "#/components/schemas/BillingPeriod"
+    BillingPeriod:
+      type: object
+      required: [start, end]
+      properties:
+        start:
+          type: string
+          format: date
+          description: Start of the pay period
+          example: "2026-01-01"
+        end:
+          type: string
+          format: date
+          description: End of the pay period
+          example: "2026-01-31"
     ProvidersResponse:
       type: object
       required: [providers, parent_provider_meta, employers]
