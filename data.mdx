@@ -84,7 +84,11 @@ curl --request GET \
   --header 'X-API-KEY: <api-key>''
 ```
 
-The structure of the returned data will contain fields on employment, identity and income. 
+The structure of the returned data will contain fields on employment, identity and income. Each payroll submission includes a `source` field indicating how the data was obtained:
+
+- **Payroll (via Direct Connection)** – Data retrieved from direct API integrations with payroll providers
+- **Payroll (via User Connection)** – Data obtained through user-authenticated scraping of payroll accounts
+- **Payslip (via Doc Scan)** – Data extracted from uploaded payslip documents 
 
 ### Documents `/documents`
 
