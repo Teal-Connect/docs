@@ -2088,10 +2088,6 @@ components:
           description: Surname of the user.
           type: string
           example: Smith
-        middle_names:
-          description: Middle names of the user.
-          type: string
-          example: Smith
         ni_number:
           description: National Insurance number of the user. Used for direct connections.
           type: string
