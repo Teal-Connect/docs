@@ -2035,11 +2035,11 @@ components:
               "$ref": "#/components/schemas/Date"
               description: When the authorisation record was created
         - "$ref": "#/components/schemas/AuthorisationAcceptance"
-    FraudRisk:
+    TrustScore:
       type: string
-      description: The fraud risk level assessment. Fraud risk will be present if the payroll data is coming from a payslip source
+      description: The document trust score assessment. Trust score will be present if the payroll data is coming from a payslip source
       enum: [Low, Medium, High]
-      example: Low
+      example: High
     PaginationWithOrderedBy:
       type: object
       allOf:
@@ -2998,8 +2998,8 @@ components:
           $ref: "#/components/schemas/EmploymentInformation"
         income_information:
           $ref: "#/components/schemas/IncomeInformation"
-        fraud_risk:
-          "$ref": "#/components/schemas/FraudRisk"
+        trust_score:
+          "$ref": "#/components/schemas/TrustScore"
           nullable: true
         source:
           type: string
