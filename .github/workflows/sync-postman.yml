@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'api-reference/openapi.yml'
+      - 'api-reference/openapi.yaml'
 
 jobs:
   sync:
@@ -19,7 +19,7 @@ jobs:
       - name: Convert OpenAPI to Postman collection
         run: |
           npx --yes openapi-to-postmanv2 \
-            -s api-reference/openapi.yml \
+            -s api-reference/openapi.yaml \
             -o /tmp/collection.json \
             -p
 
