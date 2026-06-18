@@ -1852,7 +1852,7 @@ components:
           type: string
           format: uri
           description: URL to the employer's logo
-          example: https://d1wfx42f6qh83.cloudfront.net/logos/teal_0d28113814a9.png
+          example: https://d3hi2i04139ueq.cloudfront.net/logos/teal_0d28113814a9.png
         providers:
           type: array
           description: List of provider IDs associated with this employer
