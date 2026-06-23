@@ -9,6 +9,8 @@ The sandbox environment functions as a simulated version of the actual system, d
 
 This environment employs mock payroll providers and payslip readers in order to allow developers to evaluate the API interface without compromising real data privacy.
 
+For the conceptual data model behind these endpoints, see [Data](/data).
+
 ## Test Personas
 
 The sandbox environment includes three pre-configured test personas with corresponding mock data in the backend. Use these personas to test different workflows throughout this guide.
@@ -692,7 +694,6 @@ curl --request GET \
         "pay_interval_start": "2019-05-17T00:00:00.000Z"
       },
       "document_external_id": null,
-      "document_filename": null,
       "document_filename": "file1-payslip.pdf",
       "trust_score": "High"
     }
