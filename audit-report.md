@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-23
 **Method:** LLM agent audit of the full doc set, with `api-reference/openapi.yaml` as ground truth.
-**Scope:** Content `.mdx` pages + `docs.json` navigation. Auto-generated `api-reference/**` pages and the `generator/python/` directory are treated as ground truth — flagged only, not hand-edited.
+**Scope:** Content `.mdx` pages + `docs.json` navigation + the hand-maintained `api-reference/openapi.yaml`. Auto-generated endpoint `.mdx` pages under `api-reference/**` and the `generator/python/` directory are treated as ground truth — flagged only, not hand-edited.
 
 ## Doc set inventory (baseline)
 
@@ -53,11 +53,15 @@
 
 ---
 
-## Flagged only (ground-truth, NOT edited)
+## (e) Spec inconsistency in `openapi.yaml`
 
-- **openapi internal inconsistency:** user-level `recurring_check_frequency` description lists `[WEEKLY, DAILY]` (line ~2113) while client- and account-level list `[WEEKLY, MONTHLY]`. Content pages (`recurring-checks.mdx`, `data.mdx`) state `WEEKLY`/`MONTHLY`. The `DAILY` reference in openapi looks like an error — raise with the API team; not editing the generated spec here.
+| # | Location | Issue | Fix |
+|---|----------|-------|-----|
+| O4 | `api-reference/openapi.yaml` user-level `recurring_check_frequency` | Description listed `[WEEKLY, DAILY]` while client- and account-level list `[WEEKLY, MONTHLY]`; content pages (`recurring-checks.mdx`, `data.mdx`) state `WEEKLY`/`MONTHLY`. `DAILY` is a typo. | Change to `[WEEKLY, MONTHLY]`. |
+
+Note: `openapi.yaml` is hand-maintained directly in this repo (e.g. edited in PR #123), not auto-generated, so the fix is applied here.
 
 ## Triage — fixes landing in this PR
 
-In scope (low-risk, high-confidence): **O1, O2, O3, G1, G2, X1, X2**, plus D1/D2 cross-link + field reconciliation.
-Deferred: G3 (structural nav rethink), openapi `DAILY` discrepancy (needs API-team confirmation).
+In scope (low-risk, high-confidence): **O1, O2, O3, O4, G1, G2, X1, X2**, plus D1/D2 cross-link + field reconciliation.
+Deferred: G3 (structural nav rethink — subjective ordering, needs product input).
