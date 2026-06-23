@@ -81,7 +81,7 @@ Aggregates detailed payroll information obtained through account synchronization
 ```bash
 curl --request GET \
   --url https://api.sandbox.goteal.co/payroll/{user_id} \
-  --header 'X-API-KEY: <api-key>''
+  --header 'X-API-KEY: <api-key>'
 ```
 
 The structure of the returned data will contain fields on employment, identity and income. Each payroll submission includes a `source` field indicating how the data was obtained:
@@ -163,11 +163,10 @@ curl --request POST \
   --header 'X-API-KEY: <api-key>' \
   --data '{
   "events": [
-    "user-payroll-submitted",
-    "user-payroll-created"
+    "user-payroll-submitted"
   ],
   "name": "user-payroll-submitted",
-  "secret": "very-secret",
+  "signing_secret": "very-secret",
   "url": "https://webhooks.company.com"
 }'
 ```
