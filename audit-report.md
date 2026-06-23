@@ -57,7 +57,7 @@
 
 | # | Location | Issue | Fix |
 |---|----------|-------|-----|
-| O4 | `api-reference/openapi.yaml` user-level `recurring_check_frequency` | Description listed `[WEEKLY, DAILY]` while client- and account-level list `[WEEKLY, MONTHLY]`; content pages (`recurring-checks.mdx`, `data.mdx`) state `WEEKLY`/`MONTHLY`. `DAILY` is a typo. | Change to `[WEEKLY, MONTHLY]`. |
+| O4 | `api-reference/openapi.yaml` user-level `recurring_check_frequency` | Description listed `[WEEKLY, DAILY]`. Confirmed against payroll-api source: client-supplied `recurring_check_frequency` is validated against `ClientRecurringCheckFrequency` = `WEEKLY, MONTHLY, HOURLY` (HOURLY sandbox-only); `DAILY` belongs to the internal `RetryRecurringCheckFrequency` enum (3am retry cron) and is never a client-selectable value. The user-level field conflated the two enums. | Change to `[WEEKLY, MONTHLY]` (matches client/account-level + content pages + the API validator). |
 
 Note: `openapi.yaml` is hand-maintained directly in this repo (e.g. edited in PR #123), not auto-generated, so the fix is applied here.
 
