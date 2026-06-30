@@ -2125,11 +2125,13 @@ components:
           description: Whole-document finding with no specific location.
     Box:
       type: object
-      required: [x, y, xEnd, yEnd]
+      required: [x, y, x_end, y_end]
       description: >-
         A bounding box for a flagged region. Coordinates are normalised to
         [0,1] relative to the page dimensions, with a top-left origin (Y
-        increases downward, matching CSS/canvas conventions).
+        increases downward, matching CSS/canvas conventions). Note: y is the
+        text baseline position; the visible glyph extends upward from y by
+        approximately the font cap-height. y_end is below the baseline.
       properties:
         x:
           type: number
@@ -2139,17 +2141,21 @@ components:
         y:
           type: number
           format: float
-          description: Top edge, normalised [0,1].
+          description: >-
+            Text baseline position, normalised [0,1] from top of page.
+            The visible glyph ascenders extend above this coordinate.
           example: 0.30
-        xEnd:
+        x_end:
           type: number
           format: float
           description: Right edge, normalised [0,1].
           example: 0.24
-        yEnd:
+        y_end:
           type: number
           format: float
-          description: Bottom edge, normalised [0,1].
+          description: >-
+            Bottom of bounding box (below baseline), normalised [0,1].
+            Box height = y_end - y ≈ font cap-height in page-relative units.
           example: 0.315
         message:
           type: string
