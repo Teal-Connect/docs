@@ -2076,7 +2076,7 @@ components:
       type: object
       description: >-
         Describes where a finding originates. Discriminated by `source`:
-        `page_region` (spatial, carries boxes on a page), `metadata`
+        `page_region` (spatial, carries a box on a page), `metadata`
         (tied to PDF metadata fields), or `document` (whole-document /
         non-localizable).
       required: [source]
@@ -2095,17 +2095,16 @@ components:
       allOf:
         - "$ref": "#/components/schemas/FindingLocation"
         - type: object
-          required: [page, boxes]
+          required: [page, box]
           properties:
             page:
               type: integer
-              description: 1-indexed page number the boxes belong to.
+              description: 1-indexed page number the box belongs to.
               example: 1
-            boxes:
-              type: array
-              description: Bounding boxes for the flagged regions on this page.
-              items:
-                "$ref": "#/components/schemas/Box"
+            box:
+              allOf:
+                - "$ref": "#/components/schemas/Box"
+              description: Bounding box for the flagged region on this page.
     MetadataLocation:
       allOf:
         - "$ref": "#/components/schemas/FindingLocation"
