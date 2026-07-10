@@ -76,6 +76,13 @@
             ]
           },
           {
+            "group": "Gov Connect",
+            "pages": [
+              "api-reference/gov-connect/connections-create",
+              "api-reference/gov-connect/get"
+            ]
+          },
+          {
             "group": "Documents",
             "pages": [
               "api-reference/documents/list",

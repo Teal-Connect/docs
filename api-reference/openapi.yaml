@@ -1666,6 +1666,126 @@ paths:
                 "$ref": "#/components/schemas/ProvidersResponse"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/gov-connect/entries/connections":
+    description:
+      For a Gov Connect (HMRC) account, a call to the `/gov-connect/entries/connections`
+      endpoint fetches the latest income data from HMRC for that account and persists it
+      on Teal's storage. The stored data can subsequently be retrieved using the
+      `GET /gov-connect/{user_id}` endpoint. The account must have been established via a
+      Gov Connect connection (e.g. the `hmrc_untied` provider) and the user must have HMRC
+      enabled and a valid authorisation.
+    post:
+      summary: Fetch and store Gov Connect (HMRC) income data for an account
+      parameters:
+        - "$ref": "#/components/parameters/XAuthorisationId"
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/GovConnectEntriesRequest"
+      responses:
+        "200":
+          description: OK — no new income data was returned
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GovConnectData"
+        "201":
+          description: Created — income data was fetched and stored
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GovConnectData"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedBearer"
+        "403":
+          description: Forbidden — the user does not have a valid authorisation
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+  "/gov-connect/{user_id}":
+    description:
+      Retrieve the Gov Connect (HMRC) income data that has been submitted for a user,
+      either through a connected Gov Connect account or fetched via
+      `POST /gov-connect/entries/connections`. The response contains submissions in the
+      Making Tax Digital (MTD) shape.
+    get:
+      summary: Returns all Gov Connect (HMRC) income submissions for a user
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the user to get Gov Connect income for
+        - name: offset
+          in: query
+          description: The offset to start at
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: The number of items to return
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            default: 100
+        - name: account_id
+          in: query
+          description: Filter submissions to a single account
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: entry_id
+          in: query
+          description: Filter submissions to a single ingestion entry
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: created_after
+          in: query
+          description: Filter out submissions dated before the given date
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: 2019-05-17T00:00:00.000Z
+        - name: created_before
+          in: query
+          description: Filter out submissions dated after the given date
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: 2019-05-17T00:00:00.000Z
+      responses:
+        "200":
+          description: Gov Connect income response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaginatedGovConnect"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
 components:
   responses:
     UnauthorizedApiKey:
@@ -3149,6 +3269,170 @@ components:
           type: number
           description: The total deductions
           example: 1000
+
+    GovConnectEntriesRequest:
+      type: object
+      required: [account_id]
+      properties:
+        account_id:
+          type: string
+          format: uuid
+          description: The Gov Connect (HMRC) account id to fetch income data for
+          example: 95a0e70b-fe02-4f47-aef9-2efff279df71
+
+    PaginatedGovConnect:
+      type: object
+      required: [pagination, gov_connect_submissions]
+      properties:
+        pagination:
+          "$ref": "#/components/schemas/Pagination"
+        gov_connect_submissions:
+          type: array
+          items:
+            "$ref": "#/components/schemas/GovConnectSubmission"
+
+    GovConnectData:
+      type: object
+      required: [account_id, gov_connect_submissions]
+      properties:
+        account_id:
+          type: string
+          format: uuid
+          description: The account the income data belongs to
+          example: 95a0e70b-fe02-4f47-aef9-2efff279df71
+        entry_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: The ingestion entry created for this fetch. Null when no data was returned.
+          example: 1b2c3d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e
+        gov_connect_submissions:
+          type: array
+          items:
+            "$ref": "#/components/schemas/GovConnectSubmission"
+
+    GovConnectSubmission:
+      type: object
+      description:
+        A single Gov Connect (HMRC) income submission in the Making Tax Digital (MTD)
+        shape. Only the fields present for the taxpayer are returned; empty fields are
+        omitted. All monetary values are returned as strings.
+      required: [id, account_id, entry_id, authorisation_id]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The submission id
+          example: 3f1c0b9a-1e2d-4a5b-9c8d-0e1f2a3b4c5d
+        account_id:
+          type: string
+          format: uuid
+          example: 95a0e70b-fe02-4f47-aef9-2efff279df71
+        entry_id:
+          type: string
+          format: uuid
+          example: 1b2c3d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e
+        authorisation_id:
+          type: string
+          format: uuid
+          example: 9f8e7d6c-5b4a-3210-fedc-ba9876543210
+        income_id:
+          type: string
+          description: Stable identifier for the income record
+          example: "2025-26:emp:se:prop"
+        identity:
+          type: object
+          properties:
+            name:
+              type: string
+              example: Fred Bloggs
+            date_of_birth:
+              type: string
+              example: "1980-02-20"
+            ni_number:
+              type: string
+              example: QQ000001A
+        employments:
+          type: array
+          items:
+            type: object
+            properties:
+              employment:
+                type: object
+                properties:
+                  employer_name:
+                    type: string
+                    example: NEW CORP
+                  paye_reference:
+                    type: string
+                    example: 120/NC15208
+                  status:
+                    type: string
+                    example: active
+                  start_date:
+                    type: string
+                    example: "2024-06-10T00:00Z"
+                  leave_date:
+                    type: string
+                    nullable: true
+                  tax_code:
+                    type: string
+                    nullable: true
+              income:
+                type: object
+                properties:
+                  tax_year:
+                    type: string
+                    example: "2024-25"
+                  taxable_income:
+                    type: string
+                    example: "28100.91"
+                  tax_paid:
+                    type: string
+                    example: "3611.40"
+              updated_at:
+                type: string
+                example: "2026-06-05 13:03:39"
+        self_employments:
+          type: array
+          items:
+            type: object
+            properties:
+              business:
+                type: object
+                properties:
+                  business_id:
+                    type: string
+                    example: XBIS1
+              income:
+                type: object
+                properties:
+                  tax_year:
+                    type: string
+                    example: "2024-25"
+                  turnover:
+                    type: string
+                    example: "92500.00"
+                  other_income:
+                    type: string
+                    example: "1200.00"
+                  tax_deducted_at_source:
+                    type: string
+                    example: "0.00"
+        properties:
+          type: array
+          items:
+            type: object
+            properties:
+              property_id:
+                type: string
+                example: XPIS1
+              tax_year:
+                type: string
+                example: "2024-25"
+              rent_received:
+                type: string
+                example: "747.45"
 
   securitySchemes:
     ApiKeyAuth:

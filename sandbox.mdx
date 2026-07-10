@@ -623,6 +623,182 @@ curl --location --request POST 'https://api.sandbox.goteal.co/payroll/entries/pa
 }
 ```
 
+### HMRC (Gov Connect) Connection
+
+This journey connects a user to HMRC via Gov Connect using the `hmrc_untied` provider.
+Instead of returning payroll data immediately, connecting returns an `authorization_url`
+(an untied invite link) that the user follows to authorise HMRC data sharing. Once
+authorised, income data is fetched and can be retrieved with
+`GET /gov-connect/{user_id}`. You can subscribe to the `user-gov-connect-data-submitted`
+webhook event to be notified when new HMRC income data is available.
+
+**Prerequisites:** Complete User Setup above. HMRC must be enabled for the client/user
+(`hmrc_enabled: true`) and the user must have an active authorisation.
+
+#### Connect an HMRC Account `/accounts`
+
+Create an `hmrc_untied` account, selecting the flow via `extra_login_params.flow`. The
+flow must be either `non_mtd` or `mtd`.
+
+```bash
+curl --request POST \
+  --url https://api.sandbox.goteal.co/accounts \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-KEY: <api-key>' \
+  --data '{
+  "user_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
+  "payroll_provider": "hmrc_untied",
+  "extra_login_params": {
+    "flow": "mtd"
+  }
+}'
+```
+
+<Note>
+  `ni_number` may optionally be supplied in `extra_login_params`. If the user's NINO is
+  already saved against the user record it is not needed here.
+</Note>
+
+**Response Example:**
+
+```json
+{
+  "account_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
+  "payroll_provider": "hmrc_untied",
+  "created_at": "2019-05-17T00:00:00.000Z",
+  "status": "Pending",
+  "authorization_url": "https://star-client.untied.io/invite/abc123"
+}
+```
+
+Direct the user to the `authorization_url` to complete HMRC authorisation.
+
+**Self Employed**
+
+For the self-employed flow (`"flow": "mtd"`), the user is redirected to HMRC to authorise
+Making Tax Digital access and then returned to Teal's callback. This requires an HMRC
+sandbox test user.
+
+<Note>
+  Contact Teal to be provisioned an HMRC sandbox test user. You will log in on the HMRC
+  authorisation screen using the supplied test details.
+</Note>
+
+```json
+{
+  "flow": "mtd"
+}
+```
+
+**Employed**
+
+For the employed flow (`"flow": "non_mtd"`), authorisation is verified against HMRC
+using the user's NINO and date of birth, and completion is signalled to Teal via webhook.
+The NINO and DOB must correspond to a valid HMRC test taxpayer.
+
+<Note>
+  Contact Teal to be provisioned a test user. In sandbox, the
+  `authorization_url` shows only a dummy page rather than the full HMRC authorisation flow
+  used in the self-employed journey.
+</Note>
+
+```json
+{
+  "flow": "non_mtd"
+}
+```
+
+#### Retrieve HMRC Income `/gov-connect/{user_id}`
+
+Once the account is authorised, income data is fetched automatically. Retrieve the stored
+Gov Connect income submissions for a user (MTD shape).
+
+```bash
+curl --request GET \
+  --url https://api.sandbox.goteal.co/gov-connect/{user_id} \
+  --header 'X-API-KEY: <api-key>'
+```
+
+**Response Example:**
+
+```json
+{
+  "pagination": {
+    "limit": 100,
+    "offset": 0,
+    "count": 1,
+    "total_count": 1
+  },
+  "gov_connect_submissions": [
+    {
+      "id": "3f1c0b9a-1e2d-4a5b-9c8d-0e1f2a3b4c5d",
+      "account_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
+      "entry_id": "1b2c3d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e",
+      "authorisation_id": "9f8e7d6c-5b4a-3210-fedc-ba9876543210",
+      "identity": {
+        "name": "Sarah Chen",
+        "date_of_birth": "1990-04-22",
+        "ni_number": "AB654321C"
+      },
+      "employments": [
+        {
+          "employment": {
+            "employer_name": "Acme Corp",
+            "paye_reference": "120/NC15208",
+            "status": "active",
+            "start_date": "2018-06-01T00:00Z"
+          },
+          "income": {
+            "tax_year": "2024-25",
+            "taxable_income": "28100.91",
+            "tax_paid": "3611.40"
+          },
+          "updated_at": "2026-06-05 13:03:39"
+        }
+      ],
+      "self_employments": [
+        {
+          "business": { "business_id": "XBIS1" },
+          "income": {
+            "tax_year": "2024-25",
+            "turnover": "92500.00",
+            "other_income": "1200.00",
+            "tax_deducted_at_source": "0.00"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "property_id": "XPIS1",
+          "tax_year": "2024-25",
+          "rent_received": "747.45"
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Fetch HMRC Income `/gov-connect/entries/connections`
+
+Income is fetched automatically when the account is authorised, so this step is only
+needed for subsequent retrievals — to pull fresh income data for an already-connected
+account. Any new data is persisted and can then be read via `GET /gov-connect/{user_id}`.
+This endpoint uses the user's bearer token.
+
+```bash
+curl --request POST \
+  --url https://api.sandbox.goteal.co/gov-connect/entries/connections \
+  --header 'Authorization: Bearer <bearer-token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "account_id": "95a0e70b-fe02-4f47-aef9-2efff279df71"
+}'
+```
+
+Returns `201 Created` with the income submissions when data is returned, or `200 OK`
+with an empty `gov_connect_submissions` array when there is no new data.
+
 ## General Data Retrieval
 
 #### Retrieve Payroll Data `/payroll`
