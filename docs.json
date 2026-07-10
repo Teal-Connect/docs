@@ -83,7 +83,7 @@
             ]
           },
           {
-            "group": "Documents",
+            "group": "Doc Scan",
             "pages": [
               "api-reference/documents/list",
               "api-reference/documents/get",
