@@ -1483,7 +1483,7 @@ paths:
                     is_active: true
                     is_system_term: true
                     created_at: "2024-01-15T00:00:00.000Z"
-                  - id: "7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o"
+                  - id: "7f3b8c2a-1d4e-4f6a-8b8c-9a0b1c2d3e4f"
                     name: "Custom Terms v2"
                     authorisation_text: "Custom authorisation text for our lending product."
                     authorisation_version: 2
@@ -1827,7 +1827,7 @@ components:
       schema:
         type: string
         format: uuid
-        example: "7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o"
+        example: "7f3b8c2a-1d4e-4f6a-8b8c-9a0b1c2d3e4f"
   schemas:
     ProvidersResponse:
       type: object
@@ -2129,7 +2129,7 @@ components:
               type: string
               format: uuid
               description: Unique identifier for the authorisation record
-              example: "7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o"
+              example: "7f3b8c2a-1d4e-4f6a-8b8c-9a0b1c2d3e4f"
             status:
               "$ref": "#/components/schemas/AuthorisationStatus"
             ip_address:
@@ -2235,11 +2235,19 @@ components:
           example: WEEKLY
         recurring_check_end_date:
           description: End date of the recurring check schedule. Overrides the same setting if present in client level configuration.
-          "$ref": "#/components/schemas/Date"
+          type: string
+          format: date-time
+          nullable: true
+          example: 2050-01-01T00:00:00.000Z
         payroll_period_months:
           description: Lookback period of the payroll to search on account creation. Overrides the same setting if present in client level configuration.
           type: integer
           format: int32
+          example: 36
+        hmrc_enabled:
+          description: Determines if HMRC (Gov Connect) is enabled for this user. Overrides the same setting if present in client level configuration.
+          type: boolean
+          example: false
         payslip_upload_enabled:
           type: boolean
           description: Determines if payslip upload is enabled for this user. Overrides the same setting if present in client level configuration.
@@ -2490,7 +2498,7 @@ components:
           format: uuid
           nullable: true
           description: The id of the authorisation that authorized this data retrieval
-          example: 7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o
+          example: 7f3b8c2a-1d4e-4f6a-8b8c-9a0b1c2d3e4f
         created_at:
           "$ref": "#/components/schemas/Date"
     DocumentResponse:
@@ -2839,7 +2847,7 @@ components:
           format: uuid
           nullable: true
           description: The id of the authorisation that authorized this data retrieval
-          example: 7f3b8c2a-1d4e-5f6g-7h8i-9j0k1l2m3n4o
+          example: 7f3b8c2a-1d4e-4f6a-8b8c-9a0b1c2d3e4f
         payroll_submissions:
           type: array
           items:
