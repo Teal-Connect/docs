@@ -1672,7 +1672,7 @@ paths:
       endpoint fetches the latest income data from HMRC for that account and persists it
       on Teal's storage. The stored data can subsequently be retrieved using the
       `GET /gov-connect/{user_id}` endpoint. The account must have been established via a
-      Gov Connect connection (e.g. the `hmrc_untied` provider) and the user must have HMRC
+      Gov Connect connection (e.g. the `hmrc` provider) and the user must have HMRC
       enabled and a valid authorisation.
     post:
       summary: Fetch and store Gov Connect (HMRC) income data for an account
