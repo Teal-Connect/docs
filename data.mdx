@@ -4,6 +4,8 @@ description: 'Manage your data easily and securely'
 ---
 This documentation is designed to provide developers with detailed insights into our API's structure, focusing on the management, delivery, and security of financial data.
 
+For a step-by-step, runnable walkthrough of these endpoints, see the [Sandbox guide](/sandbox).
+
 ## 1. Endpoints
 
 Our API organizes financial data into several key entities, each tailored for specific aspects of data handling and retrieval.
@@ -42,7 +44,7 @@ curl --request POST \
 }'
 ```
 
-A user can have multiple accounts to the same provider depending on the type of connection. The `POST /accounts` endpoint is a way to initialize a connection to a provider for a given user; Teal offers a separate provider flow for users via the WebUI as documented in [Introduction](./introduction.mdx). 
+A user can have multiple accounts to the same provider depending on the type of connection. The `POST /accounts` endpoint is a way to initialize a connection to a provider for a given user; Teal offers a separate provider flow for users via the WebUI as documented in [Introduction](/introduction). 
 Alternatively, `POST /accounts/direct-connections` can be used to establish a connection directly by providing a user ID.
 The status of a account determines if it is able to recieve data, needs authorisation or if it is invalid or expired. An account connected via OAuth will not require credentials to be passed into the account creation request. Any credentials that are passed to Teal are encrypted securely. An account creation
 will do an initial payroll retrieval using the optional dates supplied; if none are sent with the request we then check for the client specific duration for which to lookback - if this is not configured, we take a default of 36 months.
@@ -81,7 +83,7 @@ Aggregates detailed payroll information obtained through account synchronization
 ```bash
 curl --request GET \
   --url https://api.sandbox.goteal.co/payroll/{user_id} \
-  --header 'X-API-KEY: <api-key>''
+  --header 'X-API-KEY: <api-key>'
 ```
 
 The structure of the returned data will contain fields on employment, identity and income. Each payroll submission includes a `source` field indicating how the data was obtained:
@@ -163,11 +165,10 @@ curl --request POST \
   --header 'X-API-KEY: <api-key>' \
   --data '{
   "events": [
-    "user-payroll-submitted",
-    "user-payroll-created"
+    "user-payroll-submitted"
   ],
   "name": "user-payroll-submitted",
-  "secret": "very-secret",
+  "signing_secret": "very-secret",
   "url": "https://webhooks.company.com"
 }'
 ```
