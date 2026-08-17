@@ -3218,14 +3218,11 @@ components:
           nullable: true
           description: >
             The employer's PAYE tax reference (Office number / Employer reference).
-            Populated for Payroll (via Direct Connection) submissions.
           example: 123/AB456
         is_director:
           type: boolean
           nullable: true
-          description: >
-            Whether the employee is a company director.
-            Populated for Payroll (via Direct Connection) submissions.
+          description: Whether the employee is a company director.
           example: true
     IncomeInformation:
       type: object
@@ -3256,9 +3253,7 @@ components:
         tax_code:
           type: string
           nullable: true
-          description: >
-            The tax code applied for the pay period.
-            Populated for Payroll (via Direct Connection) submissions.
+          description: The tax code applied for the pay period.
           example: 1257L
     Earnings:
       type: object
@@ -3284,23 +3279,17 @@ components:
         fixed_pay_total:
           type: string
           nullable: true
-          description: >
-            Total of fixed (non-variable) pay for the period.
-            Populated for Payroll (via Direct Connection) submissions.
+          description: Total of fixed (non-variable) pay for the period.
           example: "3000.00"
         variable_pay_total:
           type: string
           nullable: true
-          description: >
-            Total of variable pay for the period.
-            Populated for Payroll (via Direct Connection) submissions.
+          description: Total of variable pay for the period.
           example: "500.00"
         earning_elements:
           type: array
           nullable: true
-          description: >
-            The individual earning line items that make up the pay.
-            Populated for Payroll (via Direct Connection) submissions.
+          description: The individual earning line items that make up the pay.
           items:
             $ref: "#/components/schemas/EarningElement"
         year_to_date:
@@ -3311,9 +3300,7 @@ components:
           nullable: true
     EarningElement:
       type: object
-      description: >
-        A single earning line item.
-        Populated for Payroll (via Direct Connection) submissions.
+      description: A single earning line item.
       properties:
         type:
           type: string
@@ -3383,9 +3370,7 @@ components:
           example: hours
     YearToDate:
       type: object
-      description: >
-        Year-to-date income totals for the current tax year. Present on the
-        latest pay period per tax year for Payroll (via Direct Connection) submissions.
+      description: Year-to-date income totals for the current tax year.
       properties:
         gross_pay:
           type: string
@@ -3413,9 +3398,7 @@ components:
           example: 2026
     RollingIncome:
       type: object
-      description: >
-        Rolling 12-month income totals. Present on the latest pay period for
-        Payroll (via Direct Connection) submissions.
+      description: Rolling 12-month income totals.
       properties:
         gross_pay:
           type: string
@@ -3451,21 +3434,16 @@ components:
           nullable: true
           description: >
             Total loan deductions (e.g. salary advances, season ticket loans).
-            Populated for Payroll (via Direct Connection) submissions.
           example: "0.00"
         deductions_elements:
           type: array
           nullable: true
-          description: >
-            The individual deduction line items.
-            Populated for Payroll (via Direct Connection) submissions.
+          description: The individual deduction line items.
           items:
             $ref: "#/components/schemas/DeductionElement"
     DeductionElement:
       type: object
-      description: >
-        A single deduction line item.
-        Populated for Payroll (via Direct Connection) submissions.
+      description: A single deduction line item.
       properties:
         type:
           type: string
