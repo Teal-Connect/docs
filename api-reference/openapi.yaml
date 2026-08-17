@@ -3213,6 +3213,20 @@ components:
         leave_date:
           "$ref": "#/components/schemas/Date"
           nullable: true
+        employer_tax_reference:
+          type: string
+          nullable: true
+          description: >
+            The employer's PAYE tax reference (Office number / Employer reference).
+            Populated for Payroll (via Direct Connection) submissions.
+          example: 123/AB456
+        is_director:
+          type: boolean
+          nullable: true
+          description: >
+            Whether the employee is a company director.
+            Populated for Payroll (via Direct Connection) submissions.
+          example: true
     IncomeInformation:
       type: object
       properties:
@@ -3239,44 +3253,242 @@ components:
           $ref: "#/components/schemas/Earnings"
         deductions:
           $ref: "#/components/schemas/Deductions"
+        tax_code:
+          type: string
+          nullable: true
+          description: >
+            The tax code applied for the pay period.
+            Populated for Payroll (via Direct Connection) submissions.
+          example: 1257L
     Earnings:
       type: object
+      description: >
+        All monetary values are returned as strings formatted to two decimal places.
       properties:
         gross_pay:
-          type: number
+          type: string
           description: The gross pay
-          example: 3500
+          example: "3500.00"
         net_pay:
-          type: number
+          type: string
           description: The net pay
-          example: 2500
+          example: "2500.00"
         base_salary:
-          type: number
+          type: string
           description: The base salary
-          example: 3000
+          example: "3000.00"
         bonus:
-          type: number
+          type: string
           description: The bonus
-          example: 500
+          example: "500.00"
+        fixed_pay_total:
+          type: string
+          nullable: true
+          description: >
+            Total of fixed (non-variable) pay for the period.
+            Populated for Payroll (via Direct Connection) submissions.
+          example: "3000.00"
+        variable_pay_total:
+          type: string
+          nullable: true
+          description: >
+            Total of variable pay for the period.
+            Populated for Payroll (via Direct Connection) submissions.
+          example: "500.00"
+        earning_elements:
+          type: array
+          nullable: true
+          description: >
+            The individual earning line items that make up the pay.
+            Populated for Payroll (via Direct Connection) submissions.
+          items:
+            $ref: "#/components/schemas/EarningElement"
+        year_to_date:
+          "$ref": "#/components/schemas/YearToDate"
+          nullable: true
+        rolling_12m_income:
+          "$ref": "#/components/schemas/RollingIncome"
+          nullable: true
+    EarningElement:
+      type: object
+      description: >
+        A single earning line item.
+        Populated for Payroll (via Direct Connection) submissions.
+      properties:
+        type:
+          type: string
+          description: The classified type of the earning element
+          enum:
+            - Bonus
+            - Expense
+            - Medical
+            - StatutorySickPay
+            - StatutoryParentalPayment
+            - StatutoryAdoptionPay
+            - StatutorySharedParentalPay
+            - StatutoryParentalBereavementPay
+            - Strike
+            - Holiday
+            - OtherLeave
+            - Pension
+            - Termination
+            - SportingTestimonial
+            - Other
+          example: Bonus
+        description:
+          type: string
+          nullable: true
+          description: >
+            The raw provider label for the element. Present when the type alone
+            under-specifies the element (typically for `Other`).
+          example: Night shift enhancement
+        amount:
+          type: string
+          description: The amount of the earning element
+          example: "450.00"
+        is_fixed:
+          type: boolean
+          nullable: true
+          description: Whether the element is a fixed (recurring) amount
+          example: false
+        is_after_tax:
+          type: boolean
+          nullable: true
+          description: Whether the element is applied after tax
+          example: false
+        is_after_ni:
+          type: boolean
+          nullable: true
+          description: Whether the element is applied after national insurance
+          example: false
+        is_bik:
+          type: boolean
+          nullable: true
+          description: Whether the element is a benefit in kind
+          example: false
+        quantity:
+          type: string
+          nullable: true
+          description: The quantity (e.g. hours or days) the element was calculated from
+          example: "8.00"
+        rate:
+          type: string
+          nullable: true
+          description: The rate per unit used to calculate the element
+          example: "6.00"
+        unit:
+          type: string
+          nullable: true
+          description: The unit the quantity is measured in
+          example: hours
+    YearToDate:
+      type: object
+      description: >
+        Year-to-date income totals for the current tax year. Present on the
+        latest pay period per tax year for Payroll (via Direct Connection) submissions.
+      properties:
+        gross_pay:
+          type: string
+          description: The year-to-date gross pay
+          example: "25000.00"
+        net_pay:
+          type: string
+          description: The year-to-date net pay
+          example: "17280.00"
+        total_tax_paid:
+          type: string
+          description: The year-to-date income tax paid
+          example: "5000.00"
+        total_ni_paid:
+          type: string
+          description: The year-to-date national insurance paid
+          example: "2080.00"
+        total_taxable_earnings:
+          type: string
+          description: The year-to-date taxable earnings
+          example: "25000.00"
+        tax_year:
+          type: integer
+          description: The tax year the totals apply to
+          example: 2026
+    RollingIncome:
+      type: object
+      description: >
+        Rolling 12-month income totals. Present on the latest pay period for
+        Payroll (via Direct Connection) submissions.
+      properties:
+        gross_pay:
+          type: string
+          description: The rolling 12-month gross pay
+          example: "75000.00"
+        net_pay:
+          type: string
+          description: The rolling 12-month net pay
+          example: "51840.00"
     Deductions:
       type: object
+      description: >
+        All monetary values are returned as strings formatted to two decimal places.
       properties:
         income_tax:
-          type: number
+          type: string
           description: The income tax
-          example: 500
+          example: "500.00"
         employee_ni:
-          type: number
+          type: string
           description: The employee national insurance
-          example: 200
+          example: "200.00"
         employee_pension:
-          type: number
+          type: string
           description: The employee pension
-          example: 300
+          example: "300.00"
         total_deductions:
-          type: number
+          type: string
           description: The total deductions
-          example: 1000
+          example: "1000.00"
+        loan_deductions:
+          type: string
+          nullable: true
+          description: >
+            Total loan deductions (e.g. salary advances, season ticket loans).
+            Populated for Payroll (via Direct Connection) submissions.
+          example: "0.00"
+        deductions_elements:
+          type: array
+          nullable: true
+          description: >
+            The individual deduction line items.
+            Populated for Payroll (via Direct Connection) submissions.
+          items:
+            $ref: "#/components/schemas/DeductionElement"
+    DeductionElement:
+      type: object
+      description: >
+        A single deduction line item.
+        Populated for Payroll (via Direct Connection) submissions.
+      properties:
+        type:
+          type: string
+          description: The classified type of the deduction element
+          enum:
+            - Pension
+            - StudentLoan
+            - AttachmentOfEarnings
+            - Loan
+            - Other
+          example: Pension
+        description:
+          type: string
+          nullable: true
+          description: >
+            The raw provider label for the deduction. Present when the type alone
+            under-specifies the deduction (e.g. `AttachmentOfEarnings` for council
+            tax arrears, child maintenance, or court fines).
+          example: council tax arrears
+        amount:
+          type: string
+          description: The amount of the deduction element
+          example: "160.00"
 
     GovConnectEntriesRequest:
       type: object
