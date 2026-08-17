@@ -3326,8 +3326,9 @@ components:
           type: string
           nullable: true
           description: >
-            The raw provider label for the element. Present when the type alone
-            under-specifies the element (typically for `Other`).
+            The raw provider label for the element. Primarily populated for the
+            `Other` type, where the type alone does not identify the element; may
+            also be present for other types where the provider label adds detail.
           example: Night shift enhancement
         amount:
           type: string
@@ -3459,9 +3460,10 @@ components:
           type: string
           nullable: true
           description: >
-            The raw provider label for the deduction. Present when the type alone
-            under-specifies the deduction (e.g. `AttachmentOfEarnings` for council
-            tax arrears, child maintenance, or court fines).
+            The raw provider label for the deduction. Primarily populated for the
+            `Other` type, where the type alone does not identify the deduction; also
+            present for `AttachmentOfEarnings` (e.g. council tax arrears, child
+            maintenance, or court fines) where the specific order is provider-labelled.
           example: council tax arrears
         amount:
           type: string
