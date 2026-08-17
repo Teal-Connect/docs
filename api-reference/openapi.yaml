@@ -3461,9 +3461,8 @@ components:
           nullable: true
           description: >
             The raw provider label for the deduction. Primarily populated for the
-            `Other` type, where the type alone does not identify the deduction; also
-            present for `AttachmentOfEarnings` (e.g. council tax arrears, child
-            maintenance, or court fines) where the specific order is provider-labelled.
+            `Other` type, where the type alone does not identify the deduction; may
+            also be present for other types where the provider label adds detail.
           example: council tax arrears
         amount:
           type: string
