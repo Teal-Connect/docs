@@ -2160,6 +2160,127 @@ components:
       description: The document trust score assessment. Trust score will be present if the payroll data is coming from a payslip source
       enum: [Low, Medium, High]
       example: High
+    TrustAnalysisFinding:
+      type: object
+      required: [category, message]
+      description: A single trust analysis detection on a document.
+      properties:
+        category:
+          type: string
+          description: The rule that produced this finding.
+          enum:
+            - DOCUMENT_MODIFIED_INCONSISTENT_DATES_LOW
+            - DOCUMENT_MODIFIED_INCONSISTENT_DATES_MID
+            - DOCUMENT_MODIFIED_INCONSISTENT_DATES_HIGH
+            - SUSPICIOUS_TOOL
+            - TITLE_WARNING
+            - WATERMARK
+            - FINAL_LINES_ENCODED_BEFORE_FONT
+            - OVERLAPPING_BOUNDING_BOXES
+            - OTHER
+          example: OVERLAPPING_BOUNDING_BOXES
+        title:
+          type: string
+          description: >-
+            Human-readable label for this finding type, owned by the API.
+            Empty string for records created before labels were introduced.
+          example: Overlapping text regions
+        message:
+          type: string
+          description: Human-readable summary of this detection.
+          example: Text box overlaps an adjacent field by 8.5%
+        location:
+          "$ref": "#/components/schemas/FindingLocation"
+          nullable: true
+    FindingLocation:
+      type: object
+      description: >-
+        Describes where a finding originates. Discriminated by `source`:
+        `page_region` (spatial, carries a box on a page), `metadata`
+        (tied to PDF metadata fields), or `document` (whole-document /
+        non-localizable).
+      required: [source]
+      discriminator:
+        propertyName: source
+        mapping:
+          page_region: "#/components/schemas/PageRegionLocation"
+          metadata: "#/components/schemas/MetadataLocation"
+          document: "#/components/schemas/DocumentLocation"
+      properties:
+        source:
+          type: string
+          enum: [page_region, metadata, document]
+          example: page_region
+    PageRegionLocation:
+      allOf:
+        - "$ref": "#/components/schemas/FindingLocation"
+        - type: object
+          required: [page, box]
+          properties:
+            page:
+              type: integer
+              description: 1-indexed page number the box belongs to.
+              example: 1
+            box:
+              allOf:
+                - "$ref": "#/components/schemas/Box"
+              description: Bounding box for the flagged region on this page.
+    MetadataLocation:
+      allOf:
+        - "$ref": "#/components/schemas/FindingLocation"
+        - type: object
+          required: [fields]
+          properties:
+            fields:
+              type: array
+              description: The PDF metadata field name(s) that triggered the finding.
+              items:
+                type: string
+              example: [CreationDate, ModificationDate]
+    DocumentLocation:
+      allOf:
+        - "$ref": "#/components/schemas/FindingLocation"
+        - type: object
+          description: Whole-document finding with no specific location.
+    Box:
+      type: object
+      required: [x, y, x_end, y_end]
+      description: >-
+        A bounding box for a flagged region. Coordinates are normalised to
+        [0,1] relative to the page dimensions, with a top-left origin (Y
+        increases downward, matching CSS/canvas conventions). Note: y is the
+        text baseline position; the visible glyph extends upward from y by
+        approximately the font cap-height. y_end is below the baseline.
+      properties:
+        x:
+          type: number
+          format: float
+          description: Left edge, normalised [0,1].
+          example: 0.12
+        y:
+          type: number
+          format: float
+          description: >-
+            Text baseline position, normalised [0,1] from top of page.
+            The visible glyph ascenders extend above this coordinate.
+          example: 0.30
+        x_end:
+          type: number
+          format: float
+          description: Right edge, normalised [0,1].
+          example: 0.24
+        y_end:
+          type: number
+          format: float
+          description: >-
+            Bottom of bounding box (below baseline), normalised [0,1].
+            Box height = y_end - y ≈ font cap-height in page-relative units.
+          example: 0.315
+        message:
+          type: string
+          nullable: true
+          description: Optional per-box explanation.
+          example: Overlaps 'Net Pay' by 8.5%
     PaginationWithOrderedBy:
       type: object
       allOf:
@@ -2529,6 +2650,23 @@ components:
           example: "Payslip"
         uploaded_at:
           "$ref": "#/components/schemas/Date"
+        trust_score:
+          "$ref": "#/components/schemas/TrustScore"
+          nullable: true
+          description: >-
+            Trust-oriented scan score for the document. `High` = trustworthy,
+            `Low` = high risk. Null when no scan has been run (e.g. bank
+            statements, or payslips uploaded before the trust analysis feature
+            was deployed) — render as a neutral/pending state.
+        trust_analysis:
+          type: array
+          nullable: true
+          description: >-
+            Per-detection trust analysis findings produced by the document
+            scanner. One entry per detection (not per rule). Null when no scan
+            has been run.
+          items:
+            "$ref": "#/components/schemas/TrustAnalysisFinding"
     EntriesPayslipsPresignRequest:
       type: object
       required: [files]
