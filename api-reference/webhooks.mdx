@@ -490,33 +490,67 @@ is related to uploading a payslip.
           },
           "email": "jane.doe@example.com",
           "phone": "+1234567890",
-          "NI_number": "AB123456C",
-          "employment_information": {
-            "employer_name": "Acme Corp",
-            "role": "Software Developer",
-            "type": "Full-Time",
-            "status": "Active",
-            "start_date": "2018-06-01",
-            "leave_date": null
-          },
-          "income_information": {
-            "pay_date": "2024-02-15",
-            "pay_interval_start": "2024-02-01T00:00:00.000Z",
-            "pay_interval_end": "2024-02-15T00:00:00.000Z",
-            "pay_frequency": "weekly",
-            "earnings": {
-              "gross_pay": 2000,
-              "net_pay": 1500,
-              "base_salary": 1900,
-              "bonus": 100
+          "NI_number": "AB123456C"
+        },
+        "employment_information": {
+          "employer_name": "Acme Corp",
+          "role": "Software Developer",
+          "type": "Full_Time",
+          "status": "Active",
+          "start_date": "2018-06-01",
+          "leave_date": null,
+          "employer_tax_reference": "246/JD135",
+          "is_director": false
+        },
+        "income_information": {
+          "pay_date": "2024-02-15",
+          "pay_interval_start": "2024-02-01T00:00:00.000Z",
+          "pay_interval_end": "2024-02-15T00:00:00.000Z",
+          "pay_frequency": "Weekly",
+          "earnings": {
+            "gross_pay": "2000.00",
+            "net_pay": "1500.00",
+            "base_salary": "1900.00",
+            "bonus": "100.00",
+            "fixed_pay_total": "1900.00",
+            "variable_pay_total": "100.00",
+            "earning_elements": [
+              {
+                "type": "Bonus",
+                "amount": "100.00",
+                "is_fixed": false,
+                "is_after_tax": false,
+                "is_after_ni": false,
+                "is_bik": false
+              }
+            ],
+            "year_to_date": {
+              "gross_pay": "24000.00",
+              "net_pay": "18000.00",
+              "total_tax_paid": "3600.00",
+              "total_ni_paid": "1800.00",
+              "total_taxable_earnings": "24000.00",
+              "tax_year": 2024
             },
-            "deductions": {
-              "income_tax": 300,
-              "employee_ni": 150,
-              "employee_pension": 50,
-              "total_deductions": 500
+            "rolling_12m_income": {
+              "gross_pay": "104000.00",
+              "net_pay": "78000.00"
             }
-          }
+          },
+          "deductions": {
+            "income_tax": "300.00",
+            "employee_ni": "150.00",
+            "employee_pension": "50.00",
+            "total_deductions": "500.00",
+            "loan_deductions": "0.00",
+            "deductions_elements": [
+              {
+                "type": "Pension",
+                "amount": "50.00"
+              }
+            ]
+          },
+          "tax_code": "1257L"
         }
       }
     ]
