@@ -1054,7 +1054,31 @@ curl --request GET \
 
 ## WebApp Usage
 
-Teal's webapp can be tested by accessing `https://app.sandbox.goteal.co/` in the browser. Use the generated bearer token in order to identify the user `https://app.sandbox.goteal.co/?jwt=<bearer-token>`. The webapp uses the same API mechanism as mentioned above, therefore the data will be retrieved in the same way.
+Teal's webapp can be tested by accessing `https://app.sandbox.goteal.co/` in the browser.
+
+### Launching the webapp for a user
+
+When you create a user token via `POST /user-tokens`, the response includes a `webapp_link` field:
+
+```json
+{
+  "token": "eyJhbG...",
+  "webapp_link": "https://app.sandbox.goteal.co/r/ZwgQkNEMZ4QDkQ",
+  "created_at": "2025-01-15T10:30:00.000Z"
+}
+```
+
+Open (or redirect the user to) the `webapp_link` URL. This establishes an authenticated session via a secure HttpOnly cookie and redirects the user into the webapp — no token appears in the final URL.
+
+<Warning>
+  The legacy pattern `?jwt=<bearer-token>` in the URL is **deprecated** and will be ignored. Always use the `webapp_link` from the API response.
+</Warning>
+
+### Embedding in an iframe
+
+Set the iframe `src` to the `webapp_link`. The redirect will set a session cookie and load the webapp inside the frame. For clients that configure a `client_callback_url`, the webapp communicates journey outcomes back to the parent page via `postMessage` (type: `teal:journey_outcome`).
+
+If cookie-setting is blocked by the browser (e.g. Safari ITP), the webapp requests the token from the parent via a `teal:session_required` message. The parent should respond with `{ type: "teal:session_token", token: "<jwt>" }` to complete the session exchange.
 
 You can test the webapp with any of the three personas defined at the top of this guide (Sarah Chen, James O'Connor, or Amina Diallo).
 
