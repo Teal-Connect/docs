@@ -1054,7 +1054,52 @@ curl --request GET \
 
 ## WebApp Usage
 
-Teal's webapp can be tested by accessing `https://app.sandbox.goteal.co/` in the browser. Use the generated bearer token in order to identify the user `https://app.sandbox.goteal.co/?jwt=<bearer-token>`. The webapp uses the same API mechanism as mentioned above, therefore the data will be retrieved in the same way.
+Teal's webapp can be tested by accessing `https://app.sandbox.goteal.co/` in the browser.
+
+### Launching the webapp for a user
+
+When you create a user token via `POST /user-tokens`, the response includes a `webapp_link` field:
+
+```json
+{
+  "token": "eyJhbG...",
+  "webapp_link": "https://app.sandbox.goteal.co/r/ZwgQkNEMZ4QDkQ",
+  "created_at": "2025-01-15T10:30:00.000Z"
+}
+```
+
+Open (or redirect the user to) the `webapp_link` URL. This establishes an authenticated session via a secure HttpOnly cookie and redirects the user into the webapp — no token appears in the final URL.
+
+### Embedding in an iframe
+
+When embedding the webapp in a cross-origin iframe, `SameSite=Lax` cookies are not available (all modern browsers block cross-site cookie access in iframes). The webapp handles this automatically via the **postMessage protocol**:
+
+1. The webapp loads and detects it is embedded (`window !== window.parent`).
+2. It posts `{ type: "teal:session_required" }` to the parent window (origin-restricted to the `callback_url`).
+3. The parent responds with `{ type: "teal:session_token", token: "<jwt>" }` using the `token` from the `/user-tokens` response.
+4. The webapp uses the token as an in-memory `Authorization: Bearer` credential for all API calls within that iframe session.
+
+Your parent page must include a message listener:
+
+```javascript
+window.addEventListener('message', (event) => {
+  if (event.origin !== 'https://app.yourdomain.goteal.co') return;
+  if (event.data?.type === 'teal:session_required') {
+    event.source.postMessage(
+      { type: 'teal:session_token', token: YOUR_JWT_TOKEN },
+      event.origin
+    );
+  }
+});
+```
+
+Set the iframe `src` to `https://app.<env>.goteal.co/?callback_url=<your-parent-origin>`. The `callback_url` parameter tells the webapp which origin to trust for the postMessage exchange.
+
+<Note>
+  The token is held in memory only — it is never persisted to cookies, localStorage, or sessionStorage within the iframe. The session lasts for the lifetime of the iframe. If the iframe is destroyed and re-created, the parent must respond to a new `teal:session_required` message.
+</Note>
+
+For clients that configure a `client_callback_url`, the webapp also communicates journey outcomes back to the parent page via `postMessage` (type: `teal:journey_outcome`).
 
 You can test the webapp with any of the three personas defined at the top of this guide (Sarah Chen, James O'Connor, or Amina Diallo).
 
