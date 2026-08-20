@@ -1070,10 +1070,6 @@ When you create a user token via `POST /user-tokens`, the response includes a `w
 
 Open (or redirect the user to) the `webapp_link` URL. This establishes an authenticated session via a secure HttpOnly cookie and redirects the user into the webapp — no token appears in the final URL.
 
-<Warning>
-  The legacy pattern `?jwt=<bearer-token>` in the URL is **deprecated** and will be ignored. Always use the `webapp_link` from the API response.
-</Warning>
-
 ### Embedding in an iframe
 
 When embedding the webapp in a cross-origin iframe, `SameSite=Lax` cookies are not available (all modern browsers block cross-site cookie access in iframes). The webapp handles this automatically via the **postMessage protocol**:
