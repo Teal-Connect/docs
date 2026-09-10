@@ -20,7 +20,7 @@ Authorisation terms define the legal text that users agree to when granting acce
 
 Each term belongs to a category that defines the type of authorisation:
 
-- **one_time** - Single authorisation for a specific action (e.g., one-time income verification). One-time authorisations expire after 1 day, after which the user must re-authorise.
+- **one_time** - Single authorisation for a specific action (e.g., one-time income verification). One-time authorisations expire after 1 day; the user must re-authorise if more data needs to be fetched.
 - **recurring** - Ongoing authorisation for continuous data access (e.g., recurring payroll checks)
 
 ### Retrieving Available Terms
@@ -161,7 +161,7 @@ Each authorisation record includes an `is_valid` field that indicates whether th
 If `is_valid` is false because the term was deactivated, the user needs to re-authorise to the new term.
 
 <Note>
-One-time authorisations automatically expire. Once expired, the user must re-authorise before any further actions can be performed. Check the `expires_at` field on the authorisation record to see when it expires.
+One-time authorisations automatically expire. After expiry, new data cannot be fetched, but existing data can still be read unless the authorisation is revoked.
 </Note>
 
 ## Re-authorisation Flow
