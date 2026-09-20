@@ -790,6 +790,53 @@ paths:
                 "$ref": "#/components/schemas/Error"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/expenditure/{user_id}/ons":
+    get:
+      summary: Returns monthly ONS V3.0 affordability estimates for a user
+      description: |
+        Estimates cost of living and housing from the user's payroll periods,
+        date of birth, and postcode using the Teal V3.0 ONS Family Spending
+        model (table A6).
+
+        Net pay is split across calendar months by overlapping days. Age is
+        taken as of the last day of each month and adjusts cost of living only.
+        Region (from the postcode prefix) adjusts housing only.
+
+        `404` lists each missing input as its own string in `errors`.
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the user to estimate expenditure for
+      responses:
+        "200":
+          description: Monthly expenditure estimates
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/OnsExpenditureResponse"
+              example:
+                expenditures:
+                  - date: "2026-01-01"
+                    cost_of_living: "333.21"
+                    housing: "372.96"
+                    total: "706.17"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          description: User not found or required inputs are missing
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+              example:
+                errors:
+                  - date_of_birth is missing
+                  - post_codes is missing
+                  - payroll periods are missing
   "/documents/{document_id}":
     get:
       summary: Returns all documents for a user entry
@@ -2957,6 +3004,34 @@ components:
           items:
             type: string
           example: FullMember
+    OnsExpenditureResponse:
+      type: object
+      required: [expenditures]
+      properties:
+        expenditures:
+          type: array
+          description: One row per calendar month that has allocated net pay
+          items:
+            type: object
+            required: [date, cost_of_living, housing, total]
+            properties:
+              date:
+                type: string
+                format: date
+                description: First day of the calendar month
+                example: "2026-01-01"
+              cost_of_living:
+                type: string
+                description: Age-adjusted cost of living in pounds (2 decimals)
+                example: "333.21"
+              housing:
+                type: string
+                description: Region-adjusted housing in pounds (2 decimals)
+                example: "372.96"
+              total:
+                type: string
+                description: cost_of_living plus housing
+                example: "706.17"
     Error:
       required:
         - errors
