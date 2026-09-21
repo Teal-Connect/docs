@@ -799,8 +799,10 @@ paths:
         model (table A6).
 
         Net pay is split across calendar months by overlapping days. Age is
-        taken as of the last day of each month and adjusts cost of living only.
-        Region (from the postcode prefix) adjusts housing only.
+        taken as of the last day of each month from that period's date of
+        birth (else the user's) and adjusts cost of living only.
+        Region (from each period's postcode prefix, else the user's first
+        postcode) adjusts housing only.
 
         `404` lists each missing input as its own string in `errors`.
       parameters:
