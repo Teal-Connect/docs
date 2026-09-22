@@ -76,6 +76,12 @@
             ]
           },
           {
+            "group": "Expenditure",
+            "pages": [
+              "api-reference/expenditure/ons"
+            ]
+          },
+          {
             "group": "Gov Connect",
             "pages": [
               "api-reference/gov-connect/connections-create",

@@ -1,0 +1,10 @@
+---
+title: 'Get ONS expenditure'
+openapi: 'GET /expenditure/{user_id}/ons'
+---
+
+Monthly cost of living and housing estimates from the Teal V3.0 ONS Family Spending model (table A6).
+
+Cost of living is age-adjusted from each payroll period's `identity_information.date_of_birth`, falling back to the user's `date_of_birth`. Housing is region-adjusted from each period's `identity_information.address.post_code`, falling back to the user's first `post_codes` entry. Age is calculated as of the last day of each month.
+
+`404` returns `{ "errors": [...] }` with one string per missing input (`date_of_birth`, `post_codes`, payroll periods, or region for prefixes such as GY/IM).
