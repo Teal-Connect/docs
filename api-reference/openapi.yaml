@@ -184,15 +184,6 @@ paths:
             minimum: 1
             maximum: 500
             default: 500
-        - name: type
-          in: query
-          description: Filter by document type
-          required: false
-          schema:
-            type: string
-            enum:
-              - Payslip
-              - Bank Statement
       responses:
         "200":
           description: OK
@@ -663,14 +654,18 @@ paths:
              each PDF file name (and optional external identifier). The response
              includes `presigned_url` and `path` values for every requested file.
           2. Upload the PDF content to every `presigned_url` using an HTTP `PUT`
-             request with `Content-Type: application/octet-stream`. Each file must be a
-             searchable, machine-readable PDF (scanned images are not supported).
+             request with `Content-Type: application/octet-stream`. Searchable,
+             machine-readable PDFs are preferred. Scanned-image PDFs are sent
+             through OCR; if Doc Scan assesses trust as Medium or Low before OCR,
+             the file is rejected and listed in `payslip_errors`.
           3. Call this endpoint with the JSON payload returned in step one,
              echoing the `path` (and optional `external_document_id`) for every
              uploaded file so Teal can process the documents.
         The `path` values you submit must match the ones returned by the presign
         step. Any files that failed validation or upload are reported in the
-        `payslip_errors` array.
+        `payslip_errors` array. Each successful payroll submission includes
+        `trust_score`. Retrieve `trust_analysis` and `pdf_metadata` from
+        `GET /documents/{document_id}`. See [Doc Scan](/doc-scan).
       security:
         - BearerAuth: []
       requestBody:
@@ -792,7 +787,7 @@ paths:
           "$ref": "#/components/responses/UnauthorizedApiKey"
   "/documents/{document_id}":
     get:
-      summary: Returns all documents for a user entry
+      summary: Retrieve a document by id
       parameters:
         - in: path
           name: document_id
@@ -813,6 +808,48 @@ paths:
                         type: string
                         description: Base-64 encoded string containing file contents
                         example: "JVBERi0xLjQKJdPr6eEKMSAwIG9iago8PC9UaXRsZSAoS..."
+              example:
+                document_id: 95a0e70b-fe02-4f47-aef9-2efff279df71
+                file_name: payslip1.pdf
+                type: payslip
+                uploaded_at: 2026-05-17T00:00:00.000Z
+                file_contents: JVBERi0xLjQKJdPr6eEKMSAwIG9iago8PC9UaXRsZSAoS...
+                document_external_id: payslip123456
+                trust_score: Medium
+                trust_analysis:
+                  - category: SUSPICIOUS_TOOL
+                    title: Suspicious editing tool
+                    message: PDF producer is associated with document editing software
+                    location:
+                      source: metadata
+                      fields:
+                        - producer
+                    severity: high
+                pdf_metadata:
+                  info:
+                    producer: ReportLab PDF Library
+                    creator: null
+                    author: null
+                    title: null
+                    subject: null
+                    keywords: null
+                    creation_date: D:20260517090000Z
+                    modification_date: D:20260517100000Z
+                    trapped: null
+                  structure:
+                    number_of_pages: 1
+                    file_size_bytes: 48210
+                    pdf_version: "1.7"
+                    encrypted: false
+                    incremental_saves: 2
+                    revision_count: 2
+                    signed: false
+                    linearized: false
+                    original_revision_readable: true
+                  producer: ReportLab PDF Library
+                  creator: null
+                  creation_date: D:20260517090000Z
+                  modification_date: D:20260517100000Z
         "400":
           "$ref": "#/components/responses/BadRequest"
         "401":
@@ -870,6 +907,17 @@ paths:
             minimum: 1
             maximum: 500
             default: 500
+        - name: type
+          in: query
+          description: |
+            Filter by document type. Case-insensitive. Omit to return all types.
+            Unknown values are ignored (all types returned).
+          required: false
+          schema:
+            type: string
+            enum:
+              - payslip
+              - bank_statement
       responses:
         "200":
           description: Document response
@@ -890,6 +938,54 @@ paths:
                               type: string
                               description: Location to download the document
                               example: "/documents/a9249254-ab10-4a2d-b709-eda95f5ecd59"
+              example:
+                pagination:
+                  offset: 0
+                  limit: 500
+                  count: 1
+                  total_count: 1
+                documents:
+                  - document_id: 95a0e70b-fe02-4f47-aef9-2efff279df71
+                    file_name: payslip1.pdf
+                    type: payslip
+                    uploaded_at: 2026-05-17T00:00:00.000Z
+                    file_contents: /documents/95a0e70b-fe02-4f47-aef9-2efff279df71
+                    document_external_id: payslip123456
+                    trust_score: Medium
+                    trust_analysis:
+                      - category: SUSPICIOUS_TOOL
+                        title: Suspicious editing tool
+                        message: PDF producer is associated with document editing software
+                        location:
+                          source: metadata
+                          fields:
+                            - producer
+                        severity: high
+                    pdf_metadata:
+                      info:
+                        producer: ReportLab PDF Library
+                        creator: null
+                        author: null
+                        title: null
+                        subject: null
+                        keywords: null
+                        creation_date: D:20260517090000Z
+                        modification_date: D:20260517100000Z
+                        trapped: null
+                      structure:
+                        number_of_pages: 1
+                        file_size_bytes: 48210
+                        pdf_version: "1.7"
+                        encrypted: false
+                        incremental_saves: 2
+                        revision_count: 2
+                        signed: false
+                        linearized: false
+                        original_revision_readable: true
+                      producer: ReportLab PDF Library
+                      creator: null
+                      creation_date: D:20260517090000Z
+                      modification_date: D:20260517100000Z
         "400":
           description: Unexpected error
           content:
@@ -2157,7 +2253,10 @@ components:
         - "$ref": "#/components/schemas/AuthorisationAcceptance"
     TrustScore:
       type: string
-      description: The document trust score assessment. Trust score will be present if the payroll data is coming from a payslip source
+      description: |
+        Authenticity assessment from Doc Scan. Present on payroll submissions
+        from a payslip source, and on document records created by payslip upload.
+        Null for bank statements and untyped documents. See [Doc Scan](/doc-scan).
       enum: [Low, Medium, High]
       example: High
     PaginationWithOrderedBy:
@@ -2525,10 +2624,231 @@ components:
           example: payslip123456
         type:
           type: string
-          description: The type of document (Payslip, Bank Statement, or Document)
-          example: "Payslip"
+          description: |
+            Document type as returned by the API.
+          enum:
+            - payslip
+            - bank_statement
+            - document
+          example: payslip
         uploaded_at:
           "$ref": "#/components/schemas/Date"
+        trust_score:
+          allOf:
+            - "$ref": "#/components/schemas/TrustScore"
+          nullable: true
+          description: |
+            Doc Scan authenticity score for payslip uploads. Null for bank
+            statements and untyped documents.
+        trust_analysis:
+          type: array
+          nullable: true
+          description: |
+            Findings that contributed to `trust_score`. Null when Doc Scan did
+            not run (bank statements and untyped documents). Empty array with
+            `trust_score: High` means no rules fired.
+          items:
+            "$ref": "#/components/schemas/TrustAnalysisFinding"
+        pdf_metadata:
+          allOf:
+            - "$ref": "#/components/schemas/PdfMetadata"
+          nullable: true
+          description: |
+            Extracted PDF info and structure. Null for bank statements and
+            untyped documents.
+    TrustAnalysisFinding:
+      type: object
+      required: [category, title, message, severity]
+      properties:
+        category:
+          "$ref": "#/components/schemas/DocScanRuleType"
+        title:
+          type: string
+          description: Human-readable label for the category
+          example: Suspicious editing tool
+        message:
+          type: string
+          description: Detail of what was detected
+          example: PDF producer is associated with document editing software
+        location:
+          "$ref": "#/components/schemas/FindingLocation"
+          nullable: true
+        severity:
+          type: string
+          description: |
+            Inverted from trust: a finding that alone would drive Low trust is
+            `high` severity.
+          enum: [high, medium, low]
+          example: high
+    DocScanRuleType:
+      type: string
+      description: Wire name of the Doc Scan rule that fired
+      enum:
+        - DOCUMENT_MODIFIED_INCONSISTENT_DATES_LOW_GAP
+        - DOCUMENT_MODIFIED_INCONSISTENT_DATES_MID_GAP
+        - DOCUMENT_MODIFIED_INCONSISTENT_DATES_HIGH_GAP
+        - SUSPICIOUS_TOOL
+        - TITLE_WARNING
+        - WATERMARK
+        - FINAL_LINES_ENCODED_BEFORE_FONT
+        - OVERLAPPING_BOUNDING_BOXES
+        - MANY_INCREMENTAL_SAVES_WEAK
+        - MANY_INCREMENTAL_SAVES_MID
+        - MANY_INCREMENTAL_SAVES_STRONG
+        - TEXT_MODIFIED_AFTER_SAVE_WEAK
+        - TEXT_MODIFIED_AFTER_SAVE_STRONG
+        - OTHER
+    FindingLocation:
+      oneOf:
+        - "$ref": "#/components/schemas/FindingLocationPageRegion"
+        - "$ref": "#/components/schemas/FindingLocationMetadata"
+        - "$ref": "#/components/schemas/FindingLocationDocument"
+      discriminator:
+        propertyName: source
+        mapping:
+          page_region: "#/components/schemas/FindingLocationPageRegion"
+          metadata: "#/components/schemas/FindingLocationMetadata"
+          document: "#/components/schemas/FindingLocationDocument"
+    FindingLocationPageRegion:
+      type: object
+      required: [source, page, box]
+      properties:
+        source:
+          type: string
+          enum: [page_region]
+        page:
+          type: integer
+          description: 1-indexed page number
+          example: 1
+        box:
+          type: object
+          required: [x, y, x_end, y_end]
+          properties:
+            x:
+              type: number
+              format: float
+            y:
+              type: number
+              format: float
+            x_end:
+              type: number
+              format: float
+            y_end:
+              type: number
+              format: float
+            message:
+              type: string
+              nullable: true
+    FindingLocationMetadata:
+      type: object
+      required: [source, fields]
+      properties:
+        source:
+          type: string
+          enum: [metadata]
+        fields:
+          type: array
+          items:
+            type: string
+          example: [producer]
+    FindingLocationDocument:
+      type: object
+      required: [source]
+      properties:
+        source:
+          type: string
+          enum: [document]
+    PdfMetadata:
+      type: object
+      properties:
+        info:
+          "$ref": "#/components/schemas/PdfMetadataInfo"
+          nullable: true
+        structure:
+          "$ref": "#/components/schemas/PdfMetadataStructure"
+          nullable: true
+        producer:
+          type: string
+          nullable: true
+          description: Flat compatibility copy of `info.producer`
+        creator:
+          type: string
+          nullable: true
+          description: Flat compatibility copy of `info.creator`
+        creation_date:
+          type: string
+          nullable: true
+          description: Flat compatibility copy of `info.creation_date`
+        modification_date:
+          type: string
+          nullable: true
+          description: Flat compatibility copy of `info.modification_date`
+    PdfMetadataInfo:
+      type: object
+      properties:
+        producer:
+          type: string
+          nullable: true
+        creator:
+          type: string
+          nullable: true
+        author:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        subject:
+          type: string
+          nullable: true
+        keywords:
+          type: string
+          nullable: true
+        creation_date:
+          type: string
+          nullable: true
+        modification_date:
+          type: string
+          nullable: true
+        trapped:
+          type: string
+          nullable: true
+    PdfMetadataStructure:
+      type: object
+      properties:
+        number_of_pages:
+          type: integer
+          nullable: true
+        file_size_bytes:
+          type: integer
+          format: int64
+          nullable: true
+        pdf_version:
+          type: string
+          nullable: true
+        encrypted:
+          type: boolean
+          nullable: true
+        incremental_saves:
+          type: integer
+          nullable: true
+        revision_count:
+          type: integer
+          nullable: true
+        signed:
+          type: boolean
+          nullable: true
+        linearized:
+          type: boolean
+          nullable: true
+        original_revision_readable:
+          type: boolean
+          nullable: true
+          description: |
+            Scan-coverage flag, not a fraud signal. True when the original
+            revision (rev[0]) was parsed during Doc Scan. False when candidate
+            boundaries failed to load, so content-change detection could not
+            run. Null when the document has fewer than 2 saves.
     EntriesPayslipsPresignRequest:
       type: object
       required: [files]

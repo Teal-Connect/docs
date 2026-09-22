@@ -17,13 +17,17 @@ Follow these steps to upload payslips programmatically:
    of filenames (and optional external identifiers) you intend to upload. The
    response returns `presigned_url` and `path` fields for each file.
 2. **Upload PDFs** – for every returned `presigned_url`, perform an HTTP `PUT`
-   with `Content-Type: application/octet-stream`, streaming the PDF bytes. Files must be
-   searchable, machine-readable PDFs (scanned images are not supported).
+   with `Content-Type: application/octet-stream`, streaming the PDF bytes.
+   Searchable, machine-readable PDFs are preferred. Scanned-image PDFs go through
+   OCR; if Doc Scan assesses trust as Medium or Low before OCR, the file is
+   rejected and listed in `payslip_errors`.
 3. **Submit metadata** – call `POST /payroll/entries/payslips` (this endpoint) with a
    JSON payload that includes the `path` for each uploaded file and an optional
    `external_document_id`. Teal uses this metadata to process the uploaded
    documents. Any files that fail validation are listed in `payslip_errors` in
-   the response.
+   the response. Successful submissions include `trust_score`. Retrieve
+   `trust_analysis` and `pdf_metadata` from [GET /documents/{document_id}](/api-reference/documents/get).
+   See [Doc Scan](/doc-scan).
 
 <RequestExample>
 

@@ -105,6 +105,8 @@ curl --request GET \
 
 The response data of the above document request will be JSON containing the Base-64 encoded file contents. This can be decoded and transformed back into PDF format.
 
+For payslip uploads, the same payload includes `trust_score`, `trust_analysis`, and `pdf_metadata`. Bank statement documents leave those fields null. See [Doc Scan](/doc-scan) and [List documents](/api-reference/documents/list).
+
 ### Configuration `/configuration`
 
 Configuration represents client-wide settings that control behavior across all users and accounts.
@@ -138,6 +140,8 @@ Certain endpoints that create or retrieve payroll data on behalf of a user requi
 - `POST /payroll/entries/connections` – querying a connection for data
 - `POST /payroll/entries/payslips/presign` – generating presigned upload URLs
 - `POST /payroll/entries/payslips` – submitting payslips for processing
+- `PUT /documents/bank-statements/presign` – generating presigned bank statement upload URLs
+- `PUT /documents/bank-statements` – submitting bank statements for processing
 
 If no active authorisation exists for the user, these endpoints will reject the request. You can optionally include the `x-teal-authorisation-id` header to specify which authorisation to use; otherwise the system will resolve a valid authorisation automatically. See [Authorisations](/authorisations) for full details on creating terms and recording user authorisation.
 
