@@ -822,7 +822,7 @@ paths:
                 "$ref": "#/components/schemas/OnsExpenditureResponse"
               example:
                 expenditures:
-                  - date: "2026-01-01"
+                  - date: "2026-01-01T12:00Z"
                     cost_of_living: "333.21"
                     housing: "372.96"
                     total: "706.17"
@@ -3019,9 +3019,9 @@ components:
             properties:
               date:
                 type: string
-                format: date
-                description: First day of the calendar month
-                example: "2026-01-01"
+                format: date-time
+                description: First day of the calendar month at UTC noon
+                example: "2026-01-01T12:00Z"
               cost_of_living:
                 type: string
                 description: Age-adjusted cost of living in pounds (2 decimals)
