@@ -3224,6 +3224,12 @@ components:
           nullable: true
           description: Whether the employee is a company director.
           example: true
+        employer_address:
+          $ref: "#/components/schemas/Address"
+          nullable: true
+          description: >
+            The employer's address. Same shape as the employee address.
+            Null when the provider does not supply it.
     IncomeInformation:
       type: object
       properties:
