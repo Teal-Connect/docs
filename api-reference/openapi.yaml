@@ -2728,10 +2728,20 @@ components:
           type: string
           description: File name of the uploaded document
           nullable: true
+        currency:
+          type: string
+          description: ISO-4217 currency code. Null when the statement does not determine one.
+          nullable: true
+          example: GBP
+        account_key:
+          type: string
+          description: Stable key derived from sort code and account number. Null when either value is missing.
+          nullable: true
+          example: a3f19c8e
         account_information:
           "$ref": "#/components/schemas/BankStatementAccountInformation"
           nullable: true
-        statement_period:
+        period:
           "$ref": "#/components/schemas/BankStatementStatementPeriod"
           nullable: true
         balance_information:
@@ -2797,14 +2807,14 @@ components:
       properties:
         opening_balance:
           type: string
-          description: Opening balance at the start of the statement period
+          description: Opening balance at the start of the statement period. Decimal string with 2 decimal places, no thousands separators. Sign is preserved.
           nullable: true
-          example: "1,000.00"
+          example: "1000.00"
         closing_balance:
           type: string
-          description: Closing balance at the end of the statement period
+          description: Closing balance at the end of the statement period. Decimal string with 2 decimal places, no thousands separators. Sign is preserved.
           nullable: true
-          example: "1,250.00"
+          example: "1250.00"
     BankStatementTransaction:
       type: object
       description: A single transaction from the bank statement
@@ -2821,9 +2831,9 @@ components:
           example: "Salary Payment"
         amount:
           type: string
-          description: Transaction amount
+          description: Transaction amount as a positive decimal string with 2 decimal places and no thousands separators. Direction is in type.
           nullable: true
-          example: "2,500.00"
+          example: "2500.00"
         type:
           type: string
           description: Transaction type (credit or debit)
