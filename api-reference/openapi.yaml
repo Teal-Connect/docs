@@ -819,6 +819,7 @@ paths:
           "$ref": "#/components/responses/UnauthorizedApiKey"
     delete:
       summary: Deletes a document by id
+      description: Deletes the document and, for scanned documents (P45, P60 or Universal Credit), the linked scan extract.
       parameters:
         - in: path
           name: document_id
@@ -870,6 +871,13 @@ paths:
             minimum: 1
             maximum: 500
             default: 500
+        - name: type
+          in: query
+          description: Filter documents by type
+          required: false
+          schema:
+            type: string
+            enum: [payslip, bank_statement, p45, p60, universal_credit]
       responses:
         "200":
           description: Document response
@@ -1066,6 +1074,300 @@ paths:
                     type: array
                     items:
                       "$ref": "#/components/schemas/BankStatementSubmission"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/doc-scan/presign":
+    put:
+      summary: Generate presigned URLs for document scan uploads
+      parameters:
+        - "$ref": "#/components/parameters/XAuthorisationId"
+      description: |
+        Generates short-lived presigned URLs that you can use to upload
+        documents (P45, P60, or Universal Credit statements) directly to
+        Teal-managed storage, before submitting them for scanning and
+        extraction with `POST /doc-scan`.
+
+        The request must include at least one file, file names must not
+        contain `/`, and at most 12 files can be requested at once. At least
+        one of `p45_scan_enabled`, `p60_scan_enabled` or
+        `universal_credit_scan_enabled` must be enabled for the user (see
+        client and user configuration).
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/DocScanPresignRequest"
+      responses:
+        "200":
+          description: Presigned URLs generated successfully
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/DocScanPresignResponse"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedBearer"
+  "/doc-scan":
+    post:
+      summary: Submit previously uploaded documents for scanning and extraction
+      parameters:
+        - "$ref": "#/components/parameters/XAuthorisationId"
+      description: |
+        Uploading documents for doc scan is a three-step flow:
+          1. Request upload slots with `PUT /doc-scan/presign`, providing each
+             PDF file name (and optional external identifier). The response
+             includes `presigned_url` and `path` values for every requested
+             file.
+          2. Upload the PDF content to every `presigned_url` using an HTTP
+             `PUT` request with `Content-Type: application/octet-stream`.
+          3. Call this endpoint with the `path` (and optional
+             `external_document_id`) of every uploaded file so Teal can
+             extract the document data.
+
+        `type` (`p45`, `p60` or `universal_credit`) is required and tells
+        Teal which document type to extract.
+
+        Each `path` must start with `{client_name}/{user_id}/`. A maximum of
+        12 files can be submitted at once and each file must be 10 MB or
+        smaller. The uploaded files are deleted from storage after
+        processing. The relevant scan flag (`p45_scan_enabled`,
+        `p60_scan_enabled` or `universal_credit_scan_enabled`) must be
+        enabled for the user and for the requested `type`.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/DocScanUploadRequest"
+      responses:
+        "201":
+          description: Created — document(s) extracted and saved
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/DocScanUploadResponse"
+        "200":
+          description: OK — no files were extracted; see `errors` for details
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/DocScanUploadResponse"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedBearer"
+  "/p45/{user_id}":
+    get:
+      summary: Returns all P45 extracts for a user
+      description: |
+        Retrieve paginated P45 scan extracts for a given user. Each document
+        includes the extracted P45 data, the extraction
+        probability, and details of the underlying uploaded document.
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the user to get P45 extracts for
+        - name: offset
+          in: query
+          description: The offset to start at
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: The number of items to return
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - name: created_after
+          in: query
+          description: Filter out documents created before the given date
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: 2024-01-01T00:00:00.000Z
+        - name: created_before
+          in: query
+          description: Filter out documents created after the given date
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: 2024-12-31T23:59:59.000Z
+        - "$ref": "#/components/parameters/XAuthorisationId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pagination:
+                    "$ref": "#/components/schemas/Pagination"
+                  documents:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/DocScanDocument"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/p60/{user_id}":
+    get:
+      summary: Returns all P60 extracts for a user
+      description: |
+        Retrieve paginated P60 scan extracts for a given user. Each document
+        includes the extracted P60 data, the extraction
+        probability, and details of the underlying uploaded document.
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the user to get P60 extracts for
+        - name: offset
+          in: query
+          description: The offset to start at
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: The number of items to return
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - name: created_after
+          in: query
+          description: Filter out documents created before the given date
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: 2024-01-01T00:00:00.000Z
+        - name: created_before
+          in: query
+          description: Filter out documents created after the given date
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: 2024-12-31T23:59:59.000Z
+        - "$ref": "#/components/parameters/XAuthorisationId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pagination:
+                    "$ref": "#/components/schemas/Pagination"
+                  documents:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/DocScanDocument"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/universal-credit/{user_id}":
+    get:
+      summary: Returns all Universal Credit extracts for a user
+      description: |
+        Retrieve paginated Universal Credit scan extracts for a given user.
+        Each document includes the extracted Universal Credit data, the
+        extraction probability, and details of the underlying
+        uploaded document.
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the user to get Universal Credit extracts for
+        - name: offset
+          in: query
+          description: The offset to start at
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: The number of items to return
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - name: created_after
+          in: query
+          description: Filter out documents created before the given date
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: 2024-01-01T00:00:00.000Z
+        - name: created_before
+          in: query
+          description: Filter out documents created after the given date
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: 2024-12-31T23:59:59.000Z
+        - "$ref": "#/components/parameters/XAuthorisationId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pagination:
+                    "$ref": "#/components/schemas/Pagination"
+                  documents:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/DocScanDocument"
         "400":
           "$ref": "#/components/responses/BadRequest"
         "401":
@@ -2254,6 +2556,15 @@ components:
         payroll_connections_enabled:
           type: boolean
           description: Determines if payroll connections feature is enabled for this user. Overrides the same setting if present in client level configuration.
+        p45_scan_enabled:
+          type: boolean
+          description: Determines if P45 document scanning is enabled for this user. Overrides the same setting if present in client level configuration.
+        p60_scan_enabled:
+          type: boolean
+          description: Determines if P60 document scanning is enabled for this user. Overrides the same setting if present in client level configuration.
+        universal_credit_scan_enabled:
+          type: boolean
+          description: Determines if Universal Credit document scanning is enabled for this user. Overrides the same setting if present in client level configuration.
     CreatedUser:
       allOf:
         - required: [user_id, created_at]
@@ -2315,6 +2626,18 @@ components:
           type: boolean
           description: Determines if payroll connections feature is enabled for this client. When disabled, the payroll connections endpoint will return an error.
           example: true
+        p45_scan_enabled:
+          type: boolean
+          description: Determines if P45 document scanning is enabled client-wide. Gates new doc-scan uploads; existing extracts are still returned by the P45 list endpoint.
+          example: false
+        p60_scan_enabled:
+          type: boolean
+          description: Determines if P60 document scanning is enabled client-wide. Gates new doc-scan uploads; existing extracts are still returned by the P60 list endpoint.
+          example: false
+        universal_credit_scan_enabled:
+          type: boolean
+          description: Determines if Universal Credit document scanning is enabled client-wide. Gates new doc-scan uploads; existing extracts are still returned by the Universal Credit list endpoint.
+          example: false
         client_display_name:
           type: string
           nullable: true
@@ -2525,7 +2848,7 @@ components:
           example: payslip123456
         type:
           type: string
-          description: The type of document (Payslip, Bank Statement, or Document)
+          description: The type of document (Payslip, Bank Statement, p45, p60, universal_credit, or Document)
           example: "Payslip"
         uploaded_at:
           "$ref": "#/components/schemas/Date"
@@ -2829,6 +3152,290 @@ components:
           description: Transaction type (credit or debit)
           nullable: true
           example: "credit"
+    DocScanPresignRequest:
+      type: object
+      required: [files]
+      properties:
+        files:
+          type: array
+          description: Document files that require presigned upload URLs
+          minItems: 1
+          maxItems: 12
+          items:
+            "$ref": "#/components/schemas/DocScanPresignRequestFile"
+    DocScanPresignRequestFile:
+      type: object
+      required: [file_name]
+      properties:
+        file_name:
+          type: string
+          description: File name including extension. Must not contain `/`.
+          example: p45.pdf
+        external_id:
+          type: string
+          description: Optional identifier echoed back in the presign response.
+          example: ext-p45-2024-05
+    DocScanPresignResponse:
+      type: object
+      required: [presigned_urls]
+      properties:
+        presigned_urls:
+          type: array
+          description: Generated URLs and metadata for uploading the requested files.
+          items:
+            "$ref": "#/components/schemas/DocScanPresignResponseFile"
+    DocScanPresignResponseFile:
+      type: object
+      required: [file_name, presigned_url, path]
+      properties:
+        file_name:
+          type: string
+          description: The requested file name.
+          example: p45.pdf
+        external_id:
+          type: string
+          description: Optional identifier provided in the presign request.
+          example: ext-p45-2024-05
+        presigned_url:
+          type: string
+          format: uri
+          description: The URL to upload the file content to via HTTP PUT.
+          example: https://s3.amazonaws.com/bucket/presigned-upload-key?signature=abc123
+        path:
+          type: string
+          description: The storage path that must be echoed when submitting the documents.
+          example: client/acct123/users/user456/p45.pdf
+    DocScanUploadRequest:
+      type: object
+      required: [files, type]
+      properties:
+        files:
+          type: array
+          description: Previously uploaded documents to extract.
+          minItems: 1
+          maxItems: 12
+          items:
+            "$ref": "#/components/schemas/DocScanUploadRequestFile"
+        type:
+          type: string
+          description: Target document type. Required.
+          enum: [p45, p60, universal_credit]
+    DocScanUploadRequestFile:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+          description: Storage path returned by the presign endpoint. Must start with `{client_name}/{user_id}/`.
+          example: client/acct123/users/user456/p45.pdf
+        external_document_id:
+          type: string
+          description: Optional identifier shown in the response documents when present.
+          example: ext-p45-2024-05
+    DocScanUploadResponse:
+      type: object
+      required: [documents, errors]
+      properties:
+        documents:
+          type: array
+          description: Successfully extracted documents
+          items:
+            "$ref": "#/components/schemas/DocScanDocument"
+        errors:
+          type: array
+          description: Files that failed extraction
+          items:
+            "$ref": "#/components/schemas/DocScanError"
+    DocScanDocument:
+      type: object
+      required: [id, type, created_at, document_id, extract, probability]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique doc scan extract identifier
+          example: 95a0e70b-fe02-4f47-aef9-2efff279df71
+        type:
+          type: string
+          description: The requested document type
+          enum: [p45, p60, universal_credit]
+          example: p45
+        created_at:
+          "$ref": "#/components/schemas/Date"
+        document_id:
+          type: string
+          format: uuid
+          description: ID of the linked raw document
+        document_external_id:
+          type: string
+          description: External ID provided during upload, if any
+          nullable: true
+        document_filename:
+          type: string
+          description: File name of the uploaded document
+          nullable: true
+        extract:
+          type: object
+          description: Extracted fields for the document type (see DocScanP45Extract, DocScanP60Extract or DocScanUniversalCreditExtract)
+          oneOf:
+            - "$ref": "#/components/schemas/DocScanP45Extract"
+            - "$ref": "#/components/schemas/DocScanP60Extract"
+            - "$ref": "#/components/schemas/DocScanUniversalCreditExtract"
+        probability:
+          type: number
+          format: float
+          description: Confidence score (0-1) of the extraction
+          example: 0.95
+        provenance:
+          type: object
+          description: Which pipeline produced the extract and the fraud-scan verdict on the source PDF. Omitted when no provenance was recorded.
+          nullable: true
+          required: [source, trust_score]
+          properties:
+            source:
+              type: string
+              description: The extraction pipeline that produced this document
+              enum: [DOC_SCAN]
+              example: DOC_SCAN
+            trust_score:
+              "$ref": "#/components/schemas/TrustScore"
+    DocScanError:
+      type: object
+      required: [error]
+      properties:
+        file_name:
+          type: string
+          description: File name of the document that failed, if known
+          nullable: true
+          example: p45.pdf
+        error:
+          type: string
+          description: Why the document failed extraction
+          example: P45 could not be extracted
+    DocScanP45Extract:
+      type: object
+      description: Fields extracted from a P45
+      properties:
+        employer_name:
+          type: string
+          nullable: true
+          example: "Acme Corporation"
+        paye_reference:
+          type: string
+          nullable: true
+          example: "123/AB456"
+        employee_name:
+          type: string
+          nullable: true
+          example: "John Smith"
+        national_insurance_number:
+          type: string
+          nullable: true
+          example: "QQ123456C"
+        leave_date:
+          type: string
+          description: Date in YYYY-MM-DD format
+          nullable: true
+          example: "2024-05-31"
+        tax_code:
+          type: string
+          nullable: true
+          example: "1257L"
+        tax_year:
+          type: string
+          nullable: true
+          example: "2026"
+        last_pay_date:
+          type: string
+          description: Date in YYYY-MM-DD format
+          nullable: true
+          example: "2024-05-31"
+        gross_pay:
+          type: string
+          description: Monetary value as a string with 2 decimals
+          nullable: true
+          example: "1500.00"
+        income_tax:
+          type: string
+          description: Monetary value as a string with 2 decimals
+          nullable: true
+          example: "250.00"
+    DocScanP60Extract:
+      type: object
+      description: Fields extracted from a P60
+      properties:
+        employer_name:
+          type: string
+          nullable: true
+          example: "Acme Corporation"
+        paye_reference:
+          type: string
+          nullable: true
+          example: "123/AB456"
+        employee_name:
+          type: string
+          nullable: true
+          example: "John Smith"
+        national_insurance_number:
+          type: string
+          nullable: true
+          example: "QQ123456C"
+        tax_year:
+          type: string
+          nullable: true
+          example: "2026"
+        tax_code:
+          type: string
+          nullable: true
+          example: "1257L"
+        last_pay_date:
+          type: string
+          description: Date in YYYY-MM-DD format
+          nullable: true
+          example: "2024-04-05"
+        gross_pay:
+          type: string
+          description: Monetary value as a string with 2 decimals
+          nullable: true
+          example: "32000.00"
+        net_pay:
+          type: string
+          description: Monetary value as a string with 2 decimals
+          nullable: true
+          example: "25000.00"
+        taxable_income:
+          type: string
+          description: Monetary value as a string with 2 decimals
+          nullable: true
+          example: "31000.00"
+        income_tax:
+          type: string
+          description: Monetary value as a string with 2 decimals
+          nullable: true
+          example: "5000.00"
+        employee_ni:
+          type: string
+          description: Monetary value as a string with 2 decimals
+          nullable: true
+          example: "2500.00"
+    DocScanUniversalCreditExtract:
+      type: object
+      description: Fields extracted from a Universal Credit statement
+      properties:
+        claimant_name:
+          type: string
+          nullable: true
+          example: "John Smith"
+        monthly_amount:
+          type: string
+          description: Monetary value as a string with 2 decimals
+          nullable: true
+          example: "1200.00"
+        assessment_period:
+          type: string
+          description: Assessment period in YYYY-MM-DD to YYYY-MM-DD format
+          nullable: true
+          example: "2024-05-06 to 2024-06-05"
     PayrollData:
       type: object
       required: [account_id, entry_id, pagination, payroll_submissions]
