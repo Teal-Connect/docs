@@ -90,7 +90,12 @@
               "api-reference/documents/delete",
               "api-reference/documents/bank-statements-presign",
               "api-reference/documents/bank-statements-upload",
-              "api-reference/documents/bank-statements-get"
+              "api-reference/documents/bank-statements-get",
+              "api-reference/documents/doc-scan-presign",
+              "api-reference/documents/doc-scan-upload",
+              "api-reference/documents/doc-scan-p45",
+              "api-reference/documents/doc-scan-p60",
+              "api-reference/documents/doc-scan-universal-credit"
             ]
           },
           {
