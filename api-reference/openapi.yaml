@@ -705,6 +705,11 @@ paths:
   "/payroll/{user_id}":
     get:
       summary: Returns all payroll from the system that the user has access to
+      description: >-
+        `payroll_submissions` are ordered by pay date, newest first. When a
+        payslip has no pay date, its pay interval end (then start) is used;
+        payslips with no date at all come last. Payslips with the same date are
+        ordered by employer name. `offset` and `limit` page through this order.
       parameters:
         - in: path
           name: user_id
