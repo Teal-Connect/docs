@@ -802,9 +802,23 @@ paths:
         taken as of the last day of each month from that period's date of
         birth (else the user's) and adjusts cost of living only.
         Region (from each period's postcode prefix, else the user's first
-        postcode) adjusts housing only.
+        postcode that has an ONS region) adjusts housing only.
 
-        `404` lists each missing input as its own string in `errors`.
+        Months are skipped, not returned, when their net pay is zero or
+        negative (refunds, reversals) or when no postcode for the month has
+        an ONS region (for example GY, JE, IM or an unknown postcode).
+
+        `404` lists each missing or invalid input as its own string in
+        `errors`:
+        - `User [<user_id>] not found`
+        - `[date_of_birth] param is missing on the user and its payslips`
+        - `[post_codes] param is missing on the user and its payslips`
+        - `[date_of_birth] param <date> is after the payslip month`
+        - `[date_of_birth] param <date> gives an age over 150, the ONS model limit`
+        - `Postcode <postcode> has no ONS region; supported: England, Wales, Scotland, Northern Ireland`
+          (only when no month has a postcode with a region)
+        - `payroll periods are missing`
+        - `payroll periods have no positive net pay`
       parameters:
         - in: path
           name: user_id
@@ -829,15 +843,15 @@ paths:
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
         "404":
-          description: User not found or required inputs are missing
+          description: User not found, or required inputs are missing or invalid
           content:
             application/json:
               schema:
                 "$ref": "#/components/schemas/Error"
               example:
                 errors:
-                  - date_of_birth is missing
-                  - post_codes is missing
+                  - "[date_of_birth] param is missing on the user and its payslips"
+                  - "[post_codes] param is missing on the user and its payslips"
                   - payroll periods are missing
   "/documents/{document_id}":
     get:
