@@ -1,0 +1,26 @@
+---
+title: 'Get ONS expenditure'
+openapi: 'GET /expenditure/{user_id}/ons'
+---
+
+Monthly cost of living and housing estimates from the Teal V3.0 ONS Family Spending model (table A6). `expenditures` is newest month first.
+
+Cost of living is age-adjusted from each payroll period's `identity_information.date_of_birth`, falling back to the user's `date_of_birth`. Housing is region-adjusted from each period's `identity_information.address.post_code`, falling back to the user's first `post_codes` entry that has an ONS region. Age is calculated as of the last day of each month.
+
+Some months are left out of `expenditures`:
+
+- Months whose net pay is zero or negative (refunds, reversals). They are skipped rather than returned as `0.00` or negative amounts.
+- Months where neither the payroll period's postcode nor any of the user's `post_codes` has an ONS region (for example GY, JE, IM or an unknown postcode).
+
+`404` returns `{ "errors": [...] }` with one string per missing or invalid input:
+
+| Error | Cause |
+| --- | --- |
+| `User [<user_id>] not found` | No such user for this client |
+| `[date_of_birth] param is missing on the user and its payslips` | No date of birth on a month's payroll period or on the user |
+| `[post_codes] param is missing on the user and its payslips` | No postcode on a payroll period or on the user |
+| `[date_of_birth] param <date> is after the payslip month` | Date of birth is after the month it applies to, for example in the future |
+| `[date_of_birth] param <date> gives an age over 150, the ONS model limit` | Age is above the model's oldest band |
+| `Postcode <postcode> has no ONS region; supported: England, Wales, Scotland, Northern Ireland` | No month has a postcode with an ONS region. One string per postcode tried |
+| `payroll periods are missing` | No payroll periods with net pay and dates |
+| `payroll periods have no positive net pay` | Every month has zero or negative net pay |
