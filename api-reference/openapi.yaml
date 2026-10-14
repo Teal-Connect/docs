@@ -2733,11 +2733,12 @@ components:
           description: ISO-4217 currency code. Null when the statement does not determine one.
           nullable: true
           example: GBP
-        account_key:
+        bank_account_id:
           type: string
-          description: Stable key derived from sort code and account number. Null when either value is missing.
+          format: uuid
+          description: Stable identifier derived from sort code and account number. Null when either value is missing.
           nullable: true
-          example: a3f19c8e
+          example: f2d985e8-e77d-334f-bd3e-bee1a4057e8b
         account_information:
           "$ref": "#/components/schemas/BankStatementAccountInformation"
           nullable: true
