@@ -1,0 +1,76 @@
+---
+title: 'Doc Scan'
+description: 'How Teal assesses payslip authenticity and how to read trust fields'
+---
+
+Doc Scan extracts payroll data from uploaded payslip PDFs and scores document authenticity with deterministic PDF metadata and structure checks. It runs automatically on [payslip upload](/api-reference/payroll/payslips-create). There is no feature flag.
+
+Bank statement uploads are **not** scored. Those document records return `trust_score`, `trust_analysis`, and `pdf_metadata` as `null`. `bank_statement_probability` on a bank statement submission is a separate confidence that the file is a bank statement — not a fraud analysis.
+
+# Where the fields appear
+
+| Surface | Fields |
+|---|---|
+| `POST /payroll/entries/payslips` and `GET /payroll/{user_id}` | `payroll_submissions[].trust_score` only (`Low` \| `Medium` \| `High`) |
+| `GET /documents` and `GET /documents/{document_id}` | `trust_score`, `trust_analysis[]`, `pdf_metadata` |
+
+Fetch the document endpoints when you need findings or PDF metadata. Payroll JSON does not include `trust_analysis`.
+
+# Reading `trust_score`
+
+| Score | Meaning |
+|---|---|
+| `High` | No rules fired, or the combined findings stay below the Medium band. An empty `trust_analysis` array with `High` means nothing was flagged. |
+| `Medium` | One or more rules fired; combined signal is moderate. |
+| `Low` | Combined signal is strong. Treat as high risk. |
+
+`severity` on each finding is inverted from trust: a finding that alone would drive Low trust is `high` severity.
+
+# Finding categories
+
+`trust_analysis[].category` is the wire name. `title` is the human label.
+
+| `category` | `title` |
+|---|---|
+| `DOCUMENT_MODIFIED_INCONSISTENT_DATES_LOW_GAP` | Inconsistent dates (minor) |
+| `DOCUMENT_MODIFIED_INCONSISTENT_DATES_MID_GAP` | Inconsistent dates (moderate) |
+| `DOCUMENT_MODIFIED_INCONSISTENT_DATES_HIGH_GAP` | Inconsistent dates (significant) |
+| `SUSPICIOUS_TOOL` | Suspicious editing tool |
+| `TITLE_WARNING` | Document title anomaly |
+| `WATERMARK` | Watermark detected |
+| `FINAL_LINES_ENCODED_BEFORE_FONT` | Encoding anomaly |
+| `OVERLAPPING_BOUNDING_BOXES` | Overlapping text regions |
+| `MANY_INCREMENTAL_SAVES_WEAK` | Multiple saves after creation (weak) |
+| `MANY_INCREMENTAL_SAVES_MID` | Multiple saves after creation (moderate) |
+| `MANY_INCREMENTAL_SAVES_STRONG` | Multiple saves after creation (strong) |
+| `TEXT_MODIFIED_AFTER_SAVE_WEAK` | Text values modified after save (single) |
+| `TEXT_MODIFIED_AFTER_SAVE_STRONG` | Text values modified after save (multiple) |
+| `OTHER` | Other anomaly |
+
+Each finding may include `location.source`:
+
+- `page_region` — 1-indexed `page` and `box` (`x`, `y`, `x_end`, `y_end`, optional `message`)
+- `metadata` — `fields` naming PDF info keys (for example `producer`)
+- `document` — the finding applies to the file as a whole
+
+# `pdf_metadata`
+
+Payslip documents include extracted PDF `info` (producer, creator, dates, and similar) and `structure` (page count, version, incremental saves, encryption, signatures). Flat `producer`, `creator`, `creation_date`, and `modification_date` fields are kept for compatibility.
+
+`structure.original_revision_readable` is a **coverage** flag, not a tampering signal:
+
+- `true` — the original revision was parsed, so content-change detection could run
+- `false` — candidate boundaries failed to load; content-change detection did not run. This does not imply tampering.
+- `null` — the document has fewer than two saves, so the flag does not apply
+
+# Upload constraints
+
+Payslip (and bank statement) uploads return `400` when validation fails:
+
+- PDF files only
+- 2 MB per file
+- 12 files per request
+- 250 documents per user
+- Password-protected PDFs are rejected
+
+Searchable, machine-readable PDFs are preferred. Scanned-image PDFs go through OCR. If Doc Scan assesses trust as Medium or Low on the pre-OCR metadata check, the file is not extracted and is listed in `payslip_errors`.
