@@ -25,6 +25,14 @@ Follow these steps to upload payslips programmatically:
    documents. Any files that fail validation are listed in `payslip_errors` in
    the response.
 
+<Note>
+  Payslip uploads are processed via Doc Scan, so the resulting entries carry
+  `source: "Payslip (via Doc Scan)"` and include a `trust_score`. Treat
+  `trust_score` as an advisory confidence signal, not an authoritative
+  verification result — use `source` to tell these OCR-parsed entries apart
+  from API-verified Direct Connection / User Connection entries.
+</Note>
+
 <RequestExample>
 
 ```bash cURL
