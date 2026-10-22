@@ -3241,7 +3241,8 @@ components:
       properties:
         name:
           type: string
-          description: SIC 2007 section title of the chosen code.
+          description: >
+            SIC 2007 section title of the chosen code. Sections are broad; see `sic_codes` for what the company does.
           enum:
             - Agriculture, forestry and fishing
             - Mining and quarrying
@@ -3268,11 +3269,15 @@ components:
         sic_codes:
           type: array
           items:
-            type: string
-          description: SIC codes in Companies House order, including leading zeros.
+            $ref: "#/components/schemas/SicCode"
+          description: >
+            The company's SIC codes in Companies House order, each with its description.
+            Empty when the sector was classified from the employer name rather than matched to a company.
           example:
-            - "62020"
-            - "70229"
+            - code: "62020"
+              description: Information technology consultancy activities
+            - code: "70229"
+              description: Management consultancy activities other than financial management
         confidence:
           type: string
           enum:
@@ -3280,6 +3285,18 @@ components:
             - medium
             - high
           example: high
+    SicCode:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Five-digit SIC code, including leading zeros.
+          example: "47110"
+        description:
+          type: string
+          nullable: true
+          description: What the code covers, as published by Companies House. Null when the code is not recognised.
+          example: Retail sale in non-specialised stores with food, beverages or tobacco predominating
     IncomeInformation:
       type: object
       properties:
