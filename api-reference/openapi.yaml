@@ -2254,9 +2254,12 @@ components:
     TrustScore:
       type: string
       description: |
-        Authenticity assessment from Doc Scan. Present on payroll submissions
-        from a payslip source, and on document records created by payslip upload.
-        Null for bank statements and untyped documents. See [Doc Scan](/doc-scan).
+        Authenticity assessment from Doc Scan. An advisory confidence signal,
+        not an authoritative verification result. Present on payroll
+        submissions from a payslip source, and on document records created by
+        payslip upload. Null for bank statements and untyped documents
+        (never for API-verified Direct Connection or User Connection
+        entries). See [Doc Scan](/doc-scan).
       enum: [Low, Medium, High]
       example: High
     PaginationWithOrderedBy:
@@ -3451,7 +3454,7 @@ components:
           nullable: true
         source:
           type: string
-          description: The source of the payroll data
+          description: The source of the payroll data. Use this field to distinguish OCR-parsed entries (`Payslip (via Doc Scan)`) from API-verified entries (`Payroll (via Direct Connection)`, `Payroll (via User Connection)`).
           example: Payroll (via Direct Connection)
           enum:
             - Payroll (via Direct Connection)

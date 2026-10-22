@@ -5,6 +5,8 @@ description: 'How Teal assesses payslip authenticity and how to read trust field
 
 Doc Scan extracts payroll data from uploaded payslip PDFs and scores document authenticity with deterministic PDF metadata and structure checks. It runs automatically on [payslip upload](/api-reference/payroll/payslips-create). There is no feature flag.
 
+`trust_score` is an advisory confidence signal, not an authoritative go/no-go verification result — it's one input into your own risk decisioning, not a replacement for it.
+
 Bank statement uploads are **not** scored. Those document records return `trust_score`, `trust_analysis`, and `pdf_metadata` as `null`. `bank_statement_probability` on a bank statement submission is a separate confidence that the file is a bank statement — not a fraud analysis.
 
 # Where the fields appear
