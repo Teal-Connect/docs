@@ -3326,6 +3326,79 @@ components:
           nullable: true
           description: Whether the employee is a company director.
           example: true
+        employer_address:
+          $ref: "#/components/schemas/Address"
+          nullable: true
+          description: >
+            The employer's address. Same shape as the employee address.
+            Null when the provider does not supply it.
+        employer_sector:
+          $ref: "#/components/schemas/EmployerSector"
+          nullable: true
+          description: >
+            The employer's SIC 2007 section, from Companies House when a name or postcode matches.
+            Null when there is no match, SIC is none supplied, or the only codes are dormant or non-trading.
+    EmployerSector:
+      type: object
+      properties:
+        name:
+          type: string
+          description: >
+            SIC 2007 section title of the chosen code. Sections are broad; see `sic_codes` for what the company does.
+          enum:
+            - Agriculture, forestry and fishing
+            - Mining and quarrying
+            - Manufacturing
+            - Electricity, gas, steam and air conditioning supply
+            - Water supply; sewerage, waste management and remediation activities
+            - Construction
+            - Wholesale and retail trade; repair of motor vehicles and motorcycles
+            - Transportation and storage
+            - Accommodation and food service activities
+            - Information and communication
+            - Financial and insurance activities
+            - Real estate activities
+            - Professional, scientific and technical activities
+            - Administrative and support service activities
+            - Public administration and defence; compulsory social security
+            - Education
+            - Human health and social work activities
+            - Arts, entertainment and recreation
+            - Other service activities
+            - Activities of households as employers; undifferentiated goods- and services-producing activities of households for own use
+            - Activities of extraterritorial organisations and bodies
+          example: Information and communication
+        sic_codes:
+          type: array
+          items:
+            $ref: "#/components/schemas/SicCode"
+          description: >
+            The company's SIC codes in Companies House order, each with its description.
+            Empty when the sector was classified from the employer name rather than matched to a company.
+          example:
+            - code: "62020"
+              description: Information technology consultancy activities
+            - code: "70229"
+              description: Management consultancy activities other than financial management
+        confidence:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+          example: high
+    SicCode:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Five-digit SIC code, including leading zeros.
+          example: "47110"
+        description:
+          type: string
+          nullable: true
+          description: What the code covers, as published by Companies House. Null when the code is not recognised.
+          example: Retail sale in non-specialised stores with food, beverages or tobacco predominating
     IncomeInformation:
       type: object
       properties:
