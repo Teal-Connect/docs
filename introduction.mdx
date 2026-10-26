@@ -38,7 +38,7 @@ If a direct API connection isn't available, Teal prompts the user to securely au
 
 ## 3. Doc Scan
 
-If digital connections fail or the user cannot remember their credentials, Teal seamlessly falls back to document upload. Unlike generic OCR, Teal's purpose-built extraction models interrogate the uploaded payslip's metadata, validate the mathematics (Gross vs. Net), and check for pixel anomalies for a better assessment.
+If digital connections fail or the user cannot remember their credentials, Teal seamlessly falls back to document upload. Unlike generic OCR, Teal's purpose-built extraction models interrogate the uploaded payslip's metadata, validate the mathematics (Gross vs. Net), and run deterministic PDF structure checks for authenticity. See [Doc Scan](/doc-scan) for `trust_score`, `trust_analysis`, and `pdf_metadata`.
 
 # Real-Time Updates via Webhooks
 
