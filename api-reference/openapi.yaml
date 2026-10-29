@@ -18,6 +18,18 @@ paths:
       give authorised access and/or upload their payslips to our API.
     post:
       summary: Creates a user.
+      description: |
+        Flags you do not send are copied from the client configuration (`GET /configuration`).
+        After that, at least one source must be enabled: `hmrc_enabled`, `payslip_upload_enabled`,
+        `payroll_connections_enabled` or `bank_statement_enabled`. Bank statements alone are enough,
+        under every verification preset; the preset never changes which combinations are accepted.
+        Otherwise the request is refused with a 400 and this message:
+
+        `At least one feature (payslip_upload, hmrc, payroll_connections, or bank_statement) must be enabled (verification preset [default])`
+
+        The bracket names the client's `verification_preset`. Under `gambling-light` and
+        `gambling-vulnerability` it reads `(verification preset [gambling-light] sets bank_as_source)`.
+        If you match on this message, match its start.
       requestBody:
         required: true
         content:
@@ -102,7 +114,14 @@ paths:
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
     patch:
-      description: Update a user and its config. If a field is sent as null then it is considered an unset or removal.
+      description: |
+        Update a user and its config. If a field is sent as null then it is considered an unset or removal.
+
+        Flags you do not send keep the user's stored values. After that, at least one source must be
+        enabled (`hmrc_enabled`, `payslip_upload_enabled`, `payroll_connections_enabled` or
+        `bank_statement_enabled`), or the request is refused with the same 400 as `POST /users`:
+        `At least one feature (payslip_upload, hmrc, payroll_connections, or bank_statement) must be enabled (verification preset [<preset>])`.
+        Bank statements alone are enough, under every verification preset.
       summary: Updates a user.
       parameters:
         - in: path
@@ -239,6 +258,22 @@ paths:
       providing a stream of income and employment data
     post:
       summary: Creates an account for the user e.g. a Xero account
+      description: |
+        For a Gov Connect (HMRC) account (`payroll_provider: hmrc_untied`), `extra_login_params.flow`
+        is `mtd` (self-employed, Making Tax Digital) or `non_mtd` (employed), and the user needs a
+        `date_of_birth`. Teal invites the taxpayer through its HMRC connection partner while handling the
+        request. When the partner refuses the invite, the response carries a stable `code` and, when the
+        partner gave one, its reason in `provider_message`:
+
+        | Status | `code` | `errors[0]` | When |
+        |---|---|---|---|
+        | 422 | `hmrc_nino_dob_invalid` | HMRC could not match the National Insurance number and date of birth | The partner's reason names the NINO or DOB, for either flow. |
+        | 502 | `hmrc_self_employed_unavailable` | HMRC self-employment connection is currently unavailable | Any other refusal of an `mtd` invite. |
+        | 502 | `hmrc_employed_unavailable` | HMRC employment connection is currently unavailable | Any other refusal of a `non_mtd` invite. |
+
+        A 422 means the user's National Insurance number or date of birth needs correcting before
+        retrying. A 502 means the invite was refused for another reason; retry later or offer the
+        applicant another source.
       parameters:
         - "$ref": "#/components/parameters/XAuthorisationId"
       requestBody:
@@ -287,6 +322,36 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+        "422":
+          description: Gov Connect (HMRC) only. HMRC could not match the user's National Insurance number and date of birth.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+              example:
+                errors: ["HMRC could not match the National Insurance number and date of birth"]
+                code: hmrc_nino_dob_invalid
+                provider_message: "NINO and DOB do not match"
+        "502":
+          description: |
+            Gov Connect (HMRC) only. Teal's HMRC connection partner refused the invite.
+            `code` is `hmrc_self_employed_unavailable` for the `mtd` flow and `hmrc_employed_unavailable`
+            for the `non_mtd` flow.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+              examples:
+                selfEmployed:
+                  summary: Self-employed (mtd) flow
+                  value:
+                    errors: ["HMRC self-employment connection is currently unavailable"]
+                    code: hmrc_self_employed_unavailable
+                employed:
+                  summary: Employed (non_mtd) flow
+                  value:
+                    errors: ["HMRC employment connection is currently unavailable"]
+                    code: hmrc_employed_unavailable
     get:
       summary: Returns all accounts for the user (e.g. Xero accounts)
       parameters:
@@ -664,13 +729,27 @@ paths:
              includes `presigned_url` and `path` values for every requested file.
           2. Upload the PDF content to every `presigned_url` using an HTTP `PUT`
              request with `Content-Type: application/octet-stream`. Each file must be a
-             searchable, machine-readable PDF (scanned images are not supported).
+             PDF. Text-based, scanned and image-only PDFs are all extracted.
           3. Call this endpoint with the JSON payload returned in step one,
              echoing the `path` (and optional `external_document_id`) for every
              uploaded file so Teal can process the documents.
         The `path` values you submit must match the ones returned by the presign
-        step. Any files that failed validation or upload are reported in the
-        `payslip_errors` array.
+        step.
+
+        Each file is processed on its own. A file that cannot be used does not fail
+        the request: it is listed in `payslip_errors` with its `file_name` and an
+        `error`, and the other files are still processed. Common errors:
+        - `File could not be read`: the file is named `.pdf` but cannot be opened as a PDF
+          (for example, it is corrupt or truncated).
+        - `Could not extract payslip`: the PDF opened but no payslip could be extracted from it,
+          for example a blank page.
+        - `File is not a payslip`: the document was read but is not a payslip.
+
+        The response is `201` when at least one payslip was stored, and `200` with an empty
+        `payroll_submissions` array when none was. Check `payslip_errors` in both cases.
+
+        The whole request fails, and no file is processed, when a file is not named `.pdf`, is empty,
+        is over the size limit or is password protected, or when there are too many files.
       security:
         - BearerAuth: []
       requestBody:
@@ -680,24 +759,34 @@ paths:
             schema:
               "$ref": "#/components/schemas/EntriesPayslipsJsonRequestFileRequest"
       responses:
-        "201":
-          description: Created
+        "200":
+          description: No payslip was stored. `payroll_submissions` is empty and `payslip_errors` says why for each file.
           content:
             application/json:
               schema:
                 allOf:
-                  - "$ref": "#/components/schemas/PayrollData"
-                  - properties:
-                      payslip_errors:
-                        description: List of errors for payslips that passed validation but failed to upload
+                  - type: object
+                    properties:
+                      payroll_submissions:
                         type: array
+                        description: Always empty here.
+                        maxItems: 0
                         items:
                           type: object
-                          properties:
-                            error:
-                              type: string
-                            file_name:
-                              type: string
+                  - "$ref": "#/components/schemas/PayslipErrors"
+              example:
+                payroll_submissions: []
+                payslip_errors:
+                  - file_name: payslip1.pdf
+                    error: File could not be read
+                  - file_name: payslip2.pdf
+                    error: Could not extract payslip
+        "201":
+          description: At least one payslip was stored. Files that could not be used are listed in `payslip_errors`.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PayslipUploadResult"
         "400":
           "$ref": "#/components/responses/BadRequest"
         "401":
@@ -1424,6 +1513,9 @@ paths:
   "/configuration":
     get:
       summary: Returns the client configuration
+      description: |
+        `verification_preset`, `affordability_mode` and `required_documents` are always returned.
+        Fields with no value, such as an unset `affordability_margin`, are omitted.
       responses:
         "200":
           description: OK
@@ -1437,13 +1529,60 @@ paths:
           "$ref": "#/components/responses/ResourceNotFound"
     patch:
       summary: Updates the client configuration
-      description: Partial updates supported; omitted fields preserve their existing values.
+      description: |
+        Partial update. Only the fields you send change: omitted fields keep their stored values,
+        and unknown fields are ignored. The response is the whole configuration after the update.
+
+        **`null` and empty strings.** For `client_logo`, `client_callback_url` and
+        `client_display_name`, `null` is ignored and the stored value is kept; send `""` to clear one.
+        `null` also keeps the stored `payroll_period_months`. Two fields are cleared by `null`:
+        `affordability_margin`, and `recurring_check_frequency` (refused while
+        `recurring_checks_enabled` is `true`). The boolean flags, `verification_preset`,
+        `affordability_mode` and `required_documents` refuse `null` with a 400.
+
+        **Selecting a preset.** When `verification_preset` names a different preset from the stored
+        one, that preset's defaults fill in each of these fields that the same request does not send:
+        `payroll_connections_enabled`, `hmrc_enabled`, `payslip_upload_enabled`, `p45_scan_enabled`,
+        `p60_scan_enabled`, `universal_credit_scan_enabled`, `bank_statement_enabled`,
+        `affordability_mode` and `required_documents`. Fields you send take precedence, so you can select a
+        preset and adjust it in the same request or later. Sending the stored preset again applies
+        nothing. `default` has no defaults, so switching to it changes no other field. No preset sets
+        `affordability_margin`. Selecting a preset changes the client configuration only, not the flags
+        stored on existing users. See [Update client configuration](/api-reference/configuration/update)
+        for each preset's defaults.
+
+        **Refusals.** The request is refused with a 400, and nothing is saved, when the resulting
+        configuration is inconsistent. `errors` lists every problem, for example:
+        - `[verification_preset] param must be one of: auto-finance, default, gambling-light, gambling-vulnerability, guarantor, lettings, mortgage, payday, prime-loan, recruitment, second-charge`
+        - `[affordability_mode] param must be one of: off, ons, bank, ons_then_bank`
+        - `[affordability_mode] bank and ons_then_bank need bank statements enabled (bank_statement_enabled)`
+          when the resulting `affordability_mode` is `bank` or `ons_then_bank` and `bank_statement_enabled`
+          is `false`. This also refuses switching bank statements off while the mode needs them.
+        - `[affordability_margin] param must be a whole number of pounds, 0 or more, or null`
+        - `[required_documents] param must be an array of: payslips, p45, p60, universal_credit, bank_statements`
+        - `[required_documents] bank_statements is required but bank_statement_enabled is off` (one error
+          per required document whose flag is off). Remove the document from `required_documents` before,
+          or in the same request as, switching its flag off.
+        - `[verification_preset] gambling-light uses bank statements as a source (bank_as_source) and needs bank_statement_enabled`
+          for `gambling-light` and `gambling-vulnerability`.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               "$ref": "#/components/schemas/ClientConfiguration"
+            examples:
+              selectPreset:
+                summary: Select a preset and switch one of its documents off
+                value:
+                  verification_preset: auto-finance
+                  p45_scan_enabled: false
+              requiredBankStatements:
+                summary: Require bank statements
+                value:
+                  bank_statement_enabled: true
+                  affordability_mode: bank
+                  required_documents: ["bank_statements"]
       responses:
         "200":
           description: OK
@@ -1452,7 +1591,15 @@ paths:
               schema:
                 "$ref": "#/components/schemas/ClientConfiguration"
         "400":
-          "$ref": "#/components/responses/BadRequest"
+          description: The body is invalid or the resulting configuration is inconsistent.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+              example:
+                errors:
+                  - "[affordability_mode] bank and ons_then_bank need bank statements enabled (bank_statement_enabled)"
+                  - "[required_documents] bank_statements is required but bank_statement_enabled is off"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
   "/authorisations/terms":
@@ -2317,6 +2464,18 @@ components:
         payroll_connections_enabled:
           type: boolean
           description: Determines if payroll connections feature is enabled for this user. Overrides the same setting if present in client level configuration.
+        bank_statement_enabled:
+          type: boolean
+          description: Determines if bank statement upload (Doc Scan) is enabled for this user. Overrides the same setting if present in client level configuration. Counts as a source on its own.
+        p45_scan_enabled:
+          type: boolean
+          description: Determines if P45 upload (Doc Scan) is enabled for this user. Overrides the same setting if present in client level configuration.
+        p60_scan_enabled:
+          type: boolean
+          description: Determines if P60 upload (Doc Scan) is enabled for this user. Overrides the same setting if present in client level configuration.
+        universal_credit_scan_enabled:
+          type: boolean
+          description: Determines if Universal Credit statement upload (Doc Scan) is enabled for this user. Overrides the same setting if present in client level configuration.
     CreatedUser:
       allOf:
         - required: [user_id, created_at]
@@ -2381,8 +2540,95 @@ components:
         client_display_name:
           type: string
           nullable: true
-          description: Editable display name for the client. This can be customized and is separate from the internal client name.
+          description: |
+            Editable display name for the client. This can be customized and is separate from the internal client name.
+            It is also used for the `<client_name>` placeholder in authorisation term text; when it is blank, the
+            client name is used instead.
           example: "Acme Corporation"
+        hmrc_enabled:
+          type: boolean
+          description: Determines if HMRC (Gov Connect) is enabled for new users of this client.
+          example: false
+        bank_statement_enabled:
+          type: boolean
+          description: Determines if bank statement upload (Doc Scan) is enabled for new users of this client.
+          example: false
+        p45_scan_enabled:
+          type: boolean
+          description: Determines if P45 upload (Doc Scan) is enabled for new users of this client.
+          example: false
+        p60_scan_enabled:
+          type: boolean
+          description: Determines if P60 upload (Doc Scan) is enabled for new users of this client.
+          example: false
+        universal_credit_scan_enabled:
+          type: boolean
+          description: Determines if Universal Credit statement upload (Doc Scan) is enabled for new users of this client.
+          example: false
+        verification_preset:
+          "$ref": "#/components/schemas/VerificationPreset"
+        affordability_mode:
+          type: string
+          enum: ["off", ons, bank, ons_then_bank]
+          default: ons
+          description: |
+            When the Teal webapp asks the applicant for bank statements to assess affordability.
+            - `off`: affordability is not assessed, so bank statements are never asked for on affordability grounds.
+            - `ons`: the ONS expenditure estimate is used (see `GET /expenditure/{user_id}/ons`).
+            - `bank`: bank statements are needed.
+            - `ons_then_bank`: the ONS estimate is used when it is available and, if `affordability_margin` is
+              set, the applicant's mean monthly net pay minus the ONS expenditure is at least that margin.
+              Otherwise bank statements are asked for.
+
+            `bank` and `ons_then_bank` need `bank_statement_enabled` to be `true`.
+          example: ons
+        affordability_margin:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+          description: |
+            Monthly headroom, in whole pounds, that `ons_then_bank` needs between mean net pay and the ONS
+            expenditure estimate before it accepts the estimate without bank statements. Only `ons_then_bank`
+            uses it. Omitted from the response when unset; send `null` to unset it.
+          example: 200
+        required_documents:
+          type: array
+          uniqueItems: true
+          items:
+            "$ref": "#/components/schemas/DocumentType"
+          description: |
+            Documents the Teal webapp asks for as required rather than optional. Each one must be enabled
+            by its flag (`payslips`: `payslip_upload_enabled`, `p45`: `p45_scan_enabled`, `p60`:
+            `p60_scan_enabled`, `universal_credit`: `universal_credit_scan_enabled`, `bank_statements`:
+            `bank_statement_enabled`). The response lists them in the order shown in the enum, without
+            duplicates. Send `[]` to clear it. Always present in the response; empty by default.
+          example: ["bank_statements"]
+    VerificationPreset:
+      type: string
+      enum:
+        - default
+        - auto-finance
+        - gambling-light
+        - gambling-vulnerability
+        - guarantor
+        - lettings
+        - mortgage
+        - payday
+        - prime-loan
+        - recruitment
+        - second-charge
+      default: default
+      description: |
+        The verification preset for the client. It sets which documents the Teal webapp asks applicants
+        for, and when. Clients start on `default`. Selecting a different preset with `PATCH /configuration`
+        applies that preset's defaults; see [Update client configuration](/api-reference/configuration/update).
+        Presets never restrict what the API accepts: every flag stays editable.
+      example: default
+    DocumentType:
+      type: string
+      enum: [payslips, p45, p60, universal_credit, bank_statements]
+      example: bank_statements
     Accounts:
       type: object
       required: [payroll_provider]
@@ -2903,6 +3149,27 @@ components:
           description: Transaction type (credit or debit)
           nullable: true
           example: "credit"
+    PayslipUploadResult:
+      allOf:
+        - "$ref": "#/components/schemas/PayrollData"
+        - "$ref": "#/components/schemas/PayslipErrors"
+    PayslipErrors:
+      type: object
+      properties:
+        payslip_errors:
+          description: |
+            One entry for each file that was not stored, for example `File could not be read`,
+            `Could not extract payslip` or `File is not a payslip`. Empty when every file was stored.
+          type: array
+          items:
+            type: object
+            properties:
+              error:
+                type: string
+                example: File could not be read
+              file_name:
+                type: string
+                example: payslip1.pdf
     PayrollData:
       type: object
       required: [account_id, entry_id, pagination, payroll_submissions]
@@ -3070,6 +3337,21 @@ components:
             type: string
           description: An array of messages describing the errors
           example: ["The request is missing the required field `name`"]
+        code:
+          type: string
+          description: |
+            A stable, machine-readable error code, for errors you may want to branch on.
+            Present only on errors that have one; omitted otherwise. See the endpoint's responses
+            for the codes it can return.
+          example: hmrc_nino_dob_invalid
+        provider_message:
+          type: string
+          description: |
+            The upstream provider's own reason for the failure, when it gave one. Control characters
+            are replaced, anything shaped like a National Insurance number is replaced with `<redacted>`,
+            and it is cut to 300 characters. Omitted when the provider gave no reason. Treat it as
+            free text for logs and support, not something to parse.
+          example: "NINO and DOB do not match"
     MemberSignInRequest:
       type: object
       required:

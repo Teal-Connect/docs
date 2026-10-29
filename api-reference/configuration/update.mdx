@@ -3,4 +3,48 @@ title: 'Update client configuration'
 openapi: 'PATCH /configuration'
 ---
 
+## Verification presets
 
+`verification_preset` sets which documents the Teal webapp asks your applicants for, and when.
+Clients start on `default`.
+
+When a `PATCH /configuration` request selects a different preset, the preset's defaults below are
+applied to each of these fields that the request does not send. You can then change any of them, in
+the same request or later. `default` has no defaults: switching back to it changes no other field.
+Presets never restrict what the API accepts.
+
+| Preset | Payroll connections | HMRC | Payslips | P45 | P60 | Universal Credit | Bank statements | `affordability_mode` | `required_documents` | Never asked for |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `default` | - | - | - | - | - | - | - | - | - | - |
+| `payday` | on | off | on | off | off | off | off | `off` | `[]` | bank statements, P45, P60, Universal Credit |
+| `guarantor` | on | off | on | off | off | on | on | `ons_then_bank` | `[]` | P60 |
+| `prime-loan` | on | on | on | off | off | off | on | `ons_then_bank` | `[]` | P45, P60, Universal Credit |
+| `auto-finance` | on | on | on | on | off | off | on | `ons_then_bank` | `[]` | P60, Universal Credit |
+| `mortgage` | on | on | on | on | on | off | on | `bank` | `["bank_statements"]` | Universal Credit |
+| `second-charge` | on | on | on | on | on | off | on | `bank` | `["bank_statements"]` | Universal Credit |
+| `lettings` | on | off | on | off | off | on | off | `off` | `[]` | bank statements, P60 |
+| `recruitment` | on | off | off | off | off | off | off | `off` | `[]` | payslips, bank statements, P45, P60, Universal Credit |
+| `gambling-light` | on | off | on | off | off | off | on | `ons` | `[]` | P45, P60, Universal Credit |
+| `gambling-vulnerability` | on | off | on | off | off | off | on | `bank` | `[]` | P45, P60, Universal Credit |
+
+The columns map to `payroll_connections_enabled`, `hmrc_enabled`, `payslip_upload_enabled`,
+`p45_scan_enabled`, `p60_scan_enabled`, `universal_credit_scan_enabled` and `bank_statement_enabled`.
+"Never asked for" lists the documents the webapp does not ask for under that preset, even when you
+switch them on. Users can still upload them through the API when their flags allow it.
+
+`gambling-light` and `gambling-vulnerability` treat bank statements as a source on their own
+(`bank_as_source`), so they need `bank_statement_enabled`. Under every preset, a user with only
+`bank_statement_enabled` on can be created.
+
+## Validation
+
+The request is refused with a 400 when the resulting configuration is inconsistent, and nothing is
+saved. The most common cases are switching a flag off while something still needs it:
+
+- a document in `required_documents` needs its flag on, e.g.
+  `[required_documents] bank_statements is required but bank_statement_enabled is off`;
+- `affordability_mode` `bank` or `ons_then_bank` needs `bank_statement_enabled`;
+- `gambling-light` and `gambling-vulnerability` need `bank_statement_enabled`.
+
+Remove the requirement (or change the mode or preset) before, or in the same request as, switching
+the flag off.

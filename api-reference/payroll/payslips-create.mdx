@@ -18,12 +18,28 @@ Follow these steps to upload payslips programmatically:
    response returns `presigned_url` and `path` fields for each file.
 2. **Upload PDFs** – for every returned `presigned_url`, perform an HTTP `PUT`
    with `Content-Type: application/octet-stream`, streaming the PDF bytes. Files must be
-   searchable, machine-readable PDFs (scanned images are not supported).
+   PDFs. Text-based, scanned and image-only PDFs are all extracted.
 3. **Submit metadata** – call `POST /payroll/entries/payslips` (this endpoint) with a
    JSON payload that includes the `path` for each uploaded file and an optional
    `external_document_id`. Teal uses this metadata to process the uploaded
-   documents. Any files that fail validation are listed in `payslip_errors` in
-   the response.
+   documents.
+
+## Per-file errors
+
+Each file is processed on its own. A file Teal cannot use does not fail the request: it is listed in
+`payslip_errors` and the other files are still processed.
+
+| `error` | Meaning |
+|---|---|
+| `File could not be read` | The file is named `.pdf` but cannot be opened as a PDF, for example because it is corrupt or truncated. |
+| `Could not extract payslip` | The PDF opened, but no payslip could be extracted from it (for example, a blank page). |
+| `File is not a payslip` | The document was read but is not a payslip. |
+
+The response is `201` when at least one payslip was stored. When none was, it is `200` with an empty
+`payroll_submissions` array. Check `payslip_errors` in both cases.
+
+The whole request fails, and no file is processed, when a file is not named `.pdf`, is empty, is over
+the size limit or is password protected, or when there are too many files.
 
 <RequestExample>
 
@@ -478,6 +494,9 @@ System.out.println(submitResponse.getBody());
   "payslip_errors" : [{
     "error" : "File is not a payslip",
     "file_name" : "Payslip3.pdf"
+  }, {
+    "error" : "File could not be read",
+    "file_name" : "Payslip4.pdf"
   }]
 }
 ```
