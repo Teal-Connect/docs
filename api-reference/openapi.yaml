@@ -1613,6 +1613,66 @@ paths:
                   - "[required_documents] bank_statements is required but bank_statement_enabled is off"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/configuration/presets":
+    get:
+      summary: Lists the verification presets
+      description: |
+        The catalogue of bundled verification presets, in name order, for choosing one. Each entry carries the
+        text to show a person (`title`, `summary`), what selecting it configures (`defaults`, `required_documents`)
+        and who reviews a skipped required document (`reviewer`). `defaults` is `null` for `default`, which
+        sets nothing when selected. Open to any member of the client, like `GET /configuration`.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [presets]
+                properties:
+                  presets:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/PresetCatalogueEntry"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/configuration/preview":
+    post:
+      summary: Previews a configuration change without saving it
+      description: |
+        Takes the same body as `PATCH /configuration`, applies it in memory (including the defaults of a newly
+        selected preset) and describes the result: the effective settings, the preset, a few plain-English
+        sentences, the screens an applicant can reach with the sources and documents offered on each, the moves
+        between screens and the rule that chooses each, and the same `warnings` the configuration would carry.
+        Nothing is saved, and no user is changed. The same refusals as `PATCH /configuration` apply, with a 400.
+        Because it only reads, any member of the client can call it.
+
+        The graph comes from running the preset's real rules over synthetic applicant journeys, so an edge's
+        `when_text` is its rule's condition in words and `rule_id` names the rule.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ClientConfiguration"
+            example:
+              verification_preset: mortgage
+              p45_scan_enabled: false
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ConfigurationPreview"
+        "400":
+          description: The body is invalid or the resulting configuration is inconsistent.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
   "/authorisations/terms":
     description: Authorisation terms define the legal text and versions that users can accept. Lenders can create and manage authorisation terms.
     post:
@@ -2680,6 +2740,130 @@ components:
             `bank_statement_enabled`). The response lists them in the order shown in the enum, without
             duplicates. Send `[]` to clear it. Always present in the response; empty by default.
           example: ["bank_statements"]
+    PresetCatalogueEntry:
+      type: object
+      required: [name, title, summary, defaults, reviewer, required_documents]
+      properties:
+        name:
+          "$ref": "#/components/schemas/VerificationPreset"
+        title:
+          type: string
+          maxLength: 80
+          example: Mortgage / first charge
+        summary:
+          type: string
+          maxLength: 300
+        defaults:
+          type: object
+          nullable: true
+          description: The flags and `affordability_mode` that selecting the preset sets; `null` when it sets nothing.
+          properties:
+            payroll_connections_enabled: { type: boolean }
+            hmrc_enabled: { type: boolean }
+            payslip_upload_enabled: { type: boolean }
+            p45_scan_enabled: { type: boolean }
+            p60_scan_enabled: { type: boolean }
+            universal_credit_scan_enabled: { type: boolean }
+            bank_statement_enabled: { type: boolean }
+            affordability_mode:
+              type: string
+              enum: ["off", ons, bank, ons_then_bank]
+        reviewer:
+          type: string
+          enum: [client, adviser]
+          description: Who reviews what the applicant shared when a required document is skipped.
+        required_documents:
+          type: array
+          items:
+            "$ref": "#/components/schemas/DocumentType"
+    ConfigurationPreview:
+      type: object
+      required: [effective, preset, summary_text, flow, warnings]
+      properties:
+        effective:
+          type: object
+          description: The configuration as it would be stored after the change.
+          required: [verification_preset, payroll_connections_enabled, hmrc_enabled, payslip_upload_enabled, p45_scan_enabled, p60_scan_enabled, universal_credit_scan_enabled, bank_statement_enabled, affordability_mode, required_documents]
+          properties:
+            verification_preset: { "$ref": "#/components/schemas/VerificationPreset" }
+            payroll_connections_enabled: { type: boolean }
+            hmrc_enabled: { type: boolean }
+            payslip_upload_enabled: { type: boolean }
+            p45_scan_enabled: { type: boolean }
+            p60_scan_enabled: { type: boolean }
+            universal_credit_scan_enabled: { type: boolean }
+            bank_statement_enabled: { type: boolean }
+            affordability_mode:
+              type: string
+              enum: ["off", ons, bank, ons_then_bank]
+            affordability_margin: { type: integer, nullable: true }
+            required_documents:
+              type: array
+              items: { "$ref": "#/components/schemas/DocumentType" }
+        preset:
+          type: object
+          required: [name, title, summary]
+          properties:
+            name: { "$ref": "#/components/schemas/VerificationPreset" }
+            title: { type: string }
+            summary: { type: string }
+        summary_text:
+          type: array
+          items: { type: string }
+          description: A few sentences on what the configuration does.
+        flow:
+          type: object
+          required: [nodes, edges]
+          properties:
+            nodes:
+              type: array
+              description: One per applicant screen.
+              items:
+                type: object
+                required: [id, title, sources, asks]
+                properties:
+                  id:
+                    type: string
+                    enum: [consent, nin_capture, connect, payroll_gaps_options, summary, nin_verification_failed]
+                  title: { type: string }
+                  sources:
+                    type: array
+                    items:
+                      type: string
+                      enum: [user_connection, hmrc, doc_scan]
+                    description: The income sources offered on the screen.
+                  asks:
+                    type: array
+                    description: The documents asked for on the screen, required ones first.
+                    items:
+                      type: object
+                      required: [type, reason_text, when_text, required]
+                      properties:
+                        type: { "$ref": "#/components/schemas/DocumentType" }
+                        reason_text: { type: string }
+                        when_text: { type: string }
+                        required: { type: boolean }
+                        skip_text:
+                          type: string
+                          description: What skipping does. Only present for a required document.
+            edges:
+              type: array
+              items:
+                type: object
+                required: [from, to, rule_id, when_text]
+                properties:
+                  from: { type: string }
+                  to: { type: string }
+                  rule_id:
+                    type: string
+                    description: The preset rule that chooses the `to` screen.
+                  when_text:
+                    type: string
+                    description: That rule's condition in plain English.
+        warnings:
+          type: array
+          items:
+            "$ref": "#/components/schemas/ConfigurationWarning"
     VerificationPreset:
       type: string
       enum:
