@@ -1547,8 +1547,9 @@ paths:
         `client_display_name`, `null` is ignored and the stored value is kept; send `""` to clear one.
         `null` also keeps the stored `payroll_period_months`. Two fields are cleared by `null`:
         `affordability_margin`, and `recurring_check_frequency` (refused while
-        `recurring_checks_enabled` is `true`). The boolean flags, `verification_preset`,
-        `affordability_mode` and `required_documents` refuse `null` with a 400.
+        `recurring_checks_enabled` is `true`). `verification_preset: null` means "no change" and keeps the
+        stored preset (a client that selects no preset sends it). The boolean flags, `affordability_mode`
+        and `required_documents` refuse `null` with a 400. A body that is not a JSON object is also a 400.
 
         **Selecting a preset.** When `verification_preset` names a different preset from the stored
         one, that preset's defaults fill in each of these fields that the same request does not send:
@@ -1644,8 +1645,9 @@ paths:
         selected preset) and describes the result: the effective settings, the preset, a few plain-English
         sentences, the screens an applicant can reach with the sources and documents offered on each, the moves
         between screens and the rule that chooses each, and the same `warnings` the configuration would carry.
-        Nothing is saved, and no user is changed. The same refusals as `PATCH /configuration` apply, with a 400.
-        Because it only reads, any member of the client can call it.
+        This call does not modify the configuration or any user. The same refusals as `PATCH /configuration`
+        apply, with a 400 whose body is `{"errors": [...]}`, including a body that is not a JSON object, and
+        `verification_preset: null` keeps the stored preset. Any member of the client can call it.
 
         The graph comes from running the preset's real rules over synthetic applicant journeys, so an edge's
         `when_text` is its rule's condition in words and `rule_id` names the rule.
@@ -2596,9 +2598,9 @@ components:
             - `DEAD_END_SCREEN`: some journey reaches a screen with no income found and nothing to do next.
             - `REQUIRED_DOC_UNREACHABLE`: a required document is never asked for with these settings.
             - `ONS_NEEDS_DOB_POSTCODE`: the affordability mode estimates from ONS data and the user has no date of birth or postcode.
-            - `PAYROLL_OFF_NO_FALLBACK`: payroll connections are off and neither HMRC nor payslip upload is on, so no income can be verified.
+            - `PAYROLL_OFF_NO_FALLBACK` (info): payroll connections are off and neither HMRC nor payslip upload is on, so no income can be verified. Not reported when bank statements are the only source on purpose and the preset leads the applicant to the bank statements tile.
             - `UC_NEVER_TRIGGERS`: Universal Credit is on but never asked for.
-            - `USERS_STALE_FLAGS`: some users hold flags that differ from the client's configuration.
+            - `USERS_STALE_FLAGS`: some users hold flags that differ from the client's configuration. `user_count` is every such user; the journey check behind the other findings looks at the five largest groups of users with the same flags.
             - `DEFAULTS_DRIFT`: the configuration differs from its preset's defaults (information only).
         severity:
           type: string
@@ -2726,7 +2728,8 @@ components:
             What a consistency check of this configuration found: the preset's rules are run over synthetic
             applicant journeys, and one finding is reported per distinct problem. Always present in the
             response, empty when the configuration is consistent. Ignored in a request. Users whose stored
-            flags differ from this configuration are counted in a `USERS_STALE_FLAGS` finding.
+            flags differ from this configuration are counted in a `USERS_STALE_FLAGS` finding. Warnings are
+            advisory: if they cannot be computed the write still succeeds and the list is empty.
           example: []
         required_documents:
           type: array
@@ -2749,10 +2752,12 @@ components:
         title:
           type: string
           maxLength: 80
+          description: Empty when the preset file has no title.
           example: Mortgage / first charge
         summary:
           type: string
           maxLength: 300
+          description: Empty when the preset file has no summary.
         defaults:
           type: object
           nullable: true

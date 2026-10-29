@@ -32,9 +32,14 @@ The columns map to `payroll_connections_enabled`, `hmrc_enabled`, `payslip_uploa
 "Never asked for" lists the documents the webapp does not ask for under that preset, even when you
 switch them on. Users can still upload them through the API when their flags allow it.
 
-`gambling-light` and `gambling-vulnerability` treat bank statements as a source on their own
-(`bank_as_source`), so they need `bank_statement_enabled`. Under every preset, a user with only
-`bank_statement_enabled` on can be created.
+Bank statements can be a source on their own. Under every preset, an applicant whose only source is
+bank statements (`bank_statement_enabled` on, with payroll connections, HMRC and payslip upload off) is
+led to a bank statements tile on the connect screen, and a user with only `bank_statement_enabled` on
+can be created. `gambling-light` and `gambling-vulnerability` also offer that tile to any applicant
+whose payroll connection is off or failed and who has no income yet, even when HMRC or payslip upload is
+on. The tile is a way to connect, so it is never required and has no skip alternative, even when
+`bank_statements` is in `required_documents`. The preset no longer needs `bank_statement_enabled`: with
+bank statements off, the tile is simply not offered.
 
 ## Validation
 
@@ -43,8 +48,7 @@ saved. The most common cases are switching a flag off while something still need
 
 - a document in `required_documents` needs its flag on, e.g.
   `[required_documents] bank_statements is required but bank_statement_enabled is off`;
-- `affordability_mode` `bank` or `ons_then_bank` needs `bank_statement_enabled`;
-- `gambling-light` and `gambling-vulnerability` need `bank_statement_enabled`.
+- `affordability_mode` `bank` or `ons_then_bank` needs `bank_statement_enabled`.
 
 Remove the requirement (or change the mode or preset) before, or in the same request as, switching
 the flag off.
