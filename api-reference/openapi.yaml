@@ -2594,6 +2594,10 @@ components:
             - `NO_SOURCE_ENABLED`: no source is on. Refused with a 400 for a user; a warning for a client.
             - `UNKNOWN_PRESET`, `REQUIRED_DOC_DISABLED`, `AFFORDABILITY_NEEDS_BANK`: the inconsistencies
               `PATCH /configuration` refuses with a 400. For a user they are warnings.
+              On a client response, a `REQUIRED_DOC_DISABLED` or `AFFORDABILITY_NEEDS_BANK` finding with a `user_count`
+              is about those users' own flags, not the client's: the message says so (for example
+              `12 users have bank_statement_enabled off but their client requires bank statements`) and `path` is the
+              flag to fix.
             - `BANK_ONLY_NO_ASK`: bank statements are the only source but the preset does not lead the applicant to upload them.
             - `DEAD_END_SCREEN`: some journey reaches a screen with no income found and nothing to do next.
             - `REQUIRED_DOC_UNREACHABLE`: a required document is never asked for with these settings.
