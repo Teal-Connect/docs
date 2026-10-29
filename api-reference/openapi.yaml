@@ -27,9 +27,11 @@ paths:
 
         `At least one feature (payslip_upload, hmrc, payroll_connections, or bank_statement) must be enabled (verification preset [default])`
 
-        The bracket names the client's `verification_preset`. Under `gambling-light` and
-        `gambling-vulnerability` it reads `(verification preset [gambling-light] sets bank_as_source)`.
-        If you match on this message, match its start.
+        The bracket names the client's `verification_preset`. If you match on this message, match its start.
+
+        A created user can still have an inconsistent configuration, for example payroll connections off
+        with no other income source. The user is created and the response lists what the check found in
+        `warnings`; see [ConfigurationWarning](#/components/schemas/ConfigurationWarning).
       requestBody:
         required: true
         content:
@@ -122,6 +124,9 @@ paths:
         `bank_statement_enabled`), or the request is refused with the same 400 as `POST /users`:
         `At least one feature (payslip_upload, hmrc, payroll_connections, or bank_statement) must be enabled (verification preset [<preset>])`.
         Bank statements alone are enough, under every verification preset.
+
+        The user is updated even when the resulting configuration has findings; the response lists them in
+        `warnings`.
       summary: Updates a user.
       parameters:
         - in: path
@@ -1514,8 +1519,13 @@ paths:
     get:
       summary: Returns the client configuration
       description: |
-        `verification_preset`, `affordability_mode` and `required_documents` are always returned.
+        `verification_preset`, `affordability_mode`, `required_documents` and `warnings` are always returned.
         Fields with no value, such as an unset `affordability_margin`, are omitted.
+
+        `warnings` lists what a consistency check of the configuration found, by running the verification
+        preset's own rules over synthetic applicant journeys: a screen with nothing to do next, a required
+        document that is never asked for, users whose stored flags have fallen behind this configuration,
+        and so on. It is empty for a consistent configuration. A warning never blocks anything.
       responses:
         "200":
           description: OK
@@ -1563,8 +1573,9 @@ paths:
         - `[required_documents] bank_statements is required but bank_statement_enabled is off` (one error
           per required document whose flag is off). Remove the document from `required_documents` before,
           or in the same request as, switching its flag off.
-        - `[verification_preset] gambling-light uses bank statements as a source (bank_as_source) and needs bank_statement_enabled`
-          for `gambling-light` and `gambling-vulnerability`.
+
+        Findings that are not refusals, such as a preset that leaves some applicants with nothing to do, do not
+        fail the request: the configuration is saved and the response lists them in `warnings`.
       requestBody:
         required: true
         content:
@@ -2487,7 +2498,60 @@ components:
             created_at:
               "$ref": "#/components/schemas/Date"
               description: Creation time in UTC of the user
+            warnings:
+              type: array
+              items:
+                "$ref": "#/components/schemas/ConfigurationWarning"
+              description: |
+                What the consistency check found for this user's configuration (the client's preset,
+                affordability mode and required documents with the user's own flags). Returned by
+                `POST /users` and `PATCH /users/{user_id}`; the user is created or updated either way.
         - "$ref": "#/components/schemas/User"
+    ConfigurationWarning:
+      type: object
+      required: [code, severity, message, path]
+      properties:
+        code:
+          type: string
+          enum:
+            - NO_SOURCE_ENABLED
+            - UNKNOWN_PRESET
+            - REQUIRED_DOC_DISABLED
+            - AFFORDABILITY_NEEDS_BANK
+            - BANK_ONLY_NO_ASK
+            - DEAD_END_SCREEN
+            - REQUIRED_DOC_UNREACHABLE
+            - ONS_NEEDS_DOB_POSTCODE
+            - PAYROLL_OFF_NO_FALLBACK
+            - UC_NEVER_TRIGGERS
+            - USERS_STALE_FLAGS
+            - DEFAULTS_DRIFT
+          description: |
+            Stable code to branch on.
+            - `NO_SOURCE_ENABLED`: no source is on. Refused with a 400 for a user; a warning for a client.
+            - `UNKNOWN_PRESET`, `REQUIRED_DOC_DISABLED`, `AFFORDABILITY_NEEDS_BANK`: the inconsistencies
+              `PATCH /configuration` refuses with a 400. For a user they are warnings.
+            - `BANK_ONLY_NO_ASK`: bank statements are the only source but the preset does not lead the applicant to upload them.
+            - `DEAD_END_SCREEN`: some journey reaches a screen with no income found and nothing to do next.
+            - `REQUIRED_DOC_UNREACHABLE`: a required document is never asked for with these settings.
+            - `ONS_NEEDS_DOB_POSTCODE`: the affordability mode estimates from ONS data and the user has no date of birth or postcode.
+            - `PAYROLL_OFF_NO_FALLBACK`: payroll connections are off and neither HMRC nor payslip upload is on, so no income can be verified.
+            - `UC_NEVER_TRIGGERS`: Universal Credit is on but never asked for.
+            - `USERS_STALE_FLAGS`: some users hold flags that differ from the client's configuration.
+            - `DEFAULTS_DRIFT`: the configuration differs from its preset's defaults (information only).
+        severity:
+          type: string
+          enum: [error, warning, info]
+        message:
+          type: string
+          description: A sentence a person can act on.
+        path:
+          type: string
+          description: The configuration field to change.
+          example: payroll_connections_enabled
+        user_count:
+          type: integer
+          description: How many users the finding affects, when it is about users. Omitted otherwise.
     UserToken:
       type: object
       required: [token, webapp_link, created_at]
@@ -2592,6 +2656,17 @@ components:
             expenditure estimate before it accepts the estimate without bank statements. Only `ons_then_bank`
             uses it. Omitted from the response when unset; send `null` to unset it.
           example: 200
+        warnings:
+          type: array
+          readOnly: true
+          items:
+            "$ref": "#/components/schemas/ConfigurationWarning"
+          description: |
+            What a consistency check of this configuration found: the preset's rules are run over synthetic
+            applicant journeys, and one finding is reported per distinct problem. Always present in the
+            response, empty when the configuration is consistent. Ignored in a request. Users whose stored
+            flags differ from this configuration are counted in a `USERS_STALE_FLAGS` finding.
+          example: []
         required_documents:
           type: array
           uniqueItems: true
