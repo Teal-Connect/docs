@@ -2505,7 +2505,8 @@ components:
               description: |
                 What the consistency check found for this user's configuration (the client's preset,
                 affordability mode and required documents with the user's own flags). Returned by
-                `POST /users` and `PATCH /users/{user_id}`; the user is created or updated either way.
+                `POST /users` and `PATCH /users/{user_id}` only when there is at least one finding; the user is
+                created or updated either way. Reads (`GET /users`) never carry it.
         - "$ref": "#/components/schemas/User"
     ConfigurationWarning:
       type: object
