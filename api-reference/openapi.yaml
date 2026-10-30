@@ -1650,7 +1650,9 @@ paths:
         `verification_preset: null` keeps the stored preset. Any member of the client can call it.
 
         The graph comes from running the preset's real rules over synthetic applicant journeys, so an edge's
-        `when_text` is its rule's condition in words and `rule_id` names the rule.
+        `when_text` is its rule's condition in plain English and `rule_id` names the rule for support and debugging.
+        Step titles, `reason_text`, `when_text` and `summary_text` are written for underwriters and analysts and can be
+        shown as they are.
       requestBody:
         required: true
         content:
@@ -2756,12 +2758,15 @@ components:
         title:
           type: string
           maxLength: 80
-          description: Empty when the preset file has no title.
-          example: Mortgage / first charge
+          description: Who the preset is for, in plain English. Empty when the preset file has no title.
+          example: Mortgages and first-charge lending
         summary:
           type: string
           maxLength: 300
-          description: Empty when the preset file has no summary.
+          description: |
+            What applicants are asked for and when, what is required or optional, who reviews a skipped document
+            and how deep the checking goes, in plain English. Empty when the preset file has no summary.
+          example: "For mortgage decisions. Applicants connect payroll or HMRC, or upload payslips. Optional: payslips if months are missing; a P45 if a job ended; a P60 if last tax year is uncovered. Required: bank statements after income. If skipped, their adviser reviews what they shared. Deepest checking."
         defaults:
           type: object
           nullable: true
@@ -2819,7 +2824,9 @@ components:
         summary_text:
           type: array
           items: { type: string }
-          description: A few sentences on what the configuration does.
+          description: |
+            A few plain-English sentences on what the configuration does: what applicants are asked for, when, and what they
+            can skip. For example: "Applicants are asked for payslips when some months are missing from the payroll history, and can skip this."
         flow:
           type: object
           required: [nodes, edges]
@@ -2834,7 +2841,9 @@ components:
                   id:
                     type: string
                     enum: [consent, nin_capture, connect, payroll_gaps_options, summary, nin_verification_failed]
-                  title: { type: string }
+                  title:
+                    type: string
+                    description: The step's name in plain English, such as `Consent`, `Fill in missing months` or `Income could not be verified`.
                   sources:
                     type: array
                     items:
@@ -2849,8 +2858,12 @@ components:
                       required: [type, reason_text, when_text, required]
                       properties:
                         type: { "$ref": "#/components/schemas/DocumentType" }
-                        reason_text: { type: string }
-                        when_text: { type: string }
+                        reason_text:
+                          type: string
+                          description: Why the document is asked for, such as `Payslips for months we could not find`.
+                        when_text:
+                          type: string
+                          description: When it is asked for, such as `some months are missing from the payroll history`.
                         required: { type: boolean }
                         skip_text:
                           type: string
@@ -2868,7 +2881,9 @@ components:
                     description: The preset rule that chooses the `to` screen.
                   when_text:
                     type: string
-                    description: That rule's condition in plain English.
+                    description: |
+                      That rule's condition in plain English, such as `the number of missing months is more than 0`.
+                      `rule_id` is for support and debugging; do not show it to applicants or underwriters.
         warnings:
           type: array
           items:

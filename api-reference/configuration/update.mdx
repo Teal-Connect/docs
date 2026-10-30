@@ -32,6 +32,26 @@ The columns map to `payroll_connections_enabled`, `hmrc_enabled`, `payslip_uploa
 "Never asked for" lists the documents the webapp does not ask for under that preset, even when you
 switch them on. Users can still upload them through the API when their flags allow it.
 
+### What each preset is for
+
+The `title` and `summary` that `GET /configuration/presets` returns, in plain English. Optional means the applicant can skip the request. "Checking" says how deep the preset goes, from lightest to deepest.
+
+| Preset | Title | Summary |
+|---|---|---|
+| `default` | Default (no changes) | Changes nothing. Applicants follow the standard journey, and your own settings decide which income sources and documents are used. Choose another option to start from a ready-made set of checks. |
+| `payday` | Short-term and payday lending | For fast lending decisions. Applicants connect their payroll or upload payslips. Optional: payslips, only if months are missing. Nothing is required, and nothing more is asked once income is confirmed. No affordability check. Light checking. |
+| `guarantor` | Guarantor and subprime instalment lending | For lending where income and affordability both matter. Applicants connect payroll or upload payslips. Optional: payslips if months are missing; a Universal Credit statement if not working; bank statements if the ONS spending estimate is unavailable or too thin. Standard checking. |
+| `prime-loan` | Prime personal loans | For prime personal loans: more depth, little effort. Applicants connect payroll or HMRC, or upload payslips. Optional: payslips if months are missing; bank statements if the ONS spending estimate is unavailable or too thin. Nothing is required. Standard checking. |
+| `auto-finance` | Car and auto finance | For auto finance, where a steady job history matters. Applicants connect payroll or HMRC, or upload payslips. Optional: payslips if months are missing; a P45 if a job ended; bank statements if the ONS spending estimate is unavailable or too thin. Standard checking. |
+| `mortgage` | Mortgages and first-charge lending | For mortgage decisions. Applicants connect payroll or HMRC, or upload payslips. Optional: payslips if months are missing; a P45 if a job ended; a P60 if last tax year is uncovered. Required: bank statements after income. If skipped, their adviser reviews what they shared. Deepest checking. |
+| `second-charge` | Second charge and remortgage | For second-charge and remortgage lending, with the same checks as the mortgage option. Applicants connect payroll or HMRC, or upload payslips. Optional: payslips, a P45, a P60. Required: bank statements after income. If skipped, their adviser reviews what they shared. Deepest checking. |
+| `lettings` | Lettings and tenant referencing | For quick tenant referencing. Applicants connect their payroll or upload payslips. Optional: payslips if months are missing; a Universal Credit statement if the applicant says they are not working. Nothing is required. No affordability check. Light checking. |
+| `recruitment` | Recruitment and employment checks | For confirming someone's current job. Applicants connect their payroll and nothing else is asked for: no payslips, HMRC, bank statements or other documents. No affordability check. Lightest checking. |
+| `gambling-light` | Gambling: lighter affordability checks | For gambling affordability checks with little friction. Applicants connect payroll or upload payslips, or share bank statements if payroll cannot be used. Optional: payslips if months are missing. Nothing is required. Affordability uses the ONS spending estimate. Light checking. |
+| `gambling-vulnerability` | Gambling: financial vulnerability checks | For spotting financial vulnerability. Applicants connect payroll or upload payslips, or share bank statements if payroll cannot be used. Optional: payslips if months are missing; bank statements once income is found, to show real spending. Nothing is required. Deeper checking. |
+
+When a required document is skipped, `reviewer` says who looks at what the applicant shared instead: `client` means your own team, `adviser` means the applicant's adviser. Only `mortgage` and `second-charge` require a document (bank statements) and use the adviser.
+
 Bank statements can be a source on their own. Under every preset, an applicant whose only source is
 bank statements (`bank_statement_enabled` on, with payroll connections, HMRC and payslip upload off) is
 led to a bank statements tile on the connect screen, and a user with only `bank_statement_enabled` on
