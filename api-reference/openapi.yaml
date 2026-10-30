@@ -2589,6 +2589,7 @@ components:
             - ONS_NEEDS_DOB_POSTCODE
             - PAYROLL_OFF_NO_FALLBACK
             - UC_NEVER_TRIGGERS
+            - NI_COLLECTION_UNUSED
             - USERS_STALE_FLAGS
             - DEFAULTS_DRIFT
           description: |
@@ -2606,6 +2607,7 @@ components:
             - `ONS_NEEDS_DOB_POSTCODE`: the affordability mode estimates from ONS data and the user has no date of birth or postcode.
             - `PAYROLL_OFF_NO_FALLBACK` (info): payroll connections are off and neither HMRC nor payslip upload is on, so no income can be verified. Not reported when bank statements are the only source on purpose and the preset leads the applicant to the bank statements tile.
             - `UC_NEVER_TRIGGERS`: Universal Credit is on but never asked for.
+            - `NI_COLLECTION_UNUSED`: `ni_number_collection_enabled` is on but `payroll_connections_enabled` is off. Only the automatic payroll lookup uses the National Insurance number, and the applicant journey neither asks for it nor runs that lookup when payroll connections are off, so the setting does nothing. `path` is `ni_number_collection_enabled`.
             - `USERS_STALE_FLAGS`: some users hold flags that differ from the client's configuration. `user_count` is every such user; the journey check behind the other findings looks at the five largest groups of users with the same flags.
             - `DEFAULTS_DRIFT`: the configuration differs from its preset's defaults (information only).
         severity:
