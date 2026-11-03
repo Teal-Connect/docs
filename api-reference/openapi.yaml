@@ -2597,9 +2597,10 @@ components:
             - `UNKNOWN_PRESET`, `REQUIRED_DOC_DISABLED`, `AFFORDABILITY_NEEDS_BANK`: the inconsistencies
               `PATCH /configuration` refuses with a 400. For a user they are warnings.
               On a client response, a `REQUIRED_DOC_DISABLED` or `AFFORDABILITY_NEEDS_BANK` finding with a `user_count`
-              is about those users' own flags, not the client's: the message says so (for example
-              `12 users have bank_statement_enabled off but their client requires bank statements`) and `path` is the
-              flag to fix.
+              is about those users' own flags, not the client's: the message says so, in plain English with no field
+              names (for example `Bank statements are switched off for 12 existing users, but this client requires
+              bank statements. Those users cannot provide them until they are updated.`) and `path` is the
+              flag to fix. Such a finding also carries an `action`.
             - `BANK_ONLY_NO_ASK`: bank statements are the only source but the preset does not lead the applicant to upload them.
             - `DEAD_END_SCREEN`: some journey reaches a screen with no income found and nothing to do next.
             - `REQUIRED_DOC_UNREACHABLE`: a required document is never asked for with these settings.
@@ -2613,7 +2614,11 @@ components:
           enum: [error, warning, info]
         message:
           type: string
-          description: A sentence a person can act on.
+          description: |
+            A sentence a person can act on. Findings about users are written in plain English for underwriters,
+            without field names or values: for example `The settings of 20 existing users differ from this
+            configuration. They keep the settings they were created with until each one is updated.` The
+            machine-readable field is `path`.
         path:
           type: string
           description: The configuration field to change.
@@ -2621,6 +2626,24 @@ components:
         user_count:
           type: integer
           description: How many users the finding affects, when it is about users. Omitted otherwise.
+        action:
+          type: object
+          required: [kind, label]
+          description: |
+            A suggested next step, present on every finding that has a `user_count` and omitted otherwise. Plain
+            data: the client decides what it links to (the web console opens the user list).
+          properties:
+            kind:
+              type: string
+              enum: [view_users]
+              description: "`view_users`: look at the users the finding is about."
+            label:
+              type: string
+              description: Text for the button or link.
+              example: View affected users
+          example:
+            kind: view_users
+            label: View affected users
     UserToken:
       type: object
       required: [token, webapp_link, created_at]
