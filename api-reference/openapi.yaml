@@ -3764,6 +3764,11 @@ components:
                   tax_paid:
                     type: string
                     example: "3611.40"
+                  benefits:
+                    type: array
+                    description: Taxable benefits in kind for the employment and tax year.
+                    items:
+                      $ref: "#/components/schemas/GovConnectTypedAmount"
               updated_at:
                 type: string
                 example: "2026-06-05 13:03:39"
@@ -3793,6 +3798,19 @@ components:
                   tax_deducted_at_source:
                     type: string
                     example: "0.00"
+                  total_expenses:
+                    type: string
+                    description: Total allowable expenses.
+                    example: "2100.00"
+                  net_profit:
+                    type: string
+                    description: Net profit for the tax year.
+                    example: "91600.00"
+              expenses:
+                type: array
+                description: Allowable expense lines for the business and tax year.
+                items:
+                  $ref: "#/components/schemas/GovConnectTypedAmount"
         properties:
           type: array
           items:
@@ -3807,6 +3825,305 @@ components:
               rent_received:
                 type: string
                 example: "747.45"
+              other_income:
+                type: string
+                example: "954.32"
+              premiums_of_lease_grant:
+                type: string
+                example: "4889.23"
+              reverse_premiums:
+                type: string
+                example: "847.35"
+              rent_a_room_rents_received:
+                type: string
+                example: "488.39"
+              tax_deducted:
+                type: string
+                example: "984.29"
+              expenses:
+                type: array
+                description: Deductible expense lines. Residential finance costs and rent-a-room relief are returned as separate fields.
+                items:
+                  $ref: "#/components/schemas/GovConnectTypedAmount"
+              total_expenses:
+                type: string
+                description: Total allowable expenses.
+                example: "1450.00"
+              net_income:
+                type: string
+                description: Net property income for the tax year.
+                example: "5988.35"
+              residential_finance_costs:
+                type: string
+                description: Residential finance costs (mortgage interest).
+                example: "2884.99"
+              residential_finance_costs_carried_forward:
+                type: string
+                example: "483.91"
+              rent_a_room_relief_claimed:
+                type: string
+                description: Rent-a-room relief claimed.
+                example: "88.55"
+        filed_up_to:
+          type: string
+          description: Date HMRC data has been filed up to for this tax year.
+          example: "2025-07-05"
+        foreign_properties:
+          type: array
+          items:
+            type: object
+            properties:
+              property_id:
+                type: string
+                example: XFIS12345678901
+              tax_year:
+                type: string
+                example: "2025-26"
+              rent_received:
+                type: string
+                example: "440.31"
+              other_income:
+                type: string
+                example: "802.49"
+              premiums_of_lease_grant:
+                type: string
+                example: "950.48"
+              foreign_tax_paid:
+                type: string
+                example: "734.18"
+              special_withholding_tax_or_uk_tax_paid:
+                type: string
+                example: "85.47"
+              foreign_tax_credit_relief:
+                type: boolean
+                example: false
+              expenses:
+                type: array
+                description: Deductible expense lines. Residential finance costs are returned as separate fields.
+                items:
+                  $ref: "#/components/schemas/GovConnectTypedAmount"
+              total_expenses:
+                type: string
+                description: Total allowable expenses.
+                example: "3200.00"
+              net_income:
+                type: string
+                description: Net property income for the tax year.
+                example: "-1006.72"
+              residential_finance_costs:
+                type: string
+                example: "857.99"
+              brought_forward_residential_finance_costs:
+                type: string
+                example: "600.10"
+        dividends:
+          type: object
+          properties:
+            tax_year:
+              type: string
+              example: "2025-26"
+            uk_dividends:
+              type: string
+              example: "1200.00"
+            other_uk_dividends:
+              type: string
+              example: "0.00"
+            foreign_dividends:
+              type: string
+              description: Total taxable foreign dividends.
+              example: "288.30"
+            foreign_dividend_details:
+              type: array
+              items:
+                $ref: "#/components/schemas/GovConnectForeignDividend"
+            dividends_received_whilst_abroad:
+              type: array
+              items:
+                $ref: "#/components/schemas/GovConnectForeignDividend"
+        pension_income:
+          type: object
+          properties:
+            foreign_pensions:
+              type: array
+              items:
+                $ref: "#/components/schemas/GovConnectForeignIncomeItem"
+        savings_income:
+          type: object
+          properties:
+            uk_interest_taxed:
+              type: string
+              description: Total taxed UK interest.
+              example: "0.00"
+            uk_interest_untaxed:
+              type: string
+              description: Total untaxed UK interest.
+              example: "210.00"
+            uk_accounts:
+              type: array
+              items:
+                type: object
+                properties:
+                  account_id:
+                    type: string
+                    example: "000000000000001"
+                  taxed_uk_interest:
+                    type: string
+                    example: "0.00"
+                  untaxed_uk_interest:
+                    type: string
+                    example: "210.00"
+            foreign_interest:
+              type: array
+              items:
+                $ref: "#/components/schemas/GovConnectForeignIncomeItem"
+            securities:
+              type: object
+              properties:
+                gross_amount:
+                  type: string
+                  example: "1455.23"
+                net_amount:
+                  type: string
+                  example: "1355.11"
+                tax_taken_off:
+                  type: string
+                  example: "100.12"
+        foreign_income:
+          type: object
+          properties:
+            foreign_earnings_not_taxable_uk:
+              type: string
+              example: "388.81"
+            unremittable_foreign_income:
+              type: array
+              items:
+                type: object
+                properties:
+                  country_code:
+                    type: string
+                    example: FRA
+                  amount_in_foreign_currency:
+                    type: string
+                    example: "170.38"
+                  tax_paid:
+                    type: string
+                    example: "40.31"
+        capital_gains:
+          type: object
+          properties:
+            disposals:
+              type: array
+              items:
+                type: object
+                required: [asset_category]
+                properties:
+                  asset_category:
+                    type: string
+                    enum: [residential, other, unlisted_shares, cryptoassets]
+                    example: other
+                  asset_type:
+                    type: string
+                    description: Asset type for `other` disposals.
+                    example: other-property
+                  asset_description:
+                    type: string
+                    example: Holiday cottage
+                  acquisition_date:
+                    type: string
+                    example: "2018-04-06"
+                  disposal_date:
+                    type: string
+                    example: "2025-05-04"
+                  disposal_proceeds:
+                    type: string
+                    example: "250000.00"
+                  allowable_costs:
+                    type: string
+                    description: Not returned for `residential` disposals.
+                    example: "180000.00"
+                  net_gain:
+                    type: string
+                    example: "70000.00"
+        obligations:
+          type: array
+          description: MTD filing obligations for the tax year.
+          items:
+            type: object
+            properties:
+              business_id:
+                type: string
+                example: XBIS12345678901
+              type_of_business:
+                type: string
+                example: self-employment
+              period_start:
+                type: string
+                example: "2025-04-06"
+              period_end:
+                type: string
+                example: "2026-04-05"
+              due_date:
+                type: string
+                example: "2027-01-31"
+              received_date:
+                type: string
+                example: "2026-01-20"
+              status:
+                type: string
+                example: open
+              source:
+                type: string
+                example: income-and-expenditure
+
+    GovConnectTypedAmount:
+      type: object
+      required: [type, amount]
+      properties:
+        type:
+          type: string
+          description: Line type in snake_case
+          example: medical_insurance
+        amount:
+          type: string
+          example: "4542.47"
+
+    GovConnectForeignDividend:
+      type: object
+      properties:
+        country_code:
+          type: string
+          example: DEU
+        amount_before_tax:
+          type: string
+          example: "4141.90"
+        tax_taken_off:
+          type: string
+          example: "331.55"
+        taxable_amount:
+          type: string
+          example: "288.30"
+        foreign_tax_credit_relief:
+          type: boolean
+          example: true
+
+    GovConnectForeignIncomeItem:
+      type: object
+      properties:
+        country_code:
+          type: string
+          example: DEU
+        amount_before_tax:
+          type: string
+          example: "100.23"
+        tax_taken_off:
+          type: string
+          example: "1.23"
+        special_withholding_tax:
+          type: string
+          example: "2.23"
+        taxable_amount:
+          type: string
+          example: "98.00"
 
   securitySchemes:
     ApiKeyAuth:
