@@ -3945,6 +3945,9 @@ components:
         pension_income:
           type: object
           properties:
+            tax_year:
+              type: string
+              example: "2025-26"
             foreign_pensions:
               type: array
               items:
@@ -3952,6 +3955,9 @@ components:
         savings_income:
           type: object
           properties:
+            tax_year:
+              type: string
+              example: "2025-26"
             uk_interest_taxed:
               type: string
               description: Total taxed UK interest.
@@ -3993,6 +3999,9 @@ components:
         foreign_income:
           type: object
           properties:
+            tax_year:
+              type: string
+              example: "2025-26"
             foreign_earnings_not_taxable_uk:
               type: string
               example: "388.81"
@@ -4013,6 +4022,9 @@ components:
         capital_gains:
           type: object
           properties:
+            tax_year:
+              type: string
+              example: "2025-26"
             disposals:
               type: array
               items:
