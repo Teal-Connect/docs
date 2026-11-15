@@ -18,6 +18,8 @@ paths:
       give authorised access and/or upload their payslips to our API.
     post:
       summary: Creates a user.
+      parameters:
+        - "$ref": "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -37,6 +39,8 @@ paths:
           "$ref": "#/components/responses/UnauthorizedApiKey"
         "409":
           "$ref": "#/components/responses/ConflictedResource"
+        "422":
+          "$ref": "#/components/responses/IdempotencyKeyMismatch"
 
     get:
       summary: List all users.
@@ -214,6 +218,8 @@ paths:
   "/user-tokens":
     post:
       summary: Generate a link token for authentication in subsequent steps to a unique user ID.
+      parameters:
+        - "$ref": "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -233,6 +239,10 @@ paths:
                 "$ref": "#/components/schemas/UserToken"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+        "409":
+          "$ref": "#/components/responses/IdempotencyKeyInFlight"
+        "422":
+          "$ref": "#/components/responses/IdempotencyKeyMismatch"
   "/accounts":
     description:
       Account are the payroll and HR platform accesses that users link to Teal,
@@ -240,6 +250,7 @@ paths:
     post:
       summary: Creates an account for the user e.g. a Xero account
       parameters:
+        - "$ref": "#/components/parameters/IdempotencyKey"
         - "$ref": "#/components/parameters/XAuthorisationId"
       requestBody:
         required: true
@@ -287,6 +298,10 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+        "409":
+          "$ref": "#/components/responses/IdempotencyKeyInFlight"
+        "422":
+          "$ref": "#/components/responses/IdempotencyKeyMismatch"
     get:
       summary: Returns all accounts for the user (e.g. Xero accounts)
       parameters:
@@ -473,6 +488,7 @@ paths:
     post:
       summary: Creates a direct connection for a user.
       parameters:
+        - "$ref": "#/components/parameters/IdempotencyKey"
         - "$ref": "#/components/parameters/XAuthorisationId"
       requestBody:
         required: true
@@ -505,6 +521,10 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+        "409":
+          "$ref": "#/components/responses/IdempotencyKeyInFlight"
+        "422":
+          "$ref": "#/components/responses/IdempotencyKeyMismatch"
   "/payroll/entries":
     get:
       summary: Returns all entries for a user account sorted desc by created_at
@@ -656,6 +676,7 @@ paths:
     post:
       summary: Submit previously uploaded payslips for processing
       parameters:
+        - "$ref": "#/components/parameters/IdempotencyKey"
         - "$ref": "#/components/parameters/XAuthorisationId"
       description: |
         Uploading payslips is a three-step flow:
@@ -702,6 +723,10 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedBearer"
+        "409":
+          "$ref": "#/components/responses/IdempotencyKeyInFlight"
+        "422":
+          "$ref": "#/components/responses/IdempotencyKeyMismatch"
   "/payroll/{user_id}":
     get:
       summary: Returns all payroll from the system that the user has access to
@@ -965,6 +990,7 @@ paths:
     put:
       summary: Submit previously uploaded bank statements for processing
       parameters:
+        - "$ref": "#/components/parameters/IdempotencyKey"
         - "$ref": "#/components/parameters/XAuthorisationId"
       description: |
         Uploading bank statements is a three-step flow:
@@ -1037,6 +1063,10 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedBearer"
+        "409":
+          "$ref": "#/components/responses/IdempotencyKeyInFlight"
+        "422":
+          "$ref": "#/components/responses/IdempotencyKeyMismatch"
   "/documents/bank-statements/presign":
     put:
       summary: Generate presigned URLs for bank statement uploads
@@ -1136,6 +1166,8 @@ paths:
   "/webhooks":
     post:
       summary: Creates a webhook.
+      parameters:
+        - "$ref": "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -1153,6 +1185,10 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+        "409":
+          "$ref": "#/components/responses/IdempotencyKeyInFlight"
+        "422":
+          "$ref": "#/components/responses/IdempotencyKeyMismatch"
     get:
       summary: Lists all the webhooks
       parameters:
@@ -1608,6 +1644,8 @@ paths:
     description: User authorisation records track when users accept authorisation terms, including acceptance metadata for audit purposes.
     post:
       summary: Records a user accepting a authorisation term.
+      parameters:
+        - "$ref": "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -1631,6 +1669,10 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/NotFound"
+        "409":
+          "$ref": "#/components/responses/IdempotencyKeyInFlight"
+        "422":
+          "$ref": "#/components/responses/IdempotencyKeyMismatch"
     get:
       summary: Returns all authorisation records for a user.
       parameters:
@@ -1851,6 +1893,18 @@ paths:
           "$ref": "#/components/responses/ResourceNotFound"
 components:
   responses:
+    IdempotencyKeyInFlight:
+      description: A request with the same Idempotency-Key is still being processed; retry later with the same key.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
+    IdempotencyKeyMismatch:
+      description: The Idempotency-Key was already used with a different request body.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
     UnauthorizedApiKey:
       description: Unauthorized if the X-API-KEY is not provided or is wrong
       content:
@@ -1882,6 +1936,22 @@ components:
           schema:
             "$ref": "#/components/schemas/NotFound"
   parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: |
+        Makes the call safe to retry. A repeat with the same key and the same request body within 24 hours
+        returns the stored response of the first successful request (same status, body and headers) with
+        `Idempotent-Replayed: true`, and creates nothing again. The same key with a different body answers 422;
+        a repeat while the first request is still being processed answers 409. Keys are scoped to the client
+        (and, on user-token calls, to the token's user). Only 2xx responses are stored. 1 to 255 visible ASCII
+        characters. See the Idempotent Requests guide.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 255
+        example: "4f1c2b7e-3d5a-4e8f-9a61-0c2d7b8e9f10"
     XAuthorisationId:
       name: x-teal-authorisation-id
       in: header

@@ -20,7 +20,8 @@
               "sandbox",
               "data",
               "authorisations",
-              "recurring-checks"
+              "recurring-checks",
+              "idempotency"
             ]
           }
         ]

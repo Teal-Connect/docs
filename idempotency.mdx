@@ -1,0 +1,52 @@
+---
+title: 'Idempotent Requests'
+description: 'Retry creating calls safely with an Idempotency-Key'
+---
+
+## Introduction
+
+A network fault can lose the response to a call that did succeed. Retrying such a call blindly can create a second user, account, link or upload. Send an `Idempotency-Key` header with the call and you can repeat it safely: Teal runs the first request and returns its result again to every repeat.
+
+The header is accepted on these creating calls:
+
+- `POST /users`
+- `POST /user-tokens`
+- `POST /accounts`
+- `POST /accounts/direct-connections`
+- `POST /authorisations`
+- `POST /payroll/entries/payslips`
+- `PUT /documents/bank-statements`
+- `POST /doc-scan`
+- `POST /webhooks`
+
+Without the header these calls behave exactly as before. Reads, deletes and `PATCH` calls do not take it.
+
+## Choosing a key
+
+Generate a new key, such as a UUID, for every distinct operation and reuse it only for retries of that same operation. A key is 1 to 255 visible ASCII characters (no spaces); anything else answers `400`.
+
+```bash
+curl -X POST https://api.sandbox.goteal.co/users \
+  -H "X-API-KEY: $TEAL_API_KEY" \
+  -H "Idempotency-Key: 4f1c2b7e-3d5a-4e8f-9a61-0c2d7b8e9f10" \
+  -H "Content-Type: application/json" \
+  -d '{"forename": "Jane", "surname": "Doe", "date_of_birth": "1990-01-15T00:00:00.000Z", "post_codes": ["SW1A 1AA"], "payroll_period_months": 12}'
+```
+
+Keys are scoped to your client: the same key sent with another client's API key is a different key. On the calls authenticated with a user token (`/payroll/entries/payslips`, `/documents/bank-statements`, `/doc-scan`) the key is also scoped to the token's user.
+
+## What a repeat returns
+
+| Repeat | Response |
+|--------|----------|
+| Same key, same request body, first request finished successfully | The stored response of the first request: the same status, body and headers (for example `x-teal-authorisation-id`), plus `Idempotent-Replayed: true`. Nothing is created again. |
+| Same key, different request body | `422 Unprocessable Entity`. Use a new key for a different request. |
+| Same key while the first request is still being processed | `409 Conflict`. Wait and retry with the same key. If processing was interrupted, the key is freed after at most 5 minutes. |
+
+The request body is compared byte for byte, so send exactly the same body when you retry. For multipart uploads the boundary is ignored, so your HTTP client may pick a new one.
+
+Only successful (`2xx`) responses are stored. If the first request fails, for example with a `400`, `409` or `5xx`, nothing is stored and a retry with the same key runs again.
+
+## Window
+
+A stored response is kept for **24 hours** after the first request finished. After that the key is forgotten and a repeat with it is treated as a new request.
