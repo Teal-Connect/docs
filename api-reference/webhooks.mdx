@@ -23,6 +23,12 @@ Webhooks are system-wide meaning subscriptions are not limited to specific users
 - `user-bank-statement-submitted` - notifies when any user uploads bank statements that are
    successfully extracted. Includes bank statement submissions as json if `include_payload` is set
    in the configuration.
+- `user-verification-state-changed` - notifies when a user's verification-state `screen` changes
+   (for example from `connect` to `summary`), so a client can follow the journey without polling
+   `GET /verification-state/{user_id}`. Carries `user_id`, `previous_screen` (null the first time),
+   `screen`, a per-user `sequence` and `timestamp`; includes the verification state as json if
+   `include_payload` is set in the configuration. Sent once per change, after it is committed, never
+   for a read, and in order for each user.
 
 ## Setting Up Webhooks
 
