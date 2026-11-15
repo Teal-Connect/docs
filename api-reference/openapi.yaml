@@ -486,6 +486,12 @@ paths:
                   type: string
                   description: The id of the user
                   example: 95a0e70b-fe02-4f47-aef9-2efff279df71
+                ni_number:
+                  type: string
+                  description: Optional UK National Insurance number of the user, saved on the user before the
+                    lookup runs with it. Spaces and lower case are accepted and normalised. Requires NI number
+                    collection to be enabled in the client configuration; otherwise the request answers 400.
+                  example: AB123456C
       responses:
         "201":
           description: Created
@@ -505,6 +511,8 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
   "/payroll/entries":
     get:
       summary: Returns all entries for a user account sorted desc by created_at
@@ -1843,6 +1851,217 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/PaginatedGovConnect"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
+  "/verification-state/{user_id}":
+    get:
+      summary: Returns where the user is in the verification journey.
+      description: The screen the hosted journey would show the user next (consent, nin_capture, connect,
+        payroll_gaps_options, summary or nin_verification_failed), the documents to offer on it, and the state
+        it was resolved from. With the X-API-KEY, any user of your client; with a user token, only the token's own user. A member token is not accepted.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          description: The id of the user
+          schema:
+            type: string
+            format: uuid
+        - "$ref": "#/components/parameters/XAuthorisationId"
+      responses:
+        "200":
+          description: The verification state and the screen it resolves to
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/VerificationStateResponse"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
+  "/verification-state/{user_id}/employment-status":
+    put:
+      summary: Records the user's declared employment status.
+      description: Stores the declaration (null clears it) and returns the recomputed verification state.
+        With the X-API-KEY, any user of your client; with a user token, only the token's own user. A member token is not accepted.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          description: The id of the user
+          schema:
+            type: string
+            format: uuid
+        - "$ref": "#/components/parameters/XAuthorisationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [declared]
+              properties:
+                declared:
+                  type: string
+                  nullable: true
+                  enum: [employed, self_employed, not_employed]
+                  example: employed
+      responses:
+        "200":
+          description: The verification state and the screen it resolves to
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/VerificationStateResponse"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
+  "/verification-state/{user_id}/no-more-information":
+    put:
+      summary: Records that the user has no more information to provide.
+      description: true declares "No more information available", false takes it back; returns the recomputed
+        verification state. With the X-API-KEY, any user of your client; with a user token, only the token's own user. A member token is not accepted.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          description: The id of the user
+          schema:
+            type: string
+            format: uuid
+        - "$ref": "#/components/parameters/XAuthorisationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [declared]
+              properties:
+                declared:
+                  type: boolean
+                  example: true
+      responses:
+        "200":
+          description: The verification state and the screen it resolves to
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/VerificationStateResponse"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
+  "/webapp/payroll/{user_id}/gaps":
+    get:
+      summary: Returns the periods with no payroll data for a user.
+      description: Requires payslip upload to be enabled for the user (400 otherwise). With the X-API-KEY, any user of your client; with a user token, only the token's own user. A member token is not accepted.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          description: The id of the user
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: period_start
+          required: false
+          description: Start of the window (ISO 8601). Defaults to the user's payroll period.
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: period_end
+          required: false
+          description: End of the window (ISO 8601). Defaults to now.
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: months
+          required: false
+          description: Window length in months, used when period_start is not given.
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The periods in the window with no data
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GapsResponse"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
+  "/webapp/bank-statements/{user_id}/gaps":
+    get:
+      summary: Returns the periods with no bank statement data for a user.
+      description: Requires bank statements to be enabled for the user (400 otherwise). With the X-API-KEY, any user of your client; with a user token, only the token's own user. A member token is not accepted.
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          description: The id of the user
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: period_start
+          required: false
+          description: Start of the window (ISO 8601). Defaults to the user's payroll period.
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: period_end
+          required: false
+          description: End of the window (ISO 8601). Defaults to now.
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: months
+          required: false
+          description: Window length in months, used when period_start is not given.
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The periods in the window with no data
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GapsResponse"
         "400":
           "$ref": "#/components/responses/BadRequest"
         "401":
@@ -3807,6 +4026,67 @@ components:
               rent_received:
                 type: string
                 example: "747.45"
+
+    VerificationStateResponse:
+      type: object
+      required: [screen, eligible_documents, state]
+      properties:
+        screen:
+          type: string
+          enum: [consent, nin_capture, connect, payroll_gaps_options, summary, nin_verification_failed]
+          example: payroll_gaps_options
+        eligible_documents:
+          type: array
+          description: Documents to offer on this screen, most outcome-changing first; empty means no prompt.
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                example: p60
+              reason:
+                type: string
+              required:
+                type: boolean
+              employment_id:
+                type: string
+                nullable: true
+              skip_alternative:
+                type: string
+                nullable: true
+        state:
+          type: object
+          description: The facts the screen is resolved from (authorisation, employment status, employments,
+            attempts, gaps, no_more_information, affordability and more). updated_at is the time of the read.
+          additionalProperties: true
+          properties:
+            gaps:
+              type: array
+              items:
+                "$ref": "#/components/schemas/GapPeriod"
+            updated_at:
+              type: string
+              format: date-time
+    GapPeriod:
+      type: object
+      required: [start, end]
+      properties:
+        start:
+          type: string
+          format: date-time
+          example: "2025-05-05T12:00Z"
+        end:
+          type: string
+          format: date-time
+          example: "2025-05-09T12:00Z"
+    GapsResponse:
+      type: object
+      required: [gaps]
+      properties:
+        gaps:
+          type: array
+          items:
+            "$ref": "#/components/schemas/GapPeriod"
 
   securitySchemes:
     ApiKeyAuth:
