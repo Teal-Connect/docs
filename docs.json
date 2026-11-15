@@ -72,7 +72,16 @@
               "api-reference/payroll/payslips-create",
               "api-reference/payroll/get",
               "api-reference/payroll/entries-list",
-              "api-reference/payroll/entries-delete"
+              "api-reference/payroll/entries-delete",
+              "api-reference/payroll/gaps"
+            ]
+          },
+          {
+            "group": "Verification State",
+            "pages": [
+              "api-reference/verification-state/get",
+              "api-reference/verification-state/employment-status",
+              "api-reference/verification-state/no-more-information"
             ]
           },
           {
@@ -96,7 +105,8 @@
               "api-reference/documents/delete",
               "api-reference/documents/bank-statements-presign",
               "api-reference/documents/bank-statements-upload",
-              "api-reference/documents/bank-statements-get"
+              "api-reference/documents/bank-statements-get",
+              "api-reference/documents/bank-statements-gaps"
             ]
           },
           {

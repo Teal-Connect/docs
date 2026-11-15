@@ -1,0 +1,10 @@
+---
+title: 'Declare No More Information'
+openapi: 'PUT /verification-state/{user_id}/no-more-information'
+---
+
+<Info>
+Call this with your API key (`X-API-KEY`) for any of your users, or with the user's own token from
+[`POST /user-tokens`](/api-reference/users/tokens). A server-side integration can follow the journey with its
+API key alone, without handing a user token to a browser.
+</Info>
