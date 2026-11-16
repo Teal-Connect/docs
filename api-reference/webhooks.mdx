@@ -28,7 +28,9 @@ Webhooks are system-wide meaning subscriptions are not limited to specific users
    `GET /verification-state/{user_id}`. Carries `user_id`, `previous_screen` (null the first time),
    `screen`, a per-user `sequence` and `timestamp`; includes the verification state as json if
    `include_payload` is set in the configuration. Sent once per change, after it is committed, never
-   for a read, and in order for each user.
+   for a read, and in order for each user. `sequence` is per user: 1 for the first announcement and 1
+   more for each change. Use it to order a user's deliveries, to ignore one you already have, and to
+   notice a missed one (a gap), after which `GET /verification-state/{user_id}` gives the current state.
 
 ## Setting Up Webhooks
 
