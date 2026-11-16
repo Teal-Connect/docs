@@ -3040,8 +3040,8 @@ components:
           type: string
           format: date-time
           description: When the applicant confirmed (the first confirmation). Teal records the
-            confirmation once per user, so this event is sent at most once per user; use `user_id` to
-            de-duplicate if your receiver may see a retried HTTP request.
+            confirmation once per user, so this event is sent at most once per user, with the outcome and
+            time of that first confirmation.
           example: "2026-11-16T09:30:00.250Z"
     CreatedWebhook:
       allOf:
