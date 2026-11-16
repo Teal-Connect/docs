@@ -2937,10 +2937,10 @@ components:
         events:
           type: array
           description: The events to deliver. `user-verification-state-changed` delivers a
-            UserVerificationStateChangedEvent body.
+            UserVerificationStateChangedEvent body, `user-journey-confirmed` a UserJourneyConfirmedEvent body.
           items:
             type: string
-          example: ["user-payroll-submitted", "user-bank-statement-submitted", "user-verification-state-changed"]
+          example: ["user-payroll-submitted", "user-bank-statement-submitted", "user-verification-state-changed", "user-journey-confirmed"]
         url:
           type: string
           format: url
@@ -3011,6 +3011,45 @@ components:
           description: Only when the webhook has `include_payload`. The same body as
             `GET /verification-state/{user_id}` (`screen`, `eligible_documents`, `state`) for the state
             that produced the change.
+    UserJourneyConfirmedEvent:
+      type: object
+      description: Body of a `user-journey-confirmed` delivery. Sent once per applicant when they confirm
+        the summary at the end of the hosted journey ("Confirm and finish", "Done", "Finish" or "Back to
+        <client>"), recorded by Teal's server at that moment, so it arrives even if the applicant closes
+        the page before the client callback redirect or the `teal:journey_outcome` message. Repeated
+        confirms, refreshes and retries do not send it again. Signed and optionally encrypted like the
+        other events; `include_payload` adds nothing. Teal records a confirmation only while its server
+        computes the applicant's screen as `summary`, and only with the outcome it derives from the
+        applicant's state. Otherwise the hosted journey's confirmation request (`PUT
+        /verification-state/{user_id}/journey-confirmation`, applicant token only) is refused with `409`
+        and the error `code` `journey_not_on_summary` (the applicant is not on the summary) or
+        `journey_outcome_mismatch` (the outcome sent differs from the one the server derives); nothing is
+        recorded and no event is sent. Once a confirmation is recorded, repeated requests answer `200`
+        with the first confirmation.
+      required: [event, user_id, outcome, timestamp]
+      properties:
+        event:
+          type: string
+          enum: [user-journey-confirmed]
+        user_id:
+          type: string
+          format: uuid
+          example: 4708334c-70b3-437d-8e46-91ff5c9a8d7d
+        outcome:
+          type: string
+          description: The same value the client callback carries for the journey (`message=verified` or
+            `error=no-income-found`) and the `status` of the `teal:journey_outcome` message. `verified`
+            means income was found and shared; `no-income-found` means the applicant finished without
+            income being found.
+          enum: [verified, no-income-found]
+          example: verified
+        timestamp:
+          type: string
+          format: date-time
+          description: When the applicant confirmed (the first confirmation). Teal records the
+            confirmation once per user, so this event is sent at most once per user, with the outcome and
+            time of that first confirmation.
+          example: "2026-11-16T09:30:00.250Z"
     CreatedWebhook:
       allOf:
         - required: [webhook_id]
