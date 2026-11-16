@@ -212,6 +212,8 @@ This should be taken into consideration when submitting your own dates for filte
 You can configure a client callback that will be redirected to after the end user has completed their journey. This allows the user to finish their flow on your chosen domain. For successful account connections we will redirect with the 
 `account_id`, `user_id` and `provider` in the query parameters. For payslip uploads we will redirect with the `user_id` and a `message` parameter. On failure we'll attach an `error` parameter alongside the `user_id`.
 
+The redirect depends on the user's browser: if they close the page before it happens, it never reaches you. To learn reliably that a user finished, and with which outcome, subscribe a webhook to `user-journey-confirmed`. Teal's server sends it when the user confirms the summary, once per user, with the same outcome as the callback (`verified` or `no-income-found`). Use the callback to bring the user back to your site and the event to record the result.
+
 ### Security and Compliance
 
 Our infrastructure employs advanced security measures, including data encryption, regular security audits, and compliance with global data protection standards (e.g., GDPR, CCPA), to safeguard user data against unauthorized access or breaches.

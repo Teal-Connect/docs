@@ -29,6 +29,11 @@ Webhooks are system-wide meaning subscriptions are not limited to specific users
    `screen`, a per-user `sequence` and `timestamp`; includes the verification state as json if
    `include_payload` is set in the configuration. Sent once per change, after it is committed, never
    for a read, and in order for each user.
+- `user-journey-confirmed` - notifies when a user confirms the summary at the end of the hosted
+   journey. Carries `user_id`, `outcome` (`verified` or `no-income-found`, the same value as the
+   client callback) and `timestamp`. Recorded by Teal's server when the user confirms, so it is sent
+   even if they close the page before being redirected; sent once per user however often they
+   confirm.
 
 ## Setting Up Webhooks
 
