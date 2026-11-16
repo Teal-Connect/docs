@@ -2936,9 +2936,11 @@ components:
           example: user-payroll-submitted
         events:
           type: array
+          description: The events to deliver. `user-verification-state-changed` delivers a
+            UserVerificationStateChangedEvent body.
           items:
             type: string
-          example: ["user-payroll-submitted", "user-hmrc-data-submitted", "user-bank-statement-submitted"]
+          example: ["user-payroll-submitted", "user-bank-statement-submitted", "user-verification-state-changed"]
         url:
           type: string
           format: url
@@ -2963,6 +2965,52 @@ components:
               type: boolean
               description: Whether to include or not the payload of the event in the webhook
               example: true
+    UserVerificationStateChangedEvent:
+      type: object
+      description: Body of a `user-verification-state-changed` delivery. Sent once per change of the
+        applicant's verification-state `screen`, after the change is committed and never for a read,
+        signed and optionally encrypted like the other events. One applicant's deliveries are sent in
+        order; `sequence` lets the receiver order them and notice a missed one. A change caused only
+        by time passing (for example an expired authorisation) is announced with the applicant's next
+        change.
+      required: [event, user_id, previous_screen, screen, sequence, timestamp]
+      properties:
+        event:
+          type: string
+          enum: [user-verification-state-changed]
+        user_id:
+          type: string
+          format: uuid
+          example: 4708334c-70b3-437d-8e46-91ff5c9a8d7d
+        previous_screen:
+          type: string
+          nullable: true
+          description: The screen announced before this one; null the first time a screen is
+            announced for the applicant (normally `consent`, when the user is created).
+          enum: [consent, nin_capture, connect, payroll_gaps_options, summary, nin_verification_failed]
+          example: consent
+        screen:
+          type: string
+          description: The applicant's new screen. `summary` and `nin_verification_failed` end the journey.
+          enum: [consent, nin_capture, connect, payroll_gaps_options, summary, nin_verification_failed]
+          example: nin_capture
+        sequence:
+          type: integer
+          format: int64
+          description: Per applicant, 1 for the first announcement and 1 more for each announced change.
+            Order an applicant's deliveries by it, ignore a delivery whose `sequence` you already have (a
+            repeat), and treat a gap as a missed delivery (read `GET /verification-state/{user_id}` to catch
+            up). Sequences of different applicants are independent.
+          example: 2
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-11-15T10:00:00.123Z"
+        payload:
+          type: object
+          description: Only when the webhook has `include_payload`. The same body as
+            `GET /verification-state/{user_id}` (`screen`, `eligible_documents`, `state`) for the state
+            that produced the change.
     CreatedWebhook:
       allOf:
         - required: [webhook_id]
