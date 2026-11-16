@@ -2997,7 +2997,10 @@ components:
         sequence:
           type: integer
           format: int64
-          description: Counts the announced changes for the applicant, starting at 1.
+          description: Per applicant, 1 for the first announcement and 1 more for each announced change.
+            Order an applicant's deliveries by it, ignore a delivery whose `sequence` you already have (a
+            repeat), and treat a gap as a missed delivery (read `GET /verification-state/{user_id}` to catch
+            up). Sequences of different applicants are independent.
           example: 2
         timestamp:
           type: string
