@@ -286,7 +286,11 @@ paths:
                     properties:
                       authorization_url:
                         type: string
-                        description: Authrorization url for provider using OAUTH2
+                        description: |
+                          Authorization url for provider using OAUTH2. An Idempotency-Key replay of this call returns
+                          it again while the account is still awaiting authorisation (status Pending), built from the
+                          account exactly as the first response built it; once the account is no longer Pending the
+                          replay has no authorization_url.
                         example: https://provider/authenticate?redirect_url=https://api.teal.com/auth&state=state&scope=read
                   - type: object
                     properties:
@@ -1970,7 +1974,8 @@ components:
         does not run again: it answers the status and headers of the first successful request with
         `Idempotent-Replayed: true`. Teal does not keep the response body. Where the call creates one resource
         (users, accounts, authorisations, webhooks) the replay body is that resource as it is now; elsewhere it
-        is a message naming the call that reads the result. The same key with a different body answers 422; a
+        is a message naming the call that reads the result. The replay of an OAuth `POST /accounts` includes the
+        `authorization_url` while the account is still awaiting authorisation, and none once it is not. The same key with a different body answers 422; a
         repeat while the first request is still being processed answers 409; if the key cannot be checked the
         call answers 503 with Retry-After and runs nothing. Keys are scoped to the client (and, on user-token
         calls, to the token's user). Only 2xx responses are kept. 1 to 255 visible ASCII characters. On

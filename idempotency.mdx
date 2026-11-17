@@ -58,7 +58,9 @@ Teal never stores the response body of a call, because it holds applicant data. 
 | `POST /users`, `POST /accounts`, `POST /authorisations`, `POST /webhooks` | The created resource as it is now, read as `GET /users/{user_id}`, `GET /accounts/{account_id}`, the authorisation, or `GET /webhooks/{webhook_id}` would show it. If it was deleted since, the replay answers `404`. |
 | `POST /accounts/direct-connections`, `POST /payroll/entries/payslips`, `PUT /documents/bank-statements`, `POST /doc-scan` | A `message` saying the request was already processed and naming the call that reads its result, for example `GET /payroll/entries?user_id=<user_id>`. |
 
-Because the replay reads the resource again, it can differ from the first response. For example, the `authorization_url` of an OAuth account is returned only by the first `POST /accounts`.
+Because the replay reads the resource again, it can differ from the first response, for example in the account's `status`.
+
+The replay of `POST /accounts` for an OAuth provider includes the `authorization_url` for as long as the account is still awaiting authorisation (`status` `Pending`). Teal builds it again from the account, exactly as the first response built it, so it is the same link. Once the account is no longer awaiting authorisation (for example `Authorised` or `Failed`) the replay has no `authorization_url`, as `GET /accounts/{account_id}` has none. An HMRC account created with `extra_login_params.flow` gets an invite link from HMRC's connection service rather than an OAuth URL built by Teal, so its replay has no `authorization_url`; if you lost that link, create a new account.
 
 ### Long requests
 
