@@ -41,6 +41,8 @@ paths:
           "$ref": "#/components/responses/ConflictedResource"
         "422":
           "$ref": "#/components/responses/IdempotencyKeyMismatch"
+        "503":
+          "$ref": "#/components/responses/IdempotencyStoreUnavailable"
 
     get:
       summary: List all users.
@@ -239,10 +241,6 @@ paths:
                 "$ref": "#/components/schemas/UserToken"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
-        "409":
-          "$ref": "#/components/responses/IdempotencyKeyInFlight"
-        "422":
-          "$ref": "#/components/responses/IdempotencyKeyMismatch"
   "/accounts":
     description:
       Account are the payroll and HR platform accesses that users link to Teal,
@@ -302,6 +300,8 @@ paths:
           "$ref": "#/components/responses/IdempotencyKeyInFlight"
         "422":
           "$ref": "#/components/responses/IdempotencyKeyMismatch"
+        "503":
+          "$ref": "#/components/responses/IdempotencyStoreUnavailable"
     get:
       summary: Returns all accounts for the user (e.g. Xero accounts)
       parameters:
@@ -525,6 +525,8 @@ paths:
           "$ref": "#/components/responses/IdempotencyKeyInFlight"
         "422":
           "$ref": "#/components/responses/IdempotencyKeyMismatch"
+        "503":
+          "$ref": "#/components/responses/IdempotencyStoreUnavailable"
   "/payroll/entries":
     get:
       summary: Returns all entries for a user account sorted desc by created_at
@@ -727,6 +729,8 @@ paths:
           "$ref": "#/components/responses/IdempotencyKeyInFlight"
         "422":
           "$ref": "#/components/responses/IdempotencyKeyMismatch"
+        "503":
+          "$ref": "#/components/responses/IdempotencyStoreUnavailable"
   "/payroll/{user_id}":
     get:
       summary: Returns all payroll from the system that the user has access to
@@ -1067,6 +1071,8 @@ paths:
           "$ref": "#/components/responses/IdempotencyKeyInFlight"
         "422":
           "$ref": "#/components/responses/IdempotencyKeyMismatch"
+        "503":
+          "$ref": "#/components/responses/IdempotencyStoreUnavailable"
   "/documents/bank-statements/presign":
     put:
       summary: Generate presigned URLs for bank statement uploads
@@ -1189,6 +1195,8 @@ paths:
           "$ref": "#/components/responses/IdempotencyKeyInFlight"
         "422":
           "$ref": "#/components/responses/IdempotencyKeyMismatch"
+        "503":
+          "$ref": "#/components/responses/IdempotencyStoreUnavailable"
     get:
       summary: Lists all the webhooks
       parameters:
@@ -1673,6 +1681,8 @@ paths:
           "$ref": "#/components/responses/IdempotencyKeyInFlight"
         "422":
           "$ref": "#/components/responses/IdempotencyKeyMismatch"
+        "503":
+          "$ref": "#/components/responses/IdempotencyStoreUnavailable"
     get:
       summary: Returns all authorisation records for a user.
       parameters:
@@ -1905,6 +1915,21 @@ components:
         application/json:
           schema:
             "$ref": "#/components/schemas/Error"
+    IdempotencyStoreUnavailable:
+      description: >-
+        Sent only when the call carries an Idempotency-Key: the key could not be checked because the idempotency
+        store is briefly unavailable, so nothing was run. Retry with the same key after the Retry-After interval.
+        Calls without the header are not affected.
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying with the same Idempotency-Key.
+          schema:
+            type: integer
+            example: 5
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
     UnauthorizedApiKey:
       description: Unauthorized if the X-API-KEY is not provided or is wrong
       content:
@@ -1942,11 +1967,15 @@ components:
       required: false
       description: |
         Makes the call safe to retry. A repeat with the same key and the same request body within 24 hours
-        returns the stored response of the first successful request (same status, body and headers) with
-        `Idempotent-Replayed: true`, and creates nothing again. The same key with a different body answers 422;
-        a repeat while the first request is still being processed answers 409. Keys are scoped to the client
-        (and, on user-token calls, to the token's user). Only 2xx responses are stored. 1 to 255 visible ASCII
-        characters. See the Idempotent Requests guide.
+        does not run again: it answers the status and headers of the first successful request with
+        `Idempotent-Replayed: true`. Teal does not keep the response body. Where the call creates one resource
+        (users, accounts, authorisations, webhooks) the replay body is that resource as it is now; elsewhere it
+        is a message naming the call that reads the result. The same key with a different body answers 422; a
+        repeat while the first request is still being processed answers 409; if the key cannot be checked the
+        call answers 503 with Retry-After and runs nothing. Keys are scoped to the client (and, on user-token
+        calls, to the token's user). Only 2xx responses are kept. 1 to 255 visible ASCII characters. On
+        `POST /user-tokens` the key is accepted but nothing is kept, so every call issues a new token. See the
+        Idempotent Requests guide.
       schema:
         type: string
         minLength: 1
