@@ -1,0 +1,75 @@
+---
+title: 'Idempotent Requests'
+description: 'Retry creating calls safely with an Idempotency-Key'
+---
+
+## Introduction
+
+A network fault can lose the response to a call that did succeed. Retrying such a call blindly can create a second user, account, link or upload. Send an `Idempotency-Key` header with the call and you can repeat it safely: Teal runs the first request once and answers every repeat without running it again.
+
+The header is accepted on these creating calls:
+
+- `POST /users`
+- `POST /user-tokens`
+- `POST /accounts`
+- `POST /accounts/direct-connections`
+- `POST /authorisations`
+- `POST /payroll/entries/payslips`
+- `PUT /documents/bank-statements`
+- `POST /doc-scan`
+- `POST /webhooks`
+
+Without the header these calls behave exactly as before. Reads, deletes and `PATCH` calls do not take it.
+
+`POST /user-tokens` accepts the header but keeps nothing for it, so that no user token is ever stored: every call issues a new token, whether or not the key was used before. Issuing a second token is harmless; use the newest one.
+
+## Choosing a key
+
+Generate a new key, such as a UUID, for every distinct operation and reuse it only for retries of that same operation. A key is 1 to 255 visible ASCII characters (no spaces); anything else answers `400`.
+
+```bash
+curl -X POST https://api.sandbox.goteal.co/users \
+  -H "X-API-KEY: $TEAL_API_KEY" \
+  -H "Idempotency-Key: 4f1c2b7e-3d5a-4e8f-9a61-0c2d7b8e9f10" \
+  -H "Content-Type: application/json" \
+  -d '{"forename": "Jane", "surname": "Doe", "date_of_birth": "1990-01-15T00:00:00.000Z", "post_codes": ["SW1A 1AA"], "payroll_period_months": 12}'
+```
+
+Keys are scoped to your client: the same key sent with another client's API key is a different key. On the calls authenticated with a user token (`/payroll/entries/payslips`, `/documents/bank-statements`, `/doc-scan`) the key is also scoped to the token's user.
+
+## What a repeat returns
+
+| Repeat | Response |
+|--------|----------|
+| Same key, same request body, first request finished successfully | The status and headers of the first request (for example `x-teal-authorisation-id`), plus `Idempotent-Replayed: true`. Nothing is created again. The body depends on the call, see below. |
+| Same key, different request body | `422 Unprocessable Entity`. Use a new key for a different request. |
+| Same key while the first request is still being processed | `409 Conflict`. Wait and retry with the same key. |
+
+The request body is compared byte for byte, so send exactly the same body when you retry. For multipart uploads the boundary is ignored, so your HTTP client may pick a new one.
+
+Only successful (`2xx`) responses are kept. If the first request fails, for example with a `400`, `409` or `5xx`, nothing is kept and a retry with the same key runs again.
+
+### The body of a replay
+
+Teal never stores the response body of a call, because it holds applicant data. It keeps only the status, the headers and, where the call creates one resource, that resource's id.
+
+| Call | Body of the replay |
+|------|--------------------|
+| `POST /users`, `POST /accounts`, `POST /authorisations`, `POST /webhooks` | The created resource as it is now, read as `GET /users/{user_id}`, `GET /accounts/{account_id}`, the authorisation, or `GET /webhooks/{webhook_id}` would show it. If it was deleted since, the replay answers `404`. |
+| `POST /accounts/direct-connections`, `POST /payroll/entries/payslips`, `PUT /documents/bank-statements`, `POST /doc-scan` | A `message` saying the request was already processed and naming the call that reads its result, for example `GET /payroll/entries?user_id=<user_id>`. |
+
+Because the replay reads the resource again, it can differ from the first response, for example in the account's `status`.
+
+The replay of `POST /accounts` for an OAuth provider includes the `authorization_url` for as long as the account is still awaiting authorisation (`status` `Pending`). Teal builds it again from the account, exactly as the first response built it, so it is the same link. Once the account is no longer awaiting authorisation (for example `Authorised` or `Failed`) the replay has no `authorization_url`, as `GET /accounts/{account_id}` has none. An HMRC account created with `extra_login_params.flow` gets an invite link from HMRC's connection service rather than an OAuth URL built by Teal, so its replay has no `authorization_url`; if you lost that link, create a new account.
+
+### Long requests
+
+While the first request runs, its key is held for it and renewed, up to 30 minutes. A retry during that time answers `409`. If processing is interrupted, the key is freed within 5 minutes.
+
+## When the key cannot be checked
+
+If Teal cannot check the key for a short time, a call that carries an `Idempotency-Key` answers `503 Service Unavailable` with a `Retry-After` header and runs nothing, so a retry can never create a duplicate. Retry with the same key after the `Retry-After` interval. Calls without the header are not affected.
+
+## Window
+
+The record of a key is kept for **24 hours** after the first request finished. After that the key is forgotten and a repeat with it is treated as a new request.
