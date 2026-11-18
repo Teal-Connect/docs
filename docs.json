@@ -81,7 +81,8 @@
             "pages": [
               "api-reference/verification-state/get",
               "api-reference/verification-state/employment-status",
-              "api-reference/verification-state/no-more-information"
+              "api-reference/verification-state/no-more-information",
+              "api-reference/verification-state/journey-confirmation"
             ]
           },
           {
