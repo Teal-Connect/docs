@@ -1982,7 +1982,7 @@ paths:
         outcome the server derives from the user's state; otherwise it answers 409 and nothing is recorded or
         sent. Once a confirmation is recorded, every call answers 200 with that first confirmation, whatever
         outcome it sends, so the call can be repeated safely. Only the user's own token from /user-tokens is
-        accepted; the X-API-KEY and member tokens are not.
+        accepted; the X-API-KEY and member tokens are not (401).
       security:
         - BearerAuth: []
       parameters:
@@ -2016,7 +2016,9 @@ paths:
               example:
                 errors: ["[outcome] param must be one of: verified, no-income-found"]
         "401":
-          description: The token is missing or invalid, or it was issued for another user than user_id
+          description: >-
+            The token is missing or invalid, it is not a user token (for example a member token), or it was
+            issued for another user than user_id
           content:
             application/json:
               schema:
