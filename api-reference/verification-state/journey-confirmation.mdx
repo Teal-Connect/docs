@@ -1,0 +1,21 @@
+---
+title: 'Confirm Journey'
+openapi: 'PUT /verification-state/{user_id}/journey-confirmation'
+---
+
+<Info>
+Call this with the user's own token from [`POST /user-tokens`](/api-reference/users/tokens), for that user only.
+Your API key (`X-API-KEY`) is not accepted. The hosted journey makes this call when the user selects
+"Confirm and finish" on the summary.
+</Info>
+
+The first confirmation that is recorded sends the `user-journey-confirmed` [webhook event](/api-reference/webhooks),
+once per user, so you learn that the journey finished, and with which outcome, even if the user closes the page
+before the redirect to your callback URL.
+
+- A first confirmation is accepted only while the user's screen, as
+  [`GET /verification-state/{user_id}`](/api-reference/verification-state/get) computes it, is `summary`, and only
+  with the outcome the server derives from the user's state. Otherwise the call answers `409` with error `code`
+  `journey_not_on_summary` or `journey_outcome_mismatch`, and nothing is recorded or sent.
+- Once a confirmation is recorded, every call answers `200` with that first confirmation, whatever outcome it
+  sends. Repeating the call is safe and sends no further event.

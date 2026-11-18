@@ -1972,6 +1972,79 @@ paths:
           "$ref": "#/components/responses/UnauthorizedApiKey"
         "404":
           "$ref": "#/components/responses/ResourceNotFound"
+  "/verification-state/{user_id}/journey-confirmation":
+    put:
+      summary: Records that the user confirmed the summary and finished the journey.
+      description: The user's "Confirm and finish", recorded once on the server, with the outcome the client
+        callback carries (verified or no-income-found). The first confirmation that is recorded sends the
+        user-journey-confirmed webhook event; it is sent once per user. A first confirmation is accepted only
+        while the user's screen (as GET /verification-state/{user_id} computes it) is summary and only with the
+        outcome the server derives from the user's state; otherwise it answers 409 and nothing is recorded or
+        sent. Once a confirmation is recorded, every call answers 200 with that first confirmation, whatever
+        outcome it sends, so the call can be repeated safely. Only the user's own token from /user-tokens is
+        accepted; the X-API-KEY and member tokens are not (401).
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          description: The id of the user. Must be the user the token was issued for.
+          schema:
+            type: string
+            format: uuid
+        - "$ref": "#/components/parameters/XAuthorisationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/JourneyConfirmationRequest"
+      responses:
+        "200":
+          description: The recorded confirmation (the first one, also when this call was a repeat)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/JourneyConfirmation"
+        "400":
+          description: The body is not a JSON object, or outcome is missing or not one of verified, no-income-found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+              example:
+                errors: ["[outcome] param must be one of: verified, no-income-found"]
+        "401":
+          description: >-
+            The token is missing or invalid, it is not a user token (for example a member token), or it was
+            issued for another user than user_id
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UnauthorizedBarer"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
+        "409":
+          description: Nothing was recorded and no event was sent, because no confirmation is recorded yet and
+            the journey cannot finish with this call. code journey_not_on_summary means the user's screen is not
+            summary; journey_outcome_mismatch means outcome is not the one the server derives from the user's
+            state.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/JourneyStateConflict"
+              examples:
+                notOnSummary:
+                  summary: The user is not on the summary
+                  value:
+                    errors: ["The journey can only be confirmed on the summary; the applicant's screen is [connect]"]
+                    code: journey_not_on_summary
+                outcomeMismatch:
+                  summary: The outcome differs from the server's
+                  value:
+                    errors: ["[outcome] [no-income-found] does not match the applicant's state [verified]"]
+                    code: journey_outcome_mismatch
   "/webapp/payroll/{user_id}/gaps":
     get:
       summary: Returns the periods with no payroll data for a user.
@@ -3289,6 +3362,49 @@ components:
             type: string
           description: An array of messages describing the errors
           example: ["The request is missing the required field `name`"]
+    JourneyStateConflict:
+      required:
+        - errors
+        - code
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: string
+          description: An array of messages describing the errors
+        code:
+          type: string
+          enum: [journey_not_on_summary, journey_outcome_mismatch]
+          description: Stable code to branch on
+    JourneyConfirmationRequest:
+      type: object
+      required: [outcome]
+      properties:
+        outcome:
+          type: string
+          enum: [verified, no-income-found]
+          description: The outcome the client callback carries (message=verified or error=no-income-found).
+            verified when income was found, otherwise no-income-found. Unknown fields in the body are ignored.
+          example: verified
+    JourneyConfirmation:
+      type: object
+      required: [user_id, outcome, confirmed_at]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: The id of the user
+        outcome:
+          type: string
+          enum: [verified, no-income-found]
+          description: The recorded outcome, from the first confirmation
+          example: verified
+        confirmed_at:
+          type: string
+          format: date-time
+          description: When the first confirmation was recorded (ISO 8601, UTC)
+          example: "2026-11-16T09:30:00.250Z"
     MemberSignInRequest:
       type: object
       required:
