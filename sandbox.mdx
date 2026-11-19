@@ -19,7 +19,7 @@ Pick one of the four happy paths. Every one can be run through the API with your
 |---|---|---|---|---|---|
 | 1 | [Direct Connection](#path-1-direct-connection) | `direct-monthly-covered` | Sarah Chen, NI number AB654321C, born 1990-04-22, postcode E1 6PG | `201` with the applicant's monthly payroll, no sign-in needed | `user-payroll-submitted` |
 | 2 | [User Connection](#path-2-user-connection) | `scraper-full-window-nomfa` (BrightPayCloud), or `scraper-full-window` (CGI, with a code step) | Sign in with the persona id as the user name and any password. CGI also asks for the code `123` | `201` with the account `Authorised`, then the payroll under `GET /payroll/{user_id}` | `user-payroll-submitted` |
-| 3 | [Payslip upload](#path-3-payslip-upload) | `payslips-cover-window` | Three generated payslip PDFs | `201` with the payslips read, one payroll submission per payslip | `user-payroll-submitted` |
+| 3 | [Payslip upload](#path-3-payslip-upload) | `payslips-cover-window` | Three test payslip PDFs | `201` with the payslips read, one payroll submission per payslip | none |
 | 4 | [HMRC (Gov Connect)](#path-4-hmrc-gov-connect) | `hmrc-employed-authorised`, or `hmrc-self-employed-authorised` | NI number QQ000001A with flow `non_mtd`, or QQ000002A with flow `mtd` | `201` with the account `Pending` and an `authorization_url`, then the income under `GET /gov-connect/{user_id}` | `user-gov-connect-data-submitted` |
 
 ### Persona table
@@ -27,8 +27,8 @@ Pick one of the four happy paths. Every one can be run through the API with your
 | Persona | Journey | Expected outcome |
 |---|---|---|
 | `direct-monthly-covered` (Sarah Chen) | Direct Connection | Matched at both Direct Connections (IRIS and Sage). Monthly pay for the whole lookback window. |
-| `direct-weekly-covered` (James O'Connor) | Direct Connection | Matched. Weekly pay: every pay in the window comes back, about 52 rows for 12 months. |
-| `direct-fortnightly-covered` (Amina Diallo) | Direct Connection | Matched. Fortnightly pay: every pay in the window comes back, about 26 rows for 12 months. |
+| `direct-weekly-covered` (James Oconnor) | Direct Connection | Matched. Weekly pay from each of its two employers: every pay in the window comes back, about 52 rows per employer, about 104 for 12 months. |
+| `direct-fortnightly-covered` (Amina Diallo) | Direct Connection | Matched. Fortnightly pay from each of its two employers: every pay in the window comes back, about 26 rows per employer, about 52 for 12 months. |
 | `direct-mismatched-identity` (Sarah Chen-Morgan) | Direct Connection | No match, so the hosted journey continues to the connect screen. Use this applicant for paths 2 and 3 in the webapp. |
 | `scraper-full-window-nomfa` | User Connection, BrightPayCloud | Signs in without a code. Monthly pay covering the whole window. |
 | `scraper-full-window` | User Connection, CGI | Signs in, then asks for the code `123`. Monthly pay covering the whole window. |
@@ -52,7 +52,7 @@ The pages are served by Teal's mock provider (payroll-api#2053).
 
 ## Providers
 
-A sandbox lists exactly nine payroll providers, the ones Teal has mock personas for (compose-payroll-api#276). `GET /providers` returns them; `POST /accounts` with any other provider answers `400`.
+A sandbox lists exactly nine payroll providers, the ones Teal has test personas for (compose-payroll-api#276). `GET /providers` returns them; `POST /accounts` with any other provider answers `400`.
 
 | `payroll_provider` | Name |
 |---|---|
@@ -79,7 +79,7 @@ Before you begin testing, ensure you have the following:
 
 ### Webhooks Setup `/webhooks`
 
-Subscribe to the events the happy paths send. The four paths send `user-payroll-submitted` (paths 1 to 3) and `user-gov-connect-data-submitted` (path 4).
+Subscribe to the events the happy paths send. The four paths send `user-payroll-submitted` (paths 1 and 2; a payslip upload sends no webhook) and `user-gov-connect-data-submitted` (path 4).
 
 ```bash
 curl --request POST \
@@ -182,7 +182,7 @@ curl --request POST \
 }'
 ```
 
-**Response Example:**
+**Response Example** (shortened):
 
 ```json
 {
@@ -246,7 +246,7 @@ curl --request POST \
   fingerprint).
 </Note>
 
-**Response Example:**
+**Response Example** (shortened):
 
 ```json
 {
@@ -284,7 +284,7 @@ Persona `direct-monthly-covered`, journey `direct-match`. The lookup finds the a
 
 #### Direct Connection `/accounts/direct-connections`
 
-The endpoint takes only a `user_id`. It looks the applicant up at every Direct Connection (IRIS and Sage), creates an account for each provider that holds data and returns the payroll directly, so there is no separate `/payroll/entries/connections` call.
+The endpoint takes a `user_id` (and optionally an `ni_number`). It looks the applicant up at every Direct Connection (IRIS and Sage), creates an account for each provider that holds data and returns the payroll directly, so there is no separate `/payroll/entries/connections` call.
 
 ```bash
 curl --request POST \
@@ -351,9 +351,9 @@ curl --request POST \
 What to expect for the persona:
 
 - Status `201`, the payroll in `payroll_submissions`, and the webhook `user-payroll-submitted`.
-- `direct-monthly-covered` pays monthly, so the response has one pay per month of the window.
-- The weekly and fortnightly personas return every pay in the window: `direct-weekly-covered` about 52 rows and `direct-fortnightly-covered` about 26 rows for `payroll_period_months` of 12.
-- With the NI number and date of birth of the persona but a different surname (`direct-mismatched-identity`) the lookup finds nothing and returns no submissions.
+- `direct-monthly-covered` pays monthly, so the response has one pay per month of the window from each of its two employers (about 24 rows for 12 months).
+- The weekly and fortnightly personas return every pay in the window from each of their two employers: `direct-weekly-covered` about 52 rows per employer (about 104) and `direct-fortnightly-covered` about 26 per employer (about 52) for `payroll_period_months` of 12.
+- With the NI number of the persona but a different surname and date of birth, as `direct-mismatched-identity` has (Chen-Morgan, 1991-05-23), the lookup finds nothing and returns no submissions.
 
 #### Webapp
 
@@ -538,7 +538,7 @@ In the console, an applicant that connects payroll only is created like this, an
 
 Persona `payslips-cover-window`, journey `payslips-only`. The applicant uploads payslip PDFs and Teal reads them.
 
-**Documents:** three generated payslip PDFs (`payslip-*.pdf`) that cover the window. Ask your Teal connection for the test payslips of this persona.
+**Documents:** three test payslip PDFs (`payslip-*.pdf`) that cover the window. Ask your Teal connection for the test payslips of this persona.
 
 For the webapp create the user as `direct-mismatched-identity` (see path 2), so that the Direct Connection finds nothing and the journey reaches the upload screen. Payslip upload must be enabled (`payslip_upload_enabled`).
 
@@ -550,8 +550,7 @@ For the webapp create the user as `direct-mismatched-identity` (see path 2), so 
 | 4 | `POST /payroll/entries/payslips/presign` | Bearer | `200`, `presigned_urls` |
 | 5 | `PUT <presigned_url>` for each file | | `200` |
 | 6 | `POST /payroll/entries/payslips` | Bearer | `201`, `payroll_submissions` |
-| 7 | webhook | | `user-payroll-submitted` |
-| 8 | `GET /payroll/{user_id}` | API key | `200`, `payroll_submissions` |
+| 7 | `GET /payroll/{user_id}` | API key | `200`, `payroll_submissions` |
 
 #### Request upload slots `/payroll/entries/payslips/presign`
 
@@ -564,9 +563,9 @@ curl --request POST \
   --header 'Content-Type: application/json' \
   --data '{
   "files": [
-    { "file_name": "payslip-1.pdf" },
-    { "file_name": "payslip-2.pdf" },
-    { "file_name": "payslip-3.pdf" }
+    { "file_name": "payslip-2026-08.pdf" },
+    { "file_name": "payslip-2026-09.pdf" },
+    { "file_name": "payslip-2026-10.pdf" }
   ]
 }'
 ```
@@ -577,9 +576,9 @@ curl --request POST \
 {
   "presigned_urls": [
     {
-      "file_name": "payslip-1.pdf",
+      "file_name": "payslip-2026-08.pdf",
       "presigned_url": "https://s3.amazonaws.com/bucket/presigned-upload-key?signature=abc123",
-      "path": "client/acct123/users/user456/payslip-1.pdf"
+      "path": "client-name/95a0e70b-fe02-4f47-aef9-2efff279df71/Zr8fQ1mT2/payslip-2026-08.pdf"
     }
   ]
 }
@@ -593,12 +592,12 @@ Upload the PDF to its `presigned_url` with an HTTP `PUT` and `Content-Type: appl
 curl --request PUT \
   --url '<presigned_url>' \
   --header 'Content-Type: application/octet-stream' \
-  --data-binary '@payslip-1.pdf'
+  --data-binary '@payslip-2026-08.pdf'
 ```
 
 #### Submit the payslips `/payroll/entries/payslips`
 
-Send the `path` of every uploaded file so Teal can read them.
+Send the `path` of every uploaded file, copied from the presign response (the paths below are examples), so Teal can read them.
 
 ```bash
 curl --request POST \
@@ -607,14 +606,14 @@ curl --request POST \
   --header 'Content-Type: application/json' \
   --data '{
   "files": [
-    { "path": "client/acct123/users/user456/payslip-1.pdf" },
-    { "path": "client/acct123/users/user456/payslip-2.pdf" },
-    { "path": "client/acct123/users/user456/payslip-3.pdf" }
+    { "path": "client-name/95a0e70b-fe02-4f47-aef9-2efff279df71/Zr8fQ1mT2/payslip-2026-08.pdf" },
+    { "path": "client-name/95a0e70b-fe02-4f47-aef9-2efff279df71/Zr8fQ1mT2/payslip-2026-09.pdf" },
+    { "path": "client-name/95a0e70b-fe02-4f47-aef9-2efff279df71/Zr8fQ1mT2/payslip-2026-10.pdf" }
   ]
 }'
 ```
 
-**Response Example** (shortened to one submission):
+**Response Example** (shortened to one submission; the values are illustrative):
 
 ```json
 {
@@ -626,20 +625,19 @@ curl --request POST \
       "account_id": null,
       "entry_id": "f5e0a310-d4d0-4db0-b5c3-895a81e26e03",
       "created_at": "2026-11-19T10:34:54.886Z",
-      "document_external_id": null,
-      "document_filename": "payslip-1.pdf",
+      "document_filename": "payslip-2026-08.pdf",
       "identity_information": {
         "name": "Sarah Chen-Morgan"
       },
       "employment_information": {
-        "employer_name": "Acme Corp"
+        "employer_name": "Teal Fixtures Ltd"
       },
       "income_information": {
         "pay_date": "2026-10-31",
         "pay_frequency": "Monthly",
         "earnings": {
-          "gross_pay": "2000.00",
-          "net_pay": "1500.00"
+          "gross_pay": "3833.33",
+          "net_pay": "3000.00"
         }
       }
     }
@@ -648,7 +646,7 @@ curl --request POST \
 }
 ```
 
-What to expect for the persona: status `201`, one payroll submission per payslip (three for the generated set), the webhook `user-payroll-submitted`, and an empty `payslip_errors`; a file that cannot be read is listed there with its `file_name` and `error`. Payslip data has no `account_id`: it carries the file's `document_external_id` and `document_filename` instead.
+What to expect for the persona: status `201`, one payroll submission per payslip (three for the three-payslip set), no webhook (a payslip upload sends none), and an empty `payslip_errors`; a file that cannot be read is listed there with its `file_name` and `error`. Payslip data has no `account_id`: it carries the file's `document_filename` instead (and `document_external_id` when the request sent an `external_document_id`).
 
 #### Webapp
 
@@ -732,7 +730,7 @@ curl --request POST \
   already saved against the user record it is not needed here.
 </Note>
 
-**Response Example:**
+**Response Example** (shortened):
 
 ```json
 {
@@ -740,7 +738,7 @@ curl --request POST \
   "payroll_provider": "hmrc_untied",
   "created_at": "2026-11-19T10:35:00.000Z",
   "status": "Pending",
-  "authorization_url": "https://api.sandbox.goteal.co/qa/mocks/untied/consent/3f1c0b9a-1e2d-4a5b-9c8d-0e1f2a3b4c5d"
+  "authorization_url": "https://api.sandbox.goteal.co/qa/mocks/untied/consent/3f1c0b9a1e2d4a5b9c8d0e1f2a3b4c5d"
 }
 ```
 
@@ -792,13 +790,13 @@ curl --request GET \
       "employments": [
         {
           "employment": {
-            "employer_name": "Acme Corp",
+            "employer_name": "Northwind Test Logistics Ltd",
             "status": "active"
           },
           "income": {
-            "tax_year": "2025-26",
-            "taxable_income": "28100.91",
-            "tax_paid": "3611.40"
+            "tax_year": "2026-27",
+            "taxable_income": "17400.00",
+            "tax_paid": "2435.00"
           }
         }
       ]
@@ -851,7 +849,7 @@ In the console, an applicant that connects HMRC only is created like this:
 
 #### Retrieve Payroll Data `/payroll`
 
-Retrieve the payroll data submitted through a connected account, a Direct Connection or a document upload. The response is paginated: `limit` defaults to and is at most 100.
+Retrieve the payroll data submitted through a connected account, a Direct Connection or a document upload. The response is paginated: `limit` defaults to 100 and is at most 1000.
 
 ```bash
 curl --request GET \
@@ -881,7 +879,7 @@ curl --request GET \
         "date_of_birth": "1978-12-03T00:00:00.000Z"
       },
       "employment_information": {
-        "employer_name": "Acme Ltd",
+        "employer_name": "Midland Construction Services Ltd",
         "type": "Full_Time",
         "status": "Active"
       },
@@ -889,20 +887,18 @@ curl --request GET \
         "pay_date": "2026-11-13T00:00:00.000Z",
         "pay_frequency": "Fortnightly",
         "earnings": {
-          "gross_pay": "3500.00",
-          "net_pay": "2500.00"
+          "gross_pay": "1850.00",
+          "net_pay": "1452.50"
         },
         "tax_code": "1257L"
       },
-      "document_external_id": null,
-      "document_filename": null,
-      "trust_score": "High"
+      "source": "Payroll (via Direct Connection)"
     }
   ]
 }
 ```
 
-A `direct-weekly-covered` or `direct-fortnightly-covered` user has about 52 or 26 submissions for 12 months, so read them with `limit` and `offset` when the total is larger than the page.
+A `direct-weekly-covered` user has about 104 submissions and a `direct-fortnightly-covered` user about 52 for 12 months, so read them with `limit` and `offset` when the total is larger than the page.
 
 ## WebApp Usage
 
