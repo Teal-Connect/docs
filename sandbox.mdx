@@ -15,6 +15,12 @@ For the conceptual data model behind these endpoints, see [Data](/data).
 
 The sandbox environment includes three pre-configured test personas with corresponding mock data in the backend. Use these personas to test different workflows throughout this guide.
 
+The personas are served through `/accounts/direct-connections` (see [Direct Connection](#direct-connection)). Each one matches a persona with payroll recordings from the sandbox's direct connection providers, so the user's `ni_number` and name must match the persona.
+
+<Note>
+  The sandbox only returns data for these personas and for the scenario usernames listed under [Scenario-Based Testing](#scenario-based-testing). It does not generate fake data for other names or usernames, and manual payroll providers (for example LivePay) are not available in the sandbox: connecting to one returns an error saying so.
+</Note>
+
 **Persona 1: Sarah Chen**
 
 ```json
@@ -367,7 +373,7 @@ This journey describes connecting to a specific payroll provider. Use this when 
 
 For certain providers, you can test realistic flows by sending specific usernames that match predefined scenarios. These scenarios simulate real-world conditions such as MFA challenges, incorrect credentials, and successful logins. The user you create does not need to match the test user names listed below. The password can be set to any value.
 
-If you send a `user_name` that does **not** match a scenario username, the sandbox will return fake data as normal.
+The sandbox only supports the scenario usernames listed below. If you send a `user_name` that does **not** match a scenario username for that provider, the sandbox does not generate fake data and no payroll data is returned. Manual providers (for example LivePay) are not available in the sandbox and are refused with a clear error message.
 
 <Warning>
   If you use a scenario username but do **not** supply the corresponding payroll date range, no payroll data will be returned.
@@ -380,7 +386,7 @@ If you send a `user_name` that does **not** match a scenario username, the sandb
 | AdpMyAdp | Brightwell | Emma Richardson | happy_no_mfa | `happy_no_mfa` | 2025-05-01 to 2025-05-31 | No | — | — |
 | Hero | — | Marcus Thompson | happy_mfa | `happy_mfa` | 2025-05-01 to 2025-05-31 | Yes | Code — Authenticator App | `140295` |
 
-The available scenario usernames are: `happy_mfa`, `happy_no_mfa`, `wrong_mfa`, `wrong_username`, and `wrong_password`. When sending date filters via the API, ensure they are in ISO 8601 format (e.g. `2025-08-01T00:00:00Z`).
+The table lists the success scenarios. Failure scenarios (`wrong_mfa`, `wrong_username` and `wrong_password`) are only available for providers that have a matching recording, so not every provider supports every one of them. For example, BrightPayCloud has no MFA step to get wrong, and Hero has no `wrong_username` scenario. When sending date filters via the API, ensure they are in ISO 8601 format (e.g. `2025-08-01T00:00:00Z`).
 
 These scenarios can also be used on the sandbox webapp. When testing via the webapp, ensure the user's `payroll_period_months` lookback is set large enough to cover the scenario's payroll date range.
 
