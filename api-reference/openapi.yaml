@@ -141,15 +141,7 @@ paths:
           description: ID of the user to delete.
       responses:
         "204":
-          description: No Content
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: User deleted successfully.
+          description: No Content. The user and its data are deleted; there is no response body.
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
         "404":
@@ -1743,7 +1735,7 @@ paths:
       on Teal's storage. The stored data can subsequently be retrieved using the
       `GET /gov-connect/{user_id}` endpoint; the response only reports how many income
       submissions were retrieved. The account must have been established via a
-      Gov Connect connection (e.g. the `hmrc` provider) and the user must have HMRC
+      Gov Connect connection (the `hmrc_untied` provider) and the user must have HMRC
       enabled and a valid authorisation.
     post:
       summary: Fetch and store Gov Connect (HMRC) income data for an account
@@ -2364,7 +2356,7 @@ components:
         webapp_link:
           type: string
           description: URL of the teal webapp with short version of token. Ignore if not utilising webapp.
-          example: https://api.sandbox.goteal.co/r/ZwgQkNEMZ4QDkQ
+          example: https://app.sandbox.goteal.co/r/ZwgQkNEMZ4QDkQ
         created_at:
           "$ref": "#/components/schemas/Date"
     ClientConfiguration:
@@ -2964,11 +2956,12 @@ components:
             UserVerificationStateChangedEvent body, `user-journey-confirmed` a UserJourneyConfirmedEvent body.
           items:
             type: string
-          example: ["user-payroll-submitted", "user-bank-statement-submitted", "user-verification-state-changed", "user-journey-confirmed"]
+          example: ["user-payroll-submitted", "user-gov-connect-data-submitted", "user-bank-statement-submitted", "user-verification-state-changed", "user-journey-confirmed"]
         url:
           type: string
           format: url
-          example: https://webhooks.company.com
+          description: An `https` URL whose host resolves to a public address.
+          example: https://webhook.site/00000000-0000-4000-8000-000000000000
         signing_secret:
           type: string
           description: A secret to sign the body of the webhook as described at "https://docs.goteal.co"

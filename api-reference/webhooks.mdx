@@ -7,7 +7,7 @@ description: 'Stay updated with real-time notifications via our Webhooks service
 Webhooks instantly inform your application about significant events, such as payroll submissions or updates, without the need for polling.
 
 ### Use Cases:
-- Alerting when users submit or create payroll data. This use case can be handled by subscribing for event of type `user-payroll-submitted`
+- Alerting when users submit payroll data. This use case can be handled by subscribing for event of type `user-payroll-submitted`
 - Notifying upon successful account linkages. Not yet supported as event type.
 - Triggering actions after data updates. Not yet supported as event type.
 
@@ -20,6 +20,8 @@ Webhooks are system-wide meaning subscriptions are not limited to specific users
 ### Supported Event:
 - `user-payroll-submitted` - notifies when any user creates an entry with new payroll data.
    Includes the payroll data entry as json if `include_payload` is set in the configuration.
+- `user-gov-connect-data-submitted` - notifies when new HMRC (Gov Connect) income data is stored for a user.
+   Includes the Gov Connect submissions as json if `include_payload` is set in the configuration.
 - `user-bank-statement-submitted` - notifies when any user uploads bank statements that are
    successfully extracted. Includes bank statement submissions as json if `include_payload` is set
    in the configuration.
@@ -49,16 +51,16 @@ curl --request POST \
   --header 'Content-Type: application/json' \
   --header 'X-API-KEY: <api-key>' \
   --data '{
-    "events": ["user-payroll-submitted", "user-payroll-created"],
-    "name": "user-payroll-submitted",
+    "events": ["user-payroll-submitted", "user-gov-connect-data-submitted"],
+    "name": "payroll-and-hmrc-data",
     "signing_secret": "very-secret",
     "encryption_key": "St/73LZ1xHkwX5TanL7V+YAVczn4acozPf3cFySKQXI=",
-    "url": "https://webhooks.site"
+    "url": "https://webhook.site/00000000-0000-4000-8000-000000000000"
   }'
 ```
-- **events**: Choose events like `user-payroll-submitted` or `user-bank-statement-submitted` for targeted notifications.
+- **events**: Choose events like `user-payroll-submitted`, `user-gov-connect-data-submitted` or `user-bank-statement-submitted` for targeted notifications. Any other name is refused with `400`.
 - **name**: Label your webhook for easier management.
-- **url**: Your endpoint to receive webhook payloads.
+- **url**: Your endpoint to receive webhook payloads. It must use `https` and its host must resolve to a public address.
 - **signing_secret**: (Optional) A secret for secure webhook verification.
 - **encryption_key**: (Optional) A Base64-encoded 32-byte key used to encrypt webhook payloads.
 
