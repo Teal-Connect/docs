@@ -18,7 +18,7 @@ The sandbox environment includes three pre-configured test personas with corresp
 The personas are served through `/accounts/direct-connections` (see [Direct Connection](#direct-connection)). Each one matches a persona with payroll recordings from the sandbox's direct connection providers, so the user's `ni_number` and name must match the persona.
 
 <Note>
-  The sandbox only returns data for these personas and for the scenario usernames listed under [Scenario-Based Testing](#scenario-based-testing). It does not generate fake data for other names or usernames, and manual payroll providers (for example LivePay) are not available in the sandbox: connecting to one returns an error saying so.
+  The sandbox only returns data for these personas and for the scenario usernames listed under [Scenario-Based Testing](#scenario-based-testing). It does not generate fake data for other names or usernames. Manual payroll providers (for example LivePay) connect in the sandbox (the account is created and the check is raised as usual) but never return payroll data. FreeAgent and HMRC Direct (`hmrc_direct`) are unavailable in the sandbox: they are not listed by `GET /providers`, and `POST /accounts` for either returns a `400` saying the provider is temporarily unavailable.
 </Note>
 
 **Persona 1: Sarah Chen**
@@ -373,7 +373,7 @@ This journey describes connecting to a specific payroll provider. Use this when 
 
 For certain providers, you can test realistic flows by sending specific usernames that match predefined scenarios. These scenarios simulate real-world conditions such as MFA challenges, incorrect credentials, and successful logins. The user you create does not need to match the test user names listed below. The password can be set to any value.
 
-The sandbox only supports the scenario usernames listed below. If you send a `user_name` that does **not** match a scenario username for that provider, the sandbox does not generate fake data and no payroll data is returned. Manual providers (for example LivePay) are not available in the sandbox and are refused with a clear error message.
+The sandbox only supports the scenario usernames listed below. If you send a `user_name` that does **not** match a scenario username for that provider, the sandbox does not generate fake data and no payroll data is returned. Manual providers (for example LivePay) connect in the sandbox but never return data, because no one completes the manual check. FreeAgent and HMRC Direct are unavailable in the sandbox (see above).
 
 <Warning>
   If you use a scenario username but do **not** supply the corresponding payroll date range, no payroll data will be returned.
@@ -1158,3 +1158,8 @@ To test the providers that have the OAuth2 flow available, you can use the follo
 | provider    | username       | password        | Extra login params |
 | ----------- | -------------- | --------------- | ------------------ |
 | `freeagent` | arun@goteal.co | mPxD9Tt3hBV5j39 |                    |
+
+<Note>
+  FreeAgent is unavailable in the sandbox once it runs the mock provider set (see the personas section above), so these
+  credentials only apply to a sandbox that still uses the providers' own test accounts.
+</Note>
