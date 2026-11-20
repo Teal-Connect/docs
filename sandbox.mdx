@@ -4,8 +4,12 @@ description: "Test Teal on the sandbox: four happy paths, the test personas to u
 ---
 
 {/*
-  Draft for Teal-Connect/docs#160. Screens and videos are placeholders until the epics (product#46, #88, #89)
-  merge and the new baseline is promoted; they are then filled from the baseline gallery.
+  Draft for Teal-Connect/docs#160. Videos are placeholders until the epics (product#46, #88, #89) merge and the new
+  baseline is promoted; they are then recorded from the baseline gallery. Screens were filled from the unpublished
+  baseline candidate (runs 20261119T235130Z-full-staging-lucho-console, 20261120T000933Z-full-staging-lucho and
+  20261119T235127Z-full-staging-lucho-api) and are refreshed from the promoted baseline after the epics merge.
+  Screens still missing: webapp ninCapture (x3), console applicant-create doc-scan-only and gov-connect-only,
+  console applicant-share-link connection-link (see the PR body).
   Placeholder format: SCREEN: <surface> <journey> <screen id>   and   VIDEO: <surface> <journey>
 */}
 
@@ -46,7 +50,7 @@ Two journeys send the applicant to a page that stands in for a real website: the
 - Do not enter real credentials or personal data on them.
 - You do not need an account anywhere to use them: follow the page's instructions.
 
-{/* SCREEN: webapp employed-hmrc-only hmrc-test-page */}
+![The Teal sandbox HMRC test page: a banner saying it is a test simulation, and the heading HMRC consent simulation: accepted](/images/sandbox/hmrc-test-page.png)
 
 The pages are served by Teal's mock provider (payroll-api#2053).
 
@@ -116,7 +120,7 @@ Replace the `url` with your own webhook.site address: the sandbox refuses a URL 
 }
 ```
 
-{/* SCREEN: console webhooks webhooks--create-payroll-event-with-refusal */}
+![Console Create webhook dialog for the user-payroll-submitted event, with an error message because the URL could not be resolved](/images/sandbox/console-webhook-create-refusal.png)
 
 ### Configure Client Settings `/configuration`
 
@@ -155,9 +159,9 @@ curl --request PATCH \
 
 The same settings are in the console:
 
-{/* SCREEN: console configuration configuration--products-with-refusal */}
+![Console Configuration page with months of income and supporting document settings, and a change not yet published](/images/sandbox/console-configuration-products.png)
 
-{/* SCREEN: console configuration configuration--journey-preview */}
+![Console Preview the journey dialog listing the steps applicants go through](/images/sandbox/console-journey-preview.png)
 
 ## User Setup
 
@@ -359,11 +363,11 @@ What to expect for the persona:
 
 Open the `webapp_link` of the user. The applicant sees the consent screen, the summary of the payroll found and the done screen.
 
-{/* SCREEN: webapp direct-match consent */}
+![Webapp consent screen: share your income with the client](/images/sandbox/webapp-direct-match-consent.png)
 
-{/* SCREEN: webapp direct-match summary */}
+![Webapp summary screen listing the payroll found for each employer](/images/sandbox/webapp-direct-match-summary.png)
 
-{/* SCREEN: webapp direct-match done */}
+![Webapp done screen after the applicant confirms](/images/sandbox/webapp-direct-match-done.png)
 
 {/* VIDEO: webapp direct-match */}
 
@@ -512,25 +516,25 @@ Returns `201 Created` when at least one submission was retrieved, or `200 OK` wi
 
 Open the `webapp_link`. The applicant gives consent, enters their NI number, chooses the employer, signs in with the persona id (and the code `123` for CGI) and reaches the summary.
 
-{/* SCREEN: webapp uc-connect consent */}
+![Webapp consent screen](/images/sandbox/webapp-uc-connect-consent.png)
 
 {/* SCREEN: webapp uc-connect ninCapture */}
 
-{/* SCREEN: webapp uc-connect connect */}
+![Webapp screen to find the applicant's employer](/images/sandbox/webapp-uc-connect-connect.png)
 
-{/* SCREEN: webapp uc-connect employerPayroll */}
+![Webapp screen to pick the payroll provider the employer uses](/images/sandbox/webapp-uc-connect-employer-payroll.png)
 
-{/* SCREEN: webapp uc-connect signin */}
+![Webapp payroll sign-in form with username and password fields](/images/sandbox/webapp-uc-connect-signin.png)
 
-{/* SCREEN: webapp uc-connect summary */}
+![Webapp summary screen listing the pay found through the connected payroll](/images/sandbox/webapp-uc-connect-summary.png)
 
-{/* SCREEN: webapp uc-connect done */}
+![Webapp done screen after the applicant confirms](/images/sandbox/webapp-uc-connect-done.png)
 
 {/* VIDEO: webapp uc-connect */}
 
 In the console, an applicant that connects payroll only is created like this, and a share link opens the connection for them:
 
-{/* SCREEN: console applicant-create applicant-create--user-connection-only */}
+![Console Create new user dialog with name, date of birth and postcode](/images/sandbox/console-applicant-create.png)
 
 {/* SCREEN: console applicant-share-link applicant-share-link--connection-link */}
 
@@ -652,15 +656,15 @@ What to expect for the persona: status `201`, one payroll submission per payslip
 
 Open the `webapp_link`. The applicant gives consent, enters their NI number, uploads the payslips and reaches the summary.
 
-{/* SCREEN: webapp payslips-only consent */}
+![Webapp consent screen](/images/sandbox/webapp-payslips-only-consent.png)
 
 {/* SCREEN: webapp payslips-only ninCapture */}
 
-{/* SCREEN: webapp payslips-only upload */}
+![Webapp screen to choose payslip PDFs to upload](/images/sandbox/webapp-payslips-only-upload.png)
 
-{/* SCREEN: webapp payslips-only summary */}
+![Webapp summary screen showing pay read from the uploaded payslips](/images/sandbox/webapp-payslips-only-summary.png)
 
-{/* SCREEN: webapp payslips-only done */}
+![Webapp done screen after the applicant confirms](/images/sandbox/webapp-payslips-only-done.png)
 
 {/* VIDEO: webapp payslips-only */}
 
@@ -827,17 +831,17 @@ Returns `201 Created` with `{"income_submissions_count": N}` when data is retrie
 
 Open the `webapp_link`. The applicant gives consent, enters their NI number, chooses HMRC, authorises at the HMRC test page and reaches the summary.
 
-{/* SCREEN: webapp employed-hmrc-only consent */}
+![Webapp consent screen](/images/sandbox/webapp-employed-hmrc-only-consent.png)
 
 {/* SCREEN: webapp employed-hmrc-only ninCapture */}
 
-{/* SCREEN: webapp employed-hmrc-only hmrcEntry */}
+![Webapp screen asking whether the applicant is employed or self-employed](/images/sandbox/webapp-employed-hmrc-only-hmrc-entry.png)
 
-{/* SCREEN: webapp employed-hmrc-only hmrc-test-page */}
+![The Teal sandbox HMRC test page: a banner saying it is a test simulation, and the heading HMRC consent simulation: accepted](/images/sandbox/hmrc-test-page.png)
 
-{/* SCREEN: webapp employed-hmrc-only summary */}
+![Webapp summary screen showing HMRC verified income by tax year](/images/sandbox/webapp-employed-hmrc-only-summary.png)
 
-{/* SCREEN: webapp employed-hmrc-only done */}
+![Webapp done screen after the applicant confirms](/images/sandbox/webapp-employed-hmrc-only-done.png)
 
 {/* VIDEO: webapp employed-hmrc-only */}
 
