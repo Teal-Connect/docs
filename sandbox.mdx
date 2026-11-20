@@ -1,61 +1,76 @@
 ---
 title: "Sandbox"
-description: "Using the sandbox environment"
+description: "Test Teal on the sandbox: four happy paths, the test personas to use for each and the result to expect"
 ---
 
-## Introduction
+{/*
+  Draft for Teal-Connect/docs#160. Videos are placeholders until the epics (product#46, #88, #89) merge and the new
+  baseline is promoted; they are then recorded from the baseline gallery. Screens were filled from the unpublished
+  baseline candidate (runs 20261119T235130Z-full-staging-lucho-console, 20261120T000933Z-full-staging-lucho and
+  20261119T235127Z-full-staging-lucho-api) and are refreshed from the promoted baseline after the epics merge.
+  Screens still missing: webapp ninCapture (x3), console applicant-create doc-scan-only and gov-connect-only,
+  console applicant-share-link connection-link (see the PR body).
+  Placeholder format: SCREEN: <surface> <journey> <screen id>   and   VIDEO: <surface> <journey>
+*/}
 
-The sandbox environment functions as a simulated version of the actual system, designed for testing and development purposes without interacting with real data.
+## Journeys at a glance
 
-This environment employs mock payroll providers and payslip readers in order to allow developers to evaluate the API interface without compromising real data privacy.
+The sandbox answers with Teal's mock providers, stand-ins for the real payroll, Direct Connection, HMRC and payslip sources. Each test persona is a named applicant whose data you know in advance, so you can run a journey end to end and check what comes back.
 
-For the conceptual data model behind these endpoints, see [Data](/data).
+Pick one of the four happy paths. Every one can be run through the API with your API key, or in the hosted webapp by opening the user's `webapp_link`.
 
-## Test Personas
+| # | Journey | Persona | You enter | What comes back | Webhook |
+|---|---|---|---|---|---|
+| 1 | [Direct Connection](#path-1-direct-connection) | `direct-monthly-covered` | Sarah Chen, NI number AB654321C, born 1990-04-22, postcode E1 6PG | `201` with the applicant's monthly payroll, no sign-in needed | `user-payroll-submitted` |
+| 2 | [User Connection](#path-2-user-connection) | `scraper-full-window-nomfa` (BrightPayCloud), or `scraper-full-window` (CGI, with a code step) | Sign in with the persona id as the user name and any password. CGI also asks for the code `123` | `201` with the account `Authorised`, then the payroll under `GET /payroll/{user_id}` | `user-payroll-submitted` |
+| 3 | [Payslip upload](#path-3-payslip-upload) | `payslips-cover-window` | Three test payslip PDFs | `201` with the payslips read, one payroll submission per payslip | none |
+| 4 | [HMRC (Gov Connect)](#path-4-hmrc-gov-connect) | `hmrc-employed-authorised`, or `hmrc-self-employed-authorised` | NI number QQ000001A with flow `non_mtd`, or QQ000002A with flow `mtd` | `201` with the account `Pending` and an `authorization_url`, then the income under `GET /gov-connect/{user_id}` | `user-gov-connect-data-submitted` |
 
-The sandbox environment includes three pre-configured test personas with corresponding mock data in the backend. Use these personas to test different workflows throughout this guide.
+### Persona table
 
-**Persona 1: Sarah Chen**
+| Persona | Journey | Expected outcome |
+|---|---|---|
+| `direct-monthly-covered` (Sarah Chen) | Direct Connection | Matched at both Direct Connections (IRIS and Sage). Monthly pay for the whole lookback window. |
+| `direct-weekly-covered` (James Oconnor) | Direct Connection | Matched. Weekly pay from each of its two employers: every pay in the window comes back, about 52 rows per employer, about 104 for 12 months. |
+| `direct-fortnightly-covered` (Amina Diallo) | Direct Connection | Matched. Fortnightly pay from each of its two employers: every pay in the window comes back, about 26 rows per employer, about 52 for 12 months. |
+| `direct-mismatched-identity` (Sarah Chen-Morgan) | Direct Connection | No match, so the hosted journey continues to the connect screen. Use this applicant for paths 2 and 3 in the webapp. |
+| `scraper-full-window-nomfa` | User Connection, BrightPayCloud | Signs in without a code. Monthly pay covering the whole window. |
+| `scraper-full-window` | User Connection, CGI | Signs in, then asks for the code `123`. Monthly pay covering the whole window. |
+| `payslips-cover-window` | Payslip upload | Payslips read, covering the window. |
+| `hmrc-employed-authorised` | HMRC, employed (`non_mtd`) | Authorised at the HMRC test page, one PAYE employment. |
+| `hmrc-self-employed-authorised` | HMRC, self-employed (`mtd`) | Authorised at the HMRC test page, Self Assessment income. |
 
-```json
-{
-  "forename": "sarah",
-  "surname": "chen",
-  "ni_number": "AB654321C",
-  "date_of_birth": "1990-04-22T00:00:00.000Z",
-  "post_codes": ["E1 6PG"],
-  "payroll_period_months": 12,
-  "ext_id": "ext-sarah-chen-001"
-}
-```
+The sandbox has many more personas: other pay frequencies, gaps, leavers, failed sign-ins and failed HMRC authorisations. Every one, what to enter for it and the journeys it supports is on [Test personas](/test-personas).
 
-**Persona 2: James O'Connor**
+## Sandbox test pages
 
-```json
-{
-  "forename": "james",
-  "surname": "oconnor",
-  "ni_number": "BC765432D",
-  "date_of_birth": "1985-09-10T00:00:00.000Z",
-  "post_codes": ["M13 9WL"],
-  "payroll_period_months": 12,
-  "ext_id": "ext-james-oconnor-002"
-}
-```
+Two journeys send the applicant to a page that stands in for a real website: the HMRC consent page of the HMRC path, and the payroll provider sign-in page of the OAuth providers. On sandboxes both pages are public and branded "Teal sandbox — test page".
 
-**Persona 3: Amina Diallo**
+- They are Teal test simulations. They are not HMRC, not Government Gateway and not a real payroll provider, and none of those runs them.
+- Do not enter real credentials or personal data on them.
+- You do not need an account anywhere to use them: follow the page's instructions.
 
-```json
-{
-  "forename": "amina",
-  "surname": "diallo",
-  "ni_number": "CD876543E",
-  "date_of_birth": "1978-12-03T00:00:00.000Z",
-  "post_codes": ["B1 1TT"],
-  "payroll_period_months": 12,
-  "ext_id": "ext-amina-diallo-003"
-}
-```
+![The Teal sandbox HMRC test page: a banner saying it is a test simulation, and the heading HMRC consent simulation: accepted](/images/sandbox/hmrc-test-page.png)
+
+The pages are served by Teal's mock provider (payroll-api#2053).
+
+## Providers
+
+A sandbox lists exactly nine payroll providers, the ones Teal has test personas for (compose-payroll-api#276). `GET /providers` returns them; `POST /accounts` with any other provider answers `400`.
+
+| `payroll_provider` | Name |
+|---|---|
+| `cgi` | CGI iPayView |
+| `brightpaycloud` | Brightpay Cloud |
+| `adpihcm` | ADP - IHCM |
+| `adpmyadp` | ADP - MyAdp |
+| `adpglobalview` | ADP - GlobalView |
+| `hero` | Employment Hero |
+| `deel` | Deel |
+| `newpayroll` | Newpayroll |
+| `hmrc_untied` | HMRC |
+
+IRIS and Sage are Direct Connections: you do not connect them yourself, and `POST /accounts/direct-connections` looks the applicant up at both. They are not in the provider list.
 
 ## Initial Setup
 
@@ -68,7 +83,7 @@ Before you begin testing, ensure you have the following:
 
 ### Webhooks Setup `/webhooks`
 
-Configure webhooks to receive notifications for events such as new payroll submissions.
+Subscribe to the events the happy paths send. The four paths send `user-payroll-submitted` (paths 1 and 2; a payslip upload sends no webhook) and `user-gov-connect-data-submitted` (path 4).
 
 ```bash
 curl --request POST \
@@ -78,15 +93,19 @@ curl --request POST \
   --data '{
   "events": [
     "user-payroll-submitted",
+    "user-gov-connect-data-submitted"
   ],
-  "name": "user-payroll-submitted",
-  "url": "https://webhooks.company.com"
+  "name": "sandbox-happy-paths",
+  "url": "https://webhook.site/00000000-0000-4000-8000-000000000000"
 }'
 ```
 
+Replace the `url` with your own webhook.site address: the sandbox refuses a URL that is not `https` or whose host does not resolve to a public address. A webhook `name` must be unique.
+
 <Note>
   Optional fields: `signing_secret` (for HMAC verification), `encryption_key`
-  (for AES/GCM payload encryption).
+  (for AES/GCM payload encryption), `config.include_payload` (to include the data in the delivery).
+  See [Webhooks](/api-reference/webhooks) for the events and their payloads.
 </Note>
 
 **Response Example:**
@@ -94,57 +113,63 @@ curl --request POST \
 ```json
 {
   "webhook_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
-  "events": ["user-payroll-submitted"],
-  "name": "user-payroll-submitted",
-  "url": "https://webhooks.company.com",
-  "created_at": "2019-05-17T00:00:00.000Z"
+  "events": ["user-payroll-submitted", "user-gov-connect-data-submitted"],
+  "name": "sandbox-happy-paths",
+  "url": "https://webhook.site/00000000-0000-4000-8000-000000000000",
+  "created_at": "2026-11-19T00:00:00.000Z"
 }
 ```
 
+![Console Create webhook dialog for the user-payroll-submitted event, with an error message because the URL could not be resolved](/images/sandbox/console-webhook-create-refusal.png)
+
 ### Configure Client Settings `/configuration`
 
-Configure client-wide settings that affect sandbox behavior, such as payroll lookback periods and recurring checks.
+Configure client-wide settings. The happy paths need the sources they use switched on: `payroll_connections_enabled` for path 2, `payslip_upload_enabled` for path 3 and `hmrc_enabled` for path 4. Direct Connection (path 1) is always on. `PATCH` changes only the fields you send.
 
 ```bash
-curl --request PUT \
+curl --request PATCH \
   --url https://api.sandbox.goteal.co/configuration \
   --header 'Content-Type: application/json' \
   --header 'X-API-KEY: <api-key>' \
   --data '{
   "payslip_upload_enabled": true,
-  "payroll_period_months": 12,
-  "recurring_checks_enabled": true,
-  "recurring_check_frequency": "HOURLY",
-  "recurring_check_end_date": "2027-01-10T00:00Z"
+  "payroll_connections_enabled": true,
+  "hmrc_enabled": true,
+  "payroll_period_months": 12
 }'
 ```
 
-**Response Example:**
+**Response Example** (shortened to the fields you set):
 
 ```json
 {
   "payslip_upload_enabled": true,
   "payroll_period_months": 12,
-  "client_logo": "",
-  "recurring_checks_enabled": true,
-  "recurring_check_frequency": "HOURLY",
-  "recurring_check_end_date": "2027-01-10T00:00:00.000Z",
   "hmrc_enabled": true,
-  "payroll_connections_enabled": true
+  "payroll_connections_enabled": true,
+  "warnings": []
 }
 ```
 
 <Note>
-  In sandbox, you can test the HOURLY frequency (not available in production).
+  `GET /configuration` reads the settings back. Recurring checks are configured here too
+  (`recurring_checks_enabled`, `recurring_check_frequency`, `recurring_check_duration_days`);
+  in sandbox you can test the `HOURLY` frequency (not available in production).
 </Note>
+
+The same settings are in the console:
+
+![Console Configuration page with months of income and supporting document settings, and a change not yet published](/images/sandbox/console-configuration-products.png)
+
+![Console Preview the journey dialog listing the steps applicants go through](/images/sandbox/console-journey-preview.png)
 
 ## User Setup
 
-Before starting any journey, complete the Initial Setup (Webhooks and Configuration) and User Setup steps below. These steps only need to be done once.
+Every path starts the same way: create the applicant, generate a token for them and record their authorisation. Create one applicant per persona, with the details the path gives.
 
 #### Create a User `/users`
 
-Create a user using one of the test personas defined above. Include the `ni_number` to match the mock data for that persona. In this example, we'll create Sarah Chen:
+Create the user with the persona's details exactly as listed: the Direct Connection lookup matches on name, date of birth, NI number and postcode. This example is Sarah Chen, the persona of path 1:
 
 ```bash
 curl --request POST \
@@ -161,7 +186,7 @@ curl --request POST \
 }'
 ```
 
-**Response Example:**
+**Response Example** (shortened):
 
 ```json
 {
@@ -172,13 +197,15 @@ curl --request POST \
   "date_of_birth": "1990-04-22T00:00:00.000Z",
   "post_codes": ["E1 6PG"],
   "payroll_period_months": 12,
-  "created_at": "2019-05-17T00:00:00.000Z"
+  "created_at": "2026-11-19T00:00:00.000Z"
 }
 ```
 
+`payroll_period_months` is the lookback of the check, in months. Creating the same name, date of birth and postcode twice answers `409`: delete the user (see [Cleanup](#cleanup)) or add a different `ext_id`.
+
 #### Generate a User Token `/user-tokens`
 
-After creating a user, generate a token to authenticate subsequent actions for that user. The token ensures that actions such as account connection and payslip uploads are securely attributed to the correct user.
+After creating a user, generate a token to authenticate subsequent actions for that user. The token ensures that actions such as account connection and payslip uploads are securely attributed to the correct user. The response also carries the `webapp_link` that opens the hosted webapp for the user.
 
 ```bash
 curl --request POST \
@@ -194,13 +221,17 @@ curl --request POST \
 
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfbmFtZSI6ImNsaWVudC1uYW1lIiwidXNlcl9pZCI6Ijk1YTBlNzBiLWZlMDItNGY0Ny1hZWY5LTJlZmZmMjc5ZGY3MSIsImlzcyI6ImFwcC5zYW5kYm94LmdvdGVhbC5jbyIsImV4cCI6MTc3NTA0MjQzOH0.abc123"
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfbmFtZSI6ImNsaWVudC1uYW1lIiwidXNlcl9pZCI6Ijk1YTBlNzBiLWZlMDItNGY0Ny1hZWY5LTJlZmZmMjc5ZGY3MSIsImlzcyI6ImFwcC5zYW5kYm94LmdvdGVhbC5jbyIsImV4cCI6MTc3NTA0MjQzOH0.abc123",
+  "webapp_link": "https://app.sandbox.goteal.co/r/ZwgQkNEMZ4QDkQ",
+  "created_at": "2026-11-19T10:30:00.000Z"
 }
 ```
 
+The `token` is the bearer token of the calls marked Bearer below; every other call uses your API key.
+
 #### Authorisation Terms Request `/authorisations`
 
-Before connecting a payroll account, users must accept your terms and conditions. This request records the user's consent:
+Before connecting a payroll account, users must accept your terms and conditions. This request records the user's consent. In the hosted webapp the applicant does this on the consent screen.
 
 ```bash
 curl --request POST \
@@ -219,7 +250,7 @@ curl --request POST \
   fingerprint).
 </Note>
 
-**Response Example:**
+**Response Example** (shortened):
 
 ```json
 {
@@ -231,22 +262,33 @@ curl --request POST \
   "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
   "status": "active",
   "is_valid": true,
-  "accepted_at": "2019-05-17T00:00:00.000Z",
+  "accepted_at": "2026-11-19T00:00:00.000Z",
   "revoked_at": null
 }
 ```
 
-## User Journeys
+## Happy Paths
 
-### Direct Connection
+Complete Initial Setup and User Setup first. Each path below lists its calls in order, the result to expect and the screens of the hosted webapp.
 
-This is the simplest way to get started with sandbox direct connections. The `/accounts/direct-connections` endpoint automatically checks all available providers and returns payroll data directly.
+### Path 1: Direct Connection
 
-**Prerequisites:** Complete Initial Setup (Webhooks, Configuration) and User Setup above.
+Persona `direct-monthly-covered`, journey `direct-match`. The lookup finds the applicant at the Direct Connections, so no payroll sign-in is needed.
+
+**Applicant:** Sarah Chen, NI number AB654321C, born 1990-04-22, postcode E1 6PG.
+
+| Step | Call | Auth | Expected |
+|---|---|---|---|
+| 1 | `POST /users` | API key | `201`, `user_id` |
+| 2 | `POST /user-tokens` | API key | `201`, `token`, `webapp_link`, `created_at` |
+| 3 | `POST /authorisations` | API key | `201`, `status` `active` |
+| 4 | `POST /accounts/direct-connections` | API key | `201`, `payroll_submissions` |
+| 5 | webhook | | `user-payroll-submitted` |
+| 6 | `GET /payroll/{user_id}` | API key | `200`, the same payroll, read again |
 
 #### Direct Connection `/accounts/direct-connections`
 
-For sandbox direct connections, use this simplified endpoint that automatically checks all available direct connection providers and returns payroll data directly.
+The endpoint takes a `user_id` (and optionally an `ni_number`). It looks the applicant up at every Direct Connection (IRIS and Sage), creates an account for each provider that holds data and returns the payroll directly, so there is no separate `/payroll/entries/connections` call.
 
 ```bash
 curl --request POST \
@@ -258,90 +300,50 @@ curl --request POST \
 }'
 ```
 
-**Response Example:**
+**Response Example** (shortened to one submission; `payroll_submissions` holds every pay in the window and `pagination.count` counts them):
 
 ```json
 {
   "pagination": {
     "offset": 0,
-    "limit": 12,
-    "count": 12,
-    "total_count": 12
+    "limit": 1,
+    "count": 1,
+    "total_count": 1
   },
   "payroll_submissions": [
     {
       "id": "0187c66e-e7e5-811c-b006-2232f00f426a",
-      "account_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
+      "account_id": "6d3c1f5e-8a47-4f6b-b2f4-1d7a9c0e5b21",
       "entry_id": "ddbb2453-1202-4ae8-9024-4365a223e548",
-      "created_at": "2024-05-03T14:00:13.804Z",
+      "created_at": "2026-11-19T10:31:12.804Z",
       "authorisation_id": "5a299940-9753-4f36-8611-9aa02ba457f6",
       "identity_information": {
         "name": "Sarah Chen",
         "date_of_birth": "1990-04-22T00:00:00.000Z",
-        "address": {
-          "street": "45 Commercial Road",
-          "city": "London",
-          "post_code": "E1 6PG"
-        },
-        "phone": "+44 7700 900123",
         "NI_number": "AB654321C"
       },
       "employment_information": {
-        "employer_name": "Acme Corp",
-        "role": "Software Developer",
+        "employer_name": "Lumio Technologies Ltd",
+        "role": "Senior Product Manager",
         "type": "Full_Time",
         "status": "Active",
-        "start_date": "2018-06-01",
-        "employer_tax_reference": "123/AB456",
-        "is_director": false
+        "start_date": "2021-06-01",
+        "is_director": true
       },
       "income_information": {
-        "pay_date": "2024-02-15",
-        "pay_interval_start": "2024-02-01",
-        "pay_interval_end": "2024-02-15",
-        "pay_frequency": "Weekly",
+        "pay_date": "2026-10-31",
+        "pay_interval_start": "2026-10-01",
+        "pay_interval_end": "2026-10-31",
+        "pay_frequency": "Monthly",
         "earnings": {
-          "gross_pay": "2000.00",
-          "net_pay": "1500.00",
-          "base_salary": "1900.00",
-          "bonus": "100.00",
-          "fixed_pay_total": "1900.00",
-          "variable_pay_total": "100.00",
-          "earning_elements": [
-            {
-              "type": "Bonus",
-              "amount": "100.00",
-              "is_fixed": false,
-              "is_after_tax": false,
-              "is_after_ni": false,
-              "is_bik": false
-            }
-          ],
-          "year_to_date": {
-            "gross_pay": "24000.00",
-            "net_pay": "18000.00",
-            "total_tax_paid": "3600.00",
-            "total_ni_paid": "1800.00",
-            "total_taxable_earnings": "24000.00",
-            "tax_year": 2024
-          },
-          "rolling_12m_income": {
-            "gross_pay": "104000.00",
-            "net_pay": "78000.00"
-          }
+          "gross_pay": "6250.00",
+          "net_pay": "4320.00"
         },
         "deductions": {
-          "income_tax": "300.00",
-          "employee_ni": "150.00",
-          "employee_pension": "50.00",
-          "total_deductions": "500.00",
-          "loan_deductions": "0.00",
-          "deductions_elements": [
-            {
-              "type": "Pension",
-              "amount": "50.00"
-            }
-          ]
+          "income_tax": "1250.00",
+          "employee_ni": "520.00",
+          "employee_pension": "160.00",
+          "total_deductions": "1930.00"
         },
         "tax_code": "1257L"
       }
@@ -350,43 +352,51 @@ curl --request POST \
 }
 ```
 
-This endpoint:
+What to expect for the persona:
 
-- Takes just a `user_id` (no provider selection needed)
-- Automatically checks all available direct connection providers
-- Creates accounts automatically for any provider with data
-- Returns payroll data directly (no separate `/payroll/entries/connections` call needed)
+- Status `201`, the payroll in `payroll_submissions`, and the webhook `user-payroll-submitted`.
+- `direct-monthly-covered` pays monthly, so the response has one pay per month of the window from each of its two employers (about 24 rows for 12 months).
+- The weekly and fortnightly personas return every pay in the window from each of their two employers: `direct-weekly-covered` about 52 rows per employer (about 104) and `direct-fortnightly-covered` about 26 per employer (about 52) for `payroll_period_months` of 12.
+- With the NI number of the persona but a different surname and date of birth, as `direct-mismatched-identity` has (Chen-Morgan, 1991-05-23), the lookup finds nothing and returns no submissions.
 
-### User Connection
+#### Webapp
 
-This journey describes connecting to a specific payroll provider. Use this when you need to connect to a particular provider or when the simplified direct connection doesn't meet your needs.
+Open the `webapp_link` of the user. The applicant sees the consent screen, the summary of the payroll found and the done screen.
 
-**Prerequisites:** Complete Initial Setup (Webhooks, Configuration) and User Setup above.
+![Webapp consent screen: share your income with the client](/images/sandbox/webapp-direct-match-consent.png)
 
-#### Scenario-Based Testing
+![Webapp summary screen listing the payroll found for each employer](/images/sandbox/webapp-direct-match-summary.png)
 
-For certain providers, you can test realistic flows by sending specific usernames that match predefined scenarios. These scenarios simulate real-world conditions such as MFA challenges, incorrect credentials, and successful logins. The user you create does not need to match the test user names listed below. The password can be set to any value.
+![Webapp done screen after the applicant confirms](/images/sandbox/webapp-direct-match-done.png)
 
-If you send a `user_name` that does **not** match a scenario username, the sandbox will return fake data as normal.
+{/* VIDEO: webapp direct-match */}
 
-<Warning>
-  If you use a scenario username but do **not** supply the corresponding payroll date range, no payroll data will be returned.
-</Warning>
+### Path 2: User Connection
 
-| Provider | Employer | Test User | Scenario | Username | Payroll Date Range | MFA | MFA Type | MFA Code |
-|---|---|---|---|---|---|---|---|---|
-| BrightPayCloud | Aim Smarter | Sarah Mitchell | happy_no_mfa | `happy_no_mfa` | 2025-08-01 to 2025-08-31 | No | — | — |
-| CGI | Department for Environment, Food and Rural Affairs | David Patel | happy_mfa | `happy_mfa` | 2025-10-01 to 2025-10-31 | Yes | PasswordWithPositions — Pin Code (positions 2, 4, 6) | `123` |
-| AdpMyAdp | Brightwell | Emma Richardson | happy_no_mfa | `happy_no_mfa` | 2025-05-01 to 2025-05-31 | No | — | — |
-| Hero | — | Marcus Thompson | happy_mfa | `happy_mfa` | 2025-05-01 to 2025-05-31 | Yes | Code — Authenticator App | `140295` |
+Persona `scraper-full-window-nomfa` on BrightPayCloud, or `scraper-full-window` on CGI with a code step. Journey `uc-connect`. The applicant signs in to their payroll provider and Teal retrieves the payroll.
 
-The available scenario usernames are: `happy_mfa`, `happy_no_mfa`, `wrong_mfa`, `wrong_username`, and `wrong_password`. When sending date filters via the API, ensure they are in ISO 8601 format (e.g. `2025-08-01T00:00:00Z`).
+**Sign-in:** the user name is the persona id and the password is any value.
 
-These scenarios can also be used on the sandbox webapp. When testing via the webapp, ensure the user's `payroll_period_months` lookback is set large enough to cover the scenario's payroll date range.
+| Persona | `payroll_provider` | Employer in the webapp | User name | Password | Code |
+|---|---|---|---|---|---|
+| `scraper-full-window-nomfa` | `brightpaycloud` | Accuride International | `scraper-full-window-nomfa` | any | none |
+| `scraper-full-window` | `cgi` | Department for Environment, Food and Rural affairs | `scraper-full-window` | any | `123` |
+
+For the webapp, create the user as `direct-mismatched-identity` so that the Direct Connection finds nothing and the journey reaches the connect screen: forename `sarah`, surname `Chen-Morgan`, date of birth `1991-05-23T00:00:00.000Z`, NI number `AB654321C`, postcode `E1 6PG`. Through the API any applicant works.
+
+| Step | Call | Auth | Expected |
+|---|---|---|---|
+| 1 | `POST /users` | API key | `201`, `user_id` |
+| 2 | `POST /user-tokens` | API key | `201` |
+| 3 | `POST /authorisations` | API key | `201` |
+| 4 | `POST /accounts` | API key | `201`, `status` `Authorised` (BrightPayCloud) or `MfaRequired` with `mfa_method` (CGI) |
+| 5 | `PUT /accounts/{account_id}/mfa` (CGI only) | API key | `200`, `status` `Authorised` |
+| 6 | webhook | | `user-payroll-submitted` |
+| 7 | `GET /payroll/{user_id}` | API key | `200`, `payroll_submissions` |
 
 #### Connect a Payroll Account `/accounts`
 
-This simulates the user connecting their payroll account for automatic data retrieval.
+This is the user signing in to their payroll account. The payroll is retrieved as part of the connection.
 
 ```bash
 curl --request POST \
@@ -395,43 +405,100 @@ curl --request POST \
   --header 'X-API-KEY: <api-key>' \
   --data '{
   "user_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
-  "payroll_provider": "quickbooks",
-  "user_name": "john.smith@company.com",
-  "password": "example-password"
+  "payroll_provider": "brightpaycloud",
+  "user_name": "scraper-full-window-nomfa",
+  "password": "any-password"
 }'
 ```
-
-<Note>
-  Optional fields: `user_name`, `password`, `extra_login_params` (e.g.
-  `company_name` for Dayforce).
-</Note>
 
 **Response Example:**
 
 ```json
 {
-  "account_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
-  "payroll_provider": "quickbooks",
-  "user_name": "john.smith@company.com",
-  "created_at": "2019-05-17T00:00:00.000Z",
+  "account_id": "3c1f0d52-6a9e-4b7d-9f13-8e2a5b4c7d90",
+  "payroll_provider": "brightpaycloud",
+  "user_name": "scraper-full-window-nomfa",
+  "created_at": "2026-11-19T10:32:00.000Z",
   "status": "Authorised"
 }
 ```
 
-Use the optional `extra_login_params` object for provider-specific login fields (omit it when it isn't required). Dayforce connections require setting `extra_login_params.company_name`.
+<Note>
+  Optional fields: `from` and `to` (ISO 8601 date-times) to filter the payroll retrieved, and
+  `extra_login_params` for provider-specific login fields (omit it when it isn't required).
+</Note>
 
-As with production accounts, when connecting we will retrieve payroll immediately. For sandbox, when not using scenarios, the number of payroll submissions generated matches the `payroll_period_months` configuration. If this is set on both the client and user configuration, the user level config takes precedence. For example, if it is set to 7 months, we'll return 8 payroll submissions (including the current month). If it is not set we'll take a default of 36 months. To simulate a gap in the payroll, the `Shape` provider will leave a 3 month gap from the time of the request.
+`payroll_provider` is one of the nine [providers](#providers). The payroll is the recorded data of the persona, not generated, and the user name decides which persona answers.
 
-#### Retrieve Submitted Payroll Information `/payroll/entries/connections`
-
-Retrieve latest payroll for a connected account. For sandbox, we'll always return new payroll where the `pay_date` is set to the current day. For `Shape` provider we will still maintain a 3 month gap.
+**With a code step (CGI, `scraper-full-window`):**
 
 ```bash
-curl --location --request POST 'https://api.sandbox.goteal.co/payroll/entries/connections' \
---header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfbmFtZSI6InN5c19jbGllbnQxIiwidXNlcl9pZCI6IjU3YWRiMzg0LWE2ZGEtNGE1Ny05NThhLTU1ZDk5MzdjZWE0MyIsImlzcyI6ImFwcC5zYW5kYm94LmdvdGVhbC5jbyIsImV4cCI6MTcxNTM0NTI5MH0.IxgmSN4XAn7j2jbQu0npwLXQjEQVqcbjmIBO2T-NCAc' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "account_id" : 552300dd-1e91-48d4-958b-41736c2c0167
+curl --request POST \
+  --url https://api.sandbox.goteal.co/accounts \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-KEY: <api-key>' \
+  --data '{
+  "user_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
+  "payroll_provider": "cgi",
+  "user_name": "scraper-full-window",
+  "password": "any-password"
+}'
+```
+
+The response is `201` with `"status": "MfaRequired"` and the `mfa_method` to answer:
+
+```json
+{
+  "account_id": "7a2e9b14-0c58-4d36-8f61-2b9d3e5a1c47",
+  "payroll_provider": "cgi",
+  "user_name": "scraper-full-window",
+  "created_at": "2026-11-19T10:33:00.000Z",
+  "status": "MfaRequired",
+  "mfa_method": {
+    "type": "PasswordWithPositions",
+    "positions": [2, 4, 6],
+    "message": "Pin Code"
+  }
+}
+```
+
+Send the code `123` to complete the connection:
+
+```bash
+curl --request PUT \
+  --url https://api.sandbox.goteal.co/accounts/7a2e9b14-0c58-4d36-8f61-2b9d3e5a1c47/mfa \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-KEY: <api-key>' \
+  --data '{
+  "mfa": "123"
+}'
+```
+
+The response is `200` with the account and `"status": "Authorised"`; the payroll is retrieved at that point.
+
+#### Retrieve the payroll `/payroll/{user_id}`
+
+Read the payroll with your API key. The submissions are the persona's monthly pay.
+
+```bash
+curl --request GET \
+  --url https://api.sandbox.goteal.co/payroll/{user_id} \
+  --header 'X-API-KEY: <api-key>'
+```
+
+See [Retrieve Payroll Data](#retrieve-payroll-data-payroll) for the response.
+
+#### Retrieve latest payroll `/payroll/entries/connections`
+
+To ask a connected account for new payroll again, call this endpoint with the user's bearer token. It fetches and stores the payroll and answers with the count only, not the payroll data:
+
+```bash
+curl --request POST \
+  --url https://api.sandbox.goteal.co/payroll/entries/connections \
+  --header 'Authorization: Bearer <bearer-token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "account_id": "3c1f0d52-6a9e-4b7d-9f13-8e2a5b4c7d90"
 }'
 ```
 
@@ -439,349 +506,214 @@ curl --location --request POST 'https://api.sandbox.goteal.co/payroll/entries/co
 
 ```json
 {
-  "account_id": "552300dd-1e91-48d4-958b-41736c2c0167",
-  "entry_id": "bdc420fe-5e48-4802-a753-659979a2a346",
-  "payroll_submissions": [
+  "payroll_submissions_count": 12
+}
+```
+
+Returns `201 Created` when at least one submission was retrieved, or `200 OK` with `"payroll_submissions_count": 0` when none was. To read the data, use `GET /payroll/{user_id}` with your API key.
+
+#### Webapp
+
+Open the `webapp_link`. The applicant gives consent, enters their NI number, chooses the employer, signs in with the persona id (and the code `123` for CGI) and reaches the summary.
+
+![Webapp consent screen](/images/sandbox/webapp-uc-connect-consent.png)
+
+{/* SCREEN: webapp uc-connect ninCapture */}
+
+![Webapp screen to find the applicant's employer](/images/sandbox/webapp-uc-connect-connect.png)
+
+![Webapp screen to pick the payroll provider the employer uses](/images/sandbox/webapp-uc-connect-employer-payroll.png)
+
+![Webapp payroll sign-in form with username and password fields](/images/sandbox/webapp-uc-connect-signin.png)
+
+![Webapp summary screen listing the pay found through the connected payroll](/images/sandbox/webapp-uc-connect-summary.png)
+
+![Webapp done screen after the applicant confirms](/images/sandbox/webapp-uc-connect-done.png)
+
+{/* VIDEO: webapp uc-connect */}
+
+In the console, an applicant that connects payroll only is created like this, and a share link opens the connection for them:
+
+![Console Create new user dialog with name, date of birth and postcode](/images/sandbox/console-applicant-create.png)
+
+{/* SCREEN: console applicant-share-link applicant-share-link--connection-link */}
+
+### Path 3: Payslip upload
+
+Persona `payslips-cover-window`, journey `payslips-only`. The applicant uploads payslip PDFs and Teal reads them.
+
+**Documents:** three test payslip PDFs (`payslip-*.pdf`) that cover the window. Ask your Teal connection for the test payslips of this persona.
+
+For the webapp create the user as `direct-mismatched-identity` (see path 2), so that the Direct Connection finds nothing and the journey reaches the upload screen. Payslip upload must be enabled (`payslip_upload_enabled`).
+
+| Step | Call | Auth | Expected |
+|---|---|---|---|
+| 1 | `POST /users` | API key | `201`, `user_id` |
+| 2 | `POST /user-tokens` | API key | `201` |
+| 3 | `POST /authorisations` | API key | `201` |
+| 4 | `POST /payroll/entries/payslips/presign` | Bearer | `200`, `presigned_urls` |
+| 5 | `PUT <presigned_url>` for each file | | `200` |
+| 6 | `POST /payroll/entries/payslips` | Bearer | `201`, `payroll_submissions` |
+| 7 | `GET /payroll/{user_id}` | API key | `200`, `payroll_submissions` |
+
+#### Request upload slots `/payroll/entries/payslips/presign`
+
+Name each PDF to upload. The response has a short-lived upload URL and a `path` for each file.
+
+```bash
+curl --request POST \
+  --url https://api.sandbox.goteal.co/payroll/entries/payslips/presign \
+  --header 'Authorization: Bearer <bearer-token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "files": [
+    { "file_name": "payslip-2026-08.pdf" },
+    { "file_name": "payslip-2026-09.pdf" },
+    { "file_name": "payslip-2026-10.pdf" }
+  ]
+}'
+```
+
+**Response Example** (shortened to one file):
+
+```json
+{
+  "presigned_urls": [
     {
-      "id": "0187c66e-e7e5-811c-b006-2232f00f426a",
-      "account_id": "552300dd-1e91-48d4-958b-41736c2c0167",
-      "entry_id": "bdc420fe-5e48-4802-a753-659979a2a346",
-      "created_at": "2024-05-03T14:00:13.804Z",
-      "identity_information": {
-        "name": "Sarah Chen",
-        "date_of_birth": "1990-04-22T00:00:00.000Z",
-        "address": {
-          "street": "45 Commercial Road",
-          "county": "Greater London",
-          "city": "London",
-          "post_code": "E1 6PG",
-          "country": "United Kingdom"
-        },
-        "email": "sarah.chen@example.com",
-        "phone": "+447700900123",
-        "NI_number": "AB654321C"
-      },
-      "employment_information": {
-        "employer_name": "Acme Corp",
-        "role": "Software Developer",
-        "type": "Full_Time",
-        "status": "Active",
-        "start_date": "2018-06-01",
-        "leave_date": null,
-        "employer_tax_reference": "123/AB456",
-        "is_director": false
-      },
-      "income_information": {
-        "pay_date": "2024-02-15",
-        "pay_interval_start": "2024-02-01T00:00:00.000Z",
-        "pay_interval_end": "2024-02-15T00:00:00.000Z",
-        "pay_frequency": "Weekly",
-        "earnings": {
-          "gross_pay": "2000.00",
-          "net_pay": "1500.00",
-          "base_salary": "1900.00",
-          "bonus": "100.00",
-          "fixed_pay_total": "1900.00",
-          "variable_pay_total": "100.00",
-          "earning_elements": [
-            {
-              "type": "Bonus",
-              "amount": "100.00",
-              "is_fixed": false,
-              "is_after_tax": false,
-              "is_after_ni": false,
-              "is_bik": false
-            }
-          ],
-          "year_to_date": {
-            "gross_pay": "24000.00",
-            "net_pay": "18000.00",
-            "total_tax_paid": "3600.00",
-            "total_ni_paid": "1800.00",
-            "total_taxable_earnings": "24000.00",
-            "tax_year": 2024
-          },
-          "rolling_12m_income": {
-            "gross_pay": "104000.00",
-            "net_pay": "78000.00"
-          }
-        },
-        "deductions": {
-          "income_tax": "300.00",
-          "employee_ni": "150.00",
-          "employee_pension": "50.00",
-          "total_deductions": "500.00",
-          "loan_deductions": "0.00",
-          "deductions_elements": [
-            {
-              "type": "Pension",
-              "amount": "50.00"
-            }
-          ]
-        },
-        "tax_code": "1257L"
-      }
-    },
-    {
-      "id": "0187c66e-e7e5-811c-b006-2232f00f426a",
-      "account_id": "552300dd-1e91-48d4-958b-41736c2c0167",
-      "entry_id": "bdc420fe-5e48-4802-a753-659979a2a346",
-      "created_at": "2024-05-03T14:00:13.804Z",
-      "identity_information": {
-        "name": "Sarah Chen",
-        "date_of_birth": "1990-04-22T00:00:00.000Z",
-        "address": {
-          "street": "45 Commercial Road",
-          "county": "Greater London",
-          "city": "London",
-          "post_code": "E1 6PG",
-          "country": "United Kingdom"
-        },
-        "email": "sarah.chen@example.com",
-        "phone": "+447700900123",
-        "NI_number": "AB654321C"
-      },
-      "employment_information": {
-        "employer_name": "Acme Corp",
-        "role": "Software Developer",
-        "type": "Full_Time",
-        "status": "Active",
-        "start_date": "2018-06-01",
-        "leave_date": null,
-        "employer_tax_reference": "123/AB456",
-        "is_director": false
-      },
-      "income_information": {
-        "pay_date": "2024-02-15",
-        "pay_interval_start": "2024-02-01T00:00:00.000Z",
-        "pay_interval_end": "2024-02-15T00:00:00.000Z",
-        "pay_frequency": "Weekly",
-        "earnings": {
-          "gross_pay": "2000.00",
-          "net_pay": "1500.00",
-          "base_salary": "1900.00",
-          "bonus": "100.00",
-          "fixed_pay_total": "1900.00",
-          "variable_pay_total": "100.00",
-          "earning_elements": [
-            {
-              "type": "Bonus",
-              "amount": "100.00",
-              "is_fixed": false,
-              "is_after_tax": false,
-              "is_after_ni": false,
-              "is_bik": false
-            }
-          ],
-          "year_to_date": {
-            "gross_pay": "24000.00",
-            "net_pay": "18000.00",
-            "total_tax_paid": "3600.00",
-            "total_ni_paid": "1800.00",
-            "total_taxable_earnings": "24000.00",
-            "tax_year": 2024
-          },
-          "rolling_12m_income": {
-            "gross_pay": "104000.00",
-            "net_pay": "78000.00"
-          }
-        },
-        "deductions": {
-          "income_tax": "300.00",
-          "employee_ni": "150.00",
-          "employee_pension": "50.00",
-          "total_deductions": "500.00",
-          "loan_deductions": "0.00",
-          "deductions_elements": [
-            {
-              "type": "Pension",
-              "amount": "50.00"
-            }
-          ]
-        },
-        "tax_code": "1257L"
-      }
-    },
-    {
-      "id": "0187c66e-e7e5-811c-b006-2232f00f426a",
-      "account_id": "552300dd-1e91-48d4-958b-41736c2c0167",
-      "entry_id": "bdc420fe-5e48-4802-a753-659979a2a346",
-      "created_at": "2024-05-03T14:00:13.804Z",
-      "identity_information": {
-        "name": "Sarah Chen",
-        "date_of_birth": "1990-04-22T00:00:00.000Z",
-        "address": {
-          "street": "45 Commercial Road",
-          "county": "Greater London",
-          "city": "London",
-          "post_code": "E1 6PG",
-          "country": "United Kingdom"
-        },
-        "email": "sarah.chen@example.com",
-        "phone": "+447700900123",
-        "NI_number": "AB654321C"
-      },
-      "employment_information": {
-        "employer_name": "Acme Corp",
-        "role": "Software Developer",
-        "type": "Full_Time",
-        "status": "Active",
-        "start_date": "2018-06-01",
-        "leave_date": null,
-        "employer_tax_reference": "123/AB456",
-        "is_director": false
-      },
-      "income_information": {
-        "pay_date": "2024-02-15",
-        "pay_interval_start": "2024-02-01T00:00:00.000Z",
-        "pay_interval_end": "2024-02-15T00:00:00.000Z",
-        "pay_frequency": "Weekly",
-        "earnings": {
-          "gross_pay": "2000.00",
-          "net_pay": "1500.00",
-          "base_salary": "1900.00",
-          "bonus": "100.00",
-          "fixed_pay_total": "1900.00",
-          "variable_pay_total": "100.00",
-          "earning_elements": [
-            {
-              "type": "Bonus",
-              "amount": "100.00",
-              "is_fixed": false,
-              "is_after_tax": false,
-              "is_after_ni": false,
-              "is_bik": false
-            }
-          ],
-          "year_to_date": {
-            "gross_pay": "24000.00",
-            "net_pay": "18000.00",
-            "total_tax_paid": "3600.00",
-            "total_ni_paid": "1800.00",
-            "total_taxable_earnings": "24000.00",
-            "tax_year": 2024
-          },
-          "rolling_12m_income": {
-            "gross_pay": "104000.00",
-            "net_pay": "78000.00"
-          }
-        },
-        "deductions": {
-          "income_tax": "300.00",
-          "employee_ni": "150.00",
-          "employee_pension": "50.00",
-          "total_deductions": "500.00",
-          "loan_deductions": "0.00",
-          "deductions_elements": [
-            {
-              "type": "Pension",
-              "amount": "50.00"
-            }
-          ]
-        },
-        "tax_code": "1257L"
-      }
+      "file_name": "payslip-2026-08.pdf",
+      "presigned_url": "https://s3.amazonaws.com/bucket/presigned-upload-key?signature=abc123",
+      "path": "client-name/95a0e70b-fe02-4f47-aef9-2efff279df71/Zr8fQ1mT2/payslip-2026-08.pdf"
     }
   ]
 }
 ```
 
-### Payslip Upload
+#### Upload each file
 
-This journey outlines the process for extracting payroll information by uploading a payslip.
-
-**Prerequisites:** Complete Initial Setup (Webhooks, Configuration) and User Setup above.
-
-#### Upload Payslip `/payroll/entries/payslips`
-
-This request simulates the user uploading a payslip to extract payroll information. Extracting payslip information can be done using the endpoint below but will usually be done by the user through the WebApp.
-
-This example uses James O'Connor:
+Upload the PDF to its `presigned_url` with an HTTP `PUT` and `Content-Type: application/octet-stream`:
 
 ```bash
-curl --location --request POST 'https://api.sandbox.goteal.co/payroll/entries/payslips' \
---header 'Authorization: Bearer <bearer-token>' \
---form 'file=@"<path-to-file>"'
+curl --request PUT \
+  --url '<presigned_url>' \
+  --header 'Content-Type: application/octet-stream' \
+  --data-binary '@payslip-2026-08.pdf'
 ```
 
-**Response Example:**
+#### Submit the payslips `/payroll/entries/payslips`
+
+Send the `path` of every uploaded file, copied from the presign response (the paths below are examples), so Teal can read them.
+
+```bash
+curl --request POST \
+  --url https://api.sandbox.goteal.co/payroll/entries/payslips \
+  --header 'Authorization: Bearer <bearer-token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "files": [
+    { "path": "client-name/95a0e70b-fe02-4f47-aef9-2efff279df71/Zr8fQ1mT2/payslip-2026-08.pdf" },
+    { "path": "client-name/95a0e70b-fe02-4f47-aef9-2efff279df71/Zr8fQ1mT2/payslip-2026-09.pdf" },
+    { "path": "client-name/95a0e70b-fe02-4f47-aef9-2efff279df71/Zr8fQ1mT2/payslip-2026-10.pdf" }
+  ]
+}'
+```
+
+**Response Example** (shortened to one submission; the values are illustrative):
 
 ```json
 {
-  "account_id": "f2a8e9c1-d3b4-4f5a-9e8d-7c6b5a4f3e2d",
+  "account_id": null,
   "entry_id": "f5e0a310-d4d0-4db0-b5c3-895a81e26e03",
   "payroll_submissions": [
     {
       "id": "0187c66e-e7e5-811c-b006-2232f00f426a",
       "account_id": null,
       "entry_id": "f5e0a310-d4d0-4db0-b5c3-895a81e26e03",
-      "created_at": "2024-05-03T12:48:54.886Z",
+      "created_at": "2026-11-19T10:34:54.886Z",
+      "document_filename": "payslip-2026-08.pdf",
       "identity_information": {
-        "name": "James O'Connor",
-        "date_of_birth": "1985-09-10T00:00:00.000Z",
-        "address": {
-          "street": "12 Oxford Road",
-          "county": "Greater Manchester",
-          "city": "Manchester",
-          "post_code": "M13 9WL",
-          "country": "United Kingdom"
-        },
-        "email": "james.oconnor@example.com",
-        "phone": "+447700900456",
-        "NI_number": "BC765432D"
+        "name": "Sarah Chen-Morgan"
       },
       "employment_information": {
-        "employer_name": "Acme Corp",
-        "role": "Software Developer",
-        "type": "Full_Time",
-        "status": "Active",
-        "start_date": "2018-06-01",
-        "leave_date": null
+        "employer_name": "Teal Fixtures Ltd"
       },
       "income_information": {
-        "pay_date": "2024-02-15",
-        "pay_interval_start": "2024-02-01T00:00:00.000Z",
-        "pay_interval_end": "2024-02-15T00:00:00.000Z",
-        "pay_frequency": "Weekly",
+        "pay_date": "2026-10-31",
+        "pay_frequency": "Monthly",
         "earnings": {
-          "gross_pay": "2000.00",
-          "net_pay": "1500.00",
-          "base_salary": "1900.00",
-          "bonus": "100.00"
-        },
-        "deductions": {
-          "income_tax": "300.00",
-          "employee_ni": "150.00",
-          "employee_pension": "50.00",
-          "total_deductions": "500.00"
+          "gross_pay": "3833.33",
+          "net_pay": "3000.00"
         }
       }
     }
-  ]
+  ],
+  "payslip_errors": []
 }
 ```
 
-### HMRC (Gov Connect) Connection
+What to expect for the persona: status `201`, one payroll submission per payslip (three for the three-payslip set), no webhook (a payslip upload sends none), and an empty `payslip_errors`; a file that cannot be read is listed there with its `file_name` and `error`. Payslip data has no `account_id`: it carries the file's `document_filename` instead (and `document_external_id` when the request sent an `external_document_id`).
 
-This journey connects a user to HMRC via Gov Connect using the `hmrc` provider.
-Instead of returning payroll data immediately, connecting returns an `authorization_url`
-(an invite link) that the user follows to authorise HMRC data sharing. Once
-authorised, income data is fetched and can be retrieved with
-`GET /gov-connect/{user_id}`. You can subscribe to the `user-gov-connect-data-submitted`
-webhook event to be notified when new HMRC income data is available.
+#### Webapp
 
-<Note>
-  Ask your Teal connection for the working HMRC provider id to use for
-  `payroll_provider` in your environment.
-</Note>
+Open the `webapp_link`. The applicant gives consent, enters their NI number, uploads the payslips and reaches the summary.
 
-**Prerequisites:** Complete User Setup above. HMRC must be enabled for the client/user
-(`hmrc_enabled: true`) and the user must have an active authorisation.
+![Webapp consent screen](/images/sandbox/webapp-payslips-only-consent.png)
+
+{/* SCREEN: webapp payslips-only ninCapture */}
+
+![Webapp screen to choose payslip PDFs to upload](/images/sandbox/webapp-payslips-only-upload.png)
+
+![Webapp summary screen showing pay read from the uploaded payslips](/images/sandbox/webapp-payslips-only-summary.png)
+
+![Webapp done screen after the applicant confirms](/images/sandbox/webapp-payslips-only-done.png)
+
+{/* VIDEO: webapp payslips-only */}
+
+In the console, an applicant that uploads documents only is created like this:
+
+{/* SCREEN: console applicant-create applicant-create--doc-scan-only */}
+
+### Path 4: HMRC (Gov Connect)
+
+Persona `hmrc-employed-authorised`, or the self-employed variant `hmrc-self-employed-authorised`. Journey `employed-hmrc-only`. The applicant authorises HMRC data sharing at a test page and Teal retrieves their income.
+
+| Persona | Applicant | NI number | Flow |
+|---|---|---|---|
+| `hmrc-employed-authorised` | Hmrc Persona01, born 1990-01-01, postcode ZZ99 9ZZ | QQ000001A | `non_mtd` |
+| `hmrc-self-employed-authorised` | Hmrc Persona02, born 1990-01-01, postcode ZZ99 9ZZ | QQ000002A | `mtd` |
+
+The HMRC consent page of the sandbox is a "Teal sandbox — test page", not HMRC. HMRC must be enabled (`hmrc_enabled`), and the applicant's details come from the user, so create the user with the NI number, date of birth and name of the persona.
+
+| Step | Call | Auth | Expected |
+|---|---|---|---|
+| 1 | `POST /users` | API key | `201`, `user_id` |
+| 2 | `POST /user-tokens` | API key | `201` |
+| 3 | `POST /authorisations` | API key | `201` |
+| 4 | `POST /accounts` with `payroll_provider` `hmrc_untied` | API key | `201`, `status` `Pending`, `authorization_url` |
+| 5 | open `authorization_url` in a browser | | the "Teal sandbox — test page" |
+| 6 | webhook | | `user-gov-connect-data-submitted` |
+| 7 | `GET /gov-connect/{user_id}` | API key | `200`, `gov_connect_submissions` |
+
+#### Create the user
+
+```bash
+curl --request POST \
+  --url https://api.sandbox.goteal.co/users \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-KEY: <api-key>' \
+  --data '{
+  "forename": "Hmrc",
+  "surname": "Persona01",
+  "ni_number": "QQ000001A",
+  "date_of_birth": "1990-01-01T00:00:00.000Z",
+  "post_codes": ["ZZ99 9ZZ"],
+  "payroll_period_months": 12,
+  "hmrc_enabled": true
+}'
+```
 
 #### Connect an HMRC Account `/accounts`
 
-Create an `hmrc` account, selecting the flow via `extra_login_params.flow`. The
-flow must be either `non_mtd` or `mtd`.
+Create the account with the `hmrc_untied` provider, selecting the flow via `extra_login_params.flow`. The flow must be either `non_mtd` (employed) or `mtd` (self-employed). Teal uses the user's NI number and date of birth.
 
 ```bash
 curl --request POST \
@@ -790,42 +722,39 @@ curl --request POST \
   --header 'X-API-KEY: <api-key>' \
   --data '{
   "user_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
-  "payroll_provider": "hmrc",
+  "payroll_provider": "hmrc_untied",
   "extra_login_params": {
-    "flow": "mtd"
+    "flow": "non_mtd"
   }
 }'
 ```
 
 <Note>
-  `ni_number` may optionally be supplied in `extra_login_params`. If the user's NINO is
+  `ni_number` may optionally be supplied in `extra_login_params`. If the user's NI number is
   already saved against the user record it is not needed here.
 </Note>
 
-**Response Example:**
+**Response Example** (shortened):
 
 ```json
 {
   "account_id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
-  "payroll_provider": "hmrc",
-  "created_at": "2019-05-17T00:00:00.000Z",
+  "payroll_provider": "hmrc_untied",
+  "created_at": "2026-11-19T10:35:00.000Z",
   "status": "Pending",
-  "authorization_url": "https://star-client.untied.io/invite/abc123"
+  "authorization_url": "https://api.sandbox.goteal.co/qa/mocks/untied/consent/3f1c0b9a1e2d4a5b9c8d0e1f2a3b4c5d"
 }
 ```
 
-Direct the user to the `authorization_url` to complete HMRC authorisation.
+Send the user to the `authorization_url`. On a sandbox it opens the "Teal sandbox — test page" for HMRC, not HMRC: follow its confirm button to authorise.
 
-**Self Employed**
+**Employed (`non_mtd`, `hmrc-employed-authorised`)**
 
-For the self-employed flow (`"flow": "mtd"`), the user is redirected to HMRC to authorise
-Making Tax Digital access and then returned to Teal's callback. This requires an HMRC
-sandbox test user.
+The page confirms the authorisation and tells the applicant to go back to the journey. Completion is signalled to Teal, the income is fetched and the account moves out of `Pending`: poll `GET /accounts/{account_id}`, or wait for the webhook.
 
-<Note>
-  Contact Teal to be provisioned an HMRC sandbox test user. You will log in on the HMRC
-  authorisation screen using the supplied test details.
-</Note>
+**Self-employed (`mtd`, `hmrc-self-employed-authorised`)**
+
+Create the user with NI number `QQ000002A` (name `Hmrc` `Persona02`) and send `"flow": "mtd"`. The test page sends the browser back to Teal's callback once authorised, and the income is Self Assessment income.
 
 ```json
 {
@@ -833,28 +762,9 @@ sandbox test user.
 }
 ```
 
-**Employed**
-
-For the employed flow (`"flow": "non_mtd"`), authorisation is verified against HMRC
-using the user's NINO and date of birth, and completion is signalled to Teal via webhook.
-The NINO and DOB must correspond to a valid HMRC test taxpayer.
-
-<Note>
-  Contact Teal to be provisioned a test user. In sandbox, the
-  `authorization_url` shows only a dummy page rather than the full HMRC authorisation flow
-  used in the self-employed journey.
-</Note>
-
-```json
-{
-  "flow": "non_mtd"
-}
-```
-
 #### Retrieve HMRC Income `/gov-connect/{user_id}`
 
-Once the account is authorised, income data is fetched automatically. Retrieve the stored
-Gov Connect income submissions for a user (MTD shape).
+Once the account is authorised, income data is fetched automatically. Retrieve the stored Gov Connect income submissions for a user (MTD shape).
 
 ```bash
 curl --request GET \
@@ -862,7 +772,7 @@ curl --request GET \
   --header 'X-API-KEY: <api-key>'
 ```
 
-**Response Example:**
+**Response Example** (shortened):
 
 ```json
 {
@@ -879,42 +789,19 @@ curl --request GET \
       "entry_id": "1b2c3d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e",
       "authorisation_id": "9f8e7d6c-5b4a-3210-fedc-ba9876543210",
       "identity": {
-        "name": "Sarah Chen",
-        "date_of_birth": "1990-04-22",
-        "ni_number": "AB654321C"
+        "ni_number": "QQ000001A"
       },
       "employments": [
         {
           "employment": {
-            "employer_name": "Acme Corp",
-            "paye_reference": "120/NC15208",
-            "status": "active",
-            "start_date": "2018-06-01T00:00Z"
+            "employer_name": "Northwind Test Logistics Ltd",
+            "status": "active"
           },
           "income": {
-            "tax_year": "2024-25",
-            "taxable_income": "28100.91",
-            "tax_paid": "3611.40"
-          },
-          "updated_at": "2026-06-05 13:03:39"
-        }
-      ],
-      "self_employments": [
-        {
-          "business": { "business_id": "XBIS1" },
-          "income": {
-            "tax_year": "2024-25",
-            "turnover": "92500.00",
-            "other_income": "1200.00",
-            "tax_deducted_at_source": "0.00"
+            "tax_year": "2026-27",
+            "taxable_income": "17400.00",
+            "tax_paid": "2435.00"
           }
-        }
-      ],
-      "properties": [
-        {
-          "property_id": "XPIS1",
-          "tax_year": "2024-25",
-          "rent_received": "747.45"
         }
       ]
     }
@@ -922,12 +809,11 @@ curl --request GET \
 }
 ```
 
+For the self-employed persona the submission has `self_employments` instead of `employments`.
+
 #### Fetch HMRC Income `/gov-connect/entries/connections`
 
-Income is fetched automatically when the account is authorised, so this step is only
-needed for subsequent retrievals — to pull fresh income data for an already-connected
-account. Any new data is persisted and can then be read via `GET /gov-connect/{user_id}`.
-This endpoint uses the user's bearer token.
+Income is fetched automatically when the account is authorised, so this step is only needed for subsequent retrievals, to pull fresh income data for an already-connected account. Any new data is persisted and can then be read via `GET /gov-connect/{user_id}`. This endpoint uses the user's bearer token.
 
 ```bash
 curl --request POST \
@@ -939,14 +825,35 @@ curl --request POST \
 }'
 ```
 
-Returns `201 Created` with the income submissions when data is returned, or `200 OK`
-with an empty `gov_connect_submissions` array when there is no new data.
+Returns `201 Created` with `{"income_submissions_count": N}` when data is retrieved, or `200 OK` with `{"income_submissions_count": 0}` when there is no new data. The response contains only the count; read the income data with `GET /gov-connect/{user_id}` using your API key.
+
+#### Webapp
+
+Open the `webapp_link`. The applicant gives consent, enters their NI number, chooses HMRC, authorises at the HMRC test page and reaches the summary.
+
+![Webapp consent screen](/images/sandbox/webapp-employed-hmrc-only-consent.png)
+
+{/* SCREEN: webapp employed-hmrc-only ninCapture */}
+
+![Webapp screen asking whether the applicant is employed or self-employed](/images/sandbox/webapp-employed-hmrc-only-hmrc-entry.png)
+
+![The Teal sandbox HMRC test page: a banner saying it is a test simulation, and the heading HMRC consent simulation: accepted](/images/sandbox/hmrc-test-page.png)
+
+![Webapp summary screen showing HMRC verified income by tax year](/images/sandbox/webapp-employed-hmrc-only-summary.png)
+
+![Webapp done screen after the applicant confirms](/images/sandbox/webapp-employed-hmrc-only-done.png)
+
+{/* VIDEO: webapp employed-hmrc-only */}
+
+In the console, an applicant that connects HMRC only is created like this:
+
+{/* SCREEN: console applicant-create applicant-create--gov-connect-only */}
 
 ## General Data Retrieval
 
 #### Retrieve Payroll Data `/payroll`
 
-Retrieve the payroll data submitted through a connected account or document upload. This example retrieves payroll for Amina Diallo:
+Retrieve the payroll data submitted through a connected account, a Direct Connection or a document upload. The response is paginated: `limit` defaults to 100 and is at most 1000.
 
 ```bash
 curl --request GET \
@@ -954,103 +861,48 @@ curl --request GET \
   --header 'X-API-KEY: <api-key>'
 ```
 
-**Response Example:**
+**Response Example** (shortened to one submission):
 
 ```json
 {
   "pagination": {
-    "count": 14,
-    "limit": 25,
-    "offset": 75,
-    "total_count": 89
+    "count": 1,
+    "limit": 100,
+    "offset": 0,
+    "total_count": 1
   },
   "payroll_submissions": [
     {
       "id": "95a0e70b-fe02-4f47-aef9-2efff279df71",
       "account_id": "0988b4bd-42dd-4556-95ae-27a906c066ec",
       "entry_id": "0d2bcb9b-a7ec-463f-bd7e-aacaa1a190a4",
-      "created_at": "2019-05-17T00:00:00.000Z",
+      "created_at": "2026-11-19T10:31:12.804Z",
       "identity_information": {
         "NI_number": "CD876543E",
-        "address": {
-          "city": "Birmingham",
-          "country": "United Kingdom",
-          "county": "West Midlands",
-          "post_code": "B1 1TT",
-          "street": "78 Victoria Square"
-        },
-        "date_of_birth": "1978-12-03T00:00:00.000Z",
-        "email": "amina.diallo@example.com",
         "name": "Amina Diallo",
-        "phone": 447700900789
+        "date_of_birth": "1978-12-03T00:00:00.000Z"
       },
       "employment_information": {
-        "employer_name": "Acme Ltd",
-        "role": "Software Engineer",
+        "employer_name": "Midland Construction Services Ltd",
         "type": "Full_Time",
-        "status": "Active",
-        "start_date": "2019-05-17T00:00:00.000Z",
-        "leave_date": "2019-05-17T00:00:00.000Z",
-        "employer_tax_reference": "789/AC345",
-        "is_director": false
+        "status": "Active"
       },
       "income_information": {
-        "pay_date": "2019-05-17T00:00:00.000Z",
-        "pay_interval_start": "2019-05-17T00:00:00.000Z",
-        "pay_interval_end": "2019-05-17T00:00:00.000Z",
-        "pay_frequency": "Monthly",
+        "pay_date": "2026-11-13T00:00:00.000Z",
+        "pay_frequency": "Fortnightly",
         "earnings": {
-          "gross_pay": "3500.00",
-          "net_pay": "2500.00",
-          "base_salary": "3000.00",
-          "bonus": "500.00",
-          "fixed_pay_total": "3000.00",
-          "variable_pay_total": "500.00",
-          "earning_elements": [
-            {
-              "type": "Bonus",
-              "amount": "500.00",
-              "is_fixed": false,
-              "is_after_tax": false,
-              "is_after_ni": false,
-              "is_bik": false
-            }
-          ],
-          "year_to_date": {
-            "gross_pay": "42000.00",
-            "net_pay": "30000.00",
-            "total_tax_paid": "6000.00",
-            "total_ni_paid": "2400.00",
-            "total_taxable_earnings": "42000.00",
-            "tax_year": 2019
-          },
-          "rolling_12m_income": {
-            "gross_pay": "42000.00",
-            "net_pay": "30000.00"
-          }
-        },
-        "deductions": {
-          "income_tax": "500.00",
-          "employee_ni": "200.00",
-          "employee_pension": "300.00",
-          "total_deductions": "1000.00",
-          "loan_deductions": "0.00",
-          "deductions_elements": [
-            {
-              "type": "Pension",
-              "amount": "300.00"
-            }
-          ]
+          "gross_pay": "1850.00",
+          "net_pay": "1452.50"
         },
         "tax_code": "1257L"
       },
-      "document_external_id": null,
-      "document_filename": null,
-      "trust_score": "High"
+      "source": "Payroll (via Direct Connection)"
     }
   ]
 }
 ```
+
+A `direct-weekly-covered` user has about 104 submissions and a `direct-fortnightly-covered` user about 52 for 12 months, so read them with `limit` and `offset` when the total is larger than the page.
 
 ## WebApp Usage
 
@@ -1064,11 +916,11 @@ When you create a user token via `POST /user-tokens`, the response includes a `w
 {
   "token": "eyJhbG...",
   "webapp_link": "https://app.sandbox.goteal.co/r/ZwgQkNEMZ4QDkQ",
-  "created_at": "2025-01-15T10:30:00.000Z"
+  "created_at": "2026-11-19T10:30:00.000Z"
 }
 ```
 
-Open (or redirect the user to) the `webapp_link` URL. This establishes an authenticated session via a secure HttpOnly cookie and redirects the user into the webapp — no token appears in the final URL.
+Open (or redirect the user to) the `webapp_link` URL. This establishes an authenticated session via a secure HttpOnly cookie and redirects the user into the webapp. No token appears in the final URL.
 
 ### Embedding in an iframe
 
@@ -1101,29 +953,14 @@ Set the iframe `src` to `https://app.<env>.goteal.co/?callback_url=<your-parent-
 
 For clients that configure a `client_callback_url`, the webapp also communicates journey outcomes back to the parent page via `postMessage` (type: `teal:journey_outcome`).
 
-You can test the webapp with any of the three personas defined at the top of this guide (Sarah Chen, James O'Connor, or Amina Diallo).
 
-**Connect a Payroll:**
-
-<img
-  src="/images/webapp/payroll-connection.gif"
-  alt="payroll connection"
-  width="100%"
-/>
-
-**Submit a Payslip:**
-
-<img
-  src="/images/webapp/payslip-submission.gif"
-  alt="payslip submission"
-  width="100%"
-/>
+You can test the webapp with any of the personas of the [four happy paths](#journeys-at-a-glance), or any other from [Test personas](/test-personas).
 
 ## Cleanup
 
 #### Deleting a User `/users`
 
-After testing, clean up by deleting the test user and their associated data. Use the `user_id` returned when you created the user (from any of the test personas).
+After testing, clean up by deleting the test user and their associated data. Use the `user_id` returned when you created the user.
 
 ```bash
 curl --request DELETE \
@@ -1131,24 +968,4 @@ curl --request DELETE \
   --header 'X-API-KEY: <api-key>'
 ```
 
-**Response Example:**
-
-```json
-{
-  "message": "User deleted successfully."
-}
-```
-
-## OAuth2 Test Credentials
-
-Some of our providers use an authorisation flow known as OAuth2. This allows the end user to be redirected to their payroll provider login screen, where they can grant authorisation to share their data. Below is an example login page:
-
-<img src="/images/oauth2-example-login.png" alt="OAuth2 Login" />
-
-The user will be redirected back to teal after authorising.
-
-To test the providers that have the OAuth2 flow available, you can use the following credentials.
-
-| provider    | username       | password        | Extra login params |
-| ----------- | -------------- | --------------- | ------------------ |
-| `freeagent` | arun@goteal.co | mPxD9Tt3hBV5j39 |                    |
+**Response:** `204 No Content`, with no body.
