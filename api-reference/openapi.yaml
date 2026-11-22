@@ -1113,6 +1113,12 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedBearer"
+        "403":
+          description: Forbidden — the user has no valid authorisation
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
   "/doc-scan":
     post:
       summary: Submit previously uploaded documents for scanning and extraction
@@ -1164,6 +1170,12 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedBearer"
+        "403":
+          description: Forbidden — the user has no valid authorisation
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
   "/p45/{user_id}":
     get:
       summary: Returns all P45 extracts for a user
@@ -1171,6 +1183,9 @@ paths:
         Retrieve paginated P45 scan extracts for a given user. Each document
         includes the extracted P45 data, the extraction
         probability, and details of the underlying uploaded document.
+
+        Extracts collected under an authorisation that has since been
+        revoked are not returned. Expired authorisations do not hide them.
       parameters:
         - in: path
           name: user_id
@@ -1214,7 +1229,6 @@ paths:
             type: string
             format: date-time
             example: 2024-12-31T23:59:59.000Z
-        - "$ref": "#/components/parameters/XAuthorisationId"
       responses:
         "200":
           description: OK
@@ -1233,6 +1247,8 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
   "/p60/{user_id}":
     get:
       summary: Returns all P60 extracts for a user
@@ -1240,6 +1256,9 @@ paths:
         Retrieve paginated P60 scan extracts for a given user. Each document
         includes the extracted P60 data, the extraction
         probability, and details of the underlying uploaded document.
+
+        Extracts collected under an authorisation that has since been
+        revoked are not returned. Expired authorisations do not hide them.
       parameters:
         - in: path
           name: user_id
@@ -1283,7 +1302,6 @@ paths:
             type: string
             format: date-time
             example: 2024-12-31T23:59:59.000Z
-        - "$ref": "#/components/parameters/XAuthorisationId"
       responses:
         "200":
           description: OK
@@ -1302,6 +1320,8 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
   "/universal-credit/{user_id}":
     get:
       summary: Returns all Universal Credit extracts for a user
@@ -1310,6 +1330,9 @@ paths:
         Each document includes the extracted Universal Credit data, the
         extraction probability, and details of the underlying
         uploaded document.
+
+        Extracts collected under an authorisation that has since been
+        revoked are not returned. Expired authorisations do not hide them.
       parameters:
         - in: path
           name: user_id
@@ -1353,7 +1376,6 @@ paths:
             type: string
             format: date-time
             example: 2024-12-31T23:59:59.000Z
-        - "$ref": "#/components/parameters/XAuthorisationId"
       responses:
         "200":
           description: OK
@@ -1372,6 +1394,8 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
   "/webhooks":
     post:
       summary: Creates a webhook.
@@ -2848,8 +2872,9 @@ components:
           example: payslip123456
         type:
           type: string
-          description: The type of document (Payslip, Bank Statement, p45, p60, universal_credit, or Document)
-          example: "Payslip"
+          description: The type of document
+          enum: [payslip, bank_statement, p45, p60, universal_credit, document]
+          example: "payslip"
         uploaded_at:
           "$ref": "#/components/schemas/Date"
     EntriesPayslipsPresignRequest:
@@ -3343,13 +3368,9 @@ components:
           example: "1257L"
         tax_year:
           type: string
+          description: Start year of the UK tax year the leave date falls in (`2024` for 2024-25). Derived from `leave_date`; `null` when the leave date is missing.
           nullable: true
-          example: "2026"
-        last_pay_date:
-          type: string
-          description: Date in YYYY-MM-DD format
-          nullable: true
-          example: "2024-05-31"
+          example: "2024"
         gross_pay:
           type: string
           description: Monetary value as a string with 2 decimals
@@ -3382,35 +3403,19 @@ components:
           example: "QQ123456C"
         tax_year:
           type: string
-          nullable: true
-          example: "2026"
+          description: Start year of the UK tax year (`2025` for 2025-26, the year ending 5 April 2026).
+          example: "2025"
         tax_code:
           type: string
           nullable: true
           example: "1257L"
-        last_pay_date:
-          type: string
-          description: Date in YYYY-MM-DD format
-          nullable: true
-          example: "2024-04-05"
         gross_pay:
           type: string
-          description: Monetary value as a string with 2 decimals
-          nullable: true
+          description: Total pay for the year across all employments, as a string with 2 decimals
           example: "32000.00"
-        net_pay:
-          type: string
-          description: Monetary value as a string with 2 decimals
-          nullable: true
-          example: "25000.00"
-        taxable_income:
-          type: string
-          description: Monetary value as a string with 2 decimals
-          nullable: true
-          example: "31000.00"
         income_tax:
           type: string
-          description: Monetary value as a string with 2 decimals
+          description: Total tax for the year across all employments, as a string with 2 decimals
           nullable: true
           example: "5000.00"
         employee_ni:
