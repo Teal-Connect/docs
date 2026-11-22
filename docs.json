@@ -53,6 +53,23 @@
             ]
           },
           {
+            "group": "Emails",
+            "pages": [
+              "api-reference/emails/send",
+              "api-reference/emails/send-bulk",
+              "api-reference/emails/send-log",
+              "api-reference/emails/templates-create",
+              "api-reference/emails/templates-list",
+              "api-reference/emails/templates-get",
+              "api-reference/emails/templates-update",
+              "api-reference/emails/templates-delete",
+              "api-reference/emails/templates-preview",
+              "api-reference/emails/smtp-set",
+              "api-reference/emails/smtp-get",
+              "api-reference/emails/smtp-delete"
+            ]
+          },
+          {
             "group": "Accounts",
             "pages": [
               "api-reference/accounts/create",
