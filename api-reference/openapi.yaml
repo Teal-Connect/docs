@@ -2331,7 +2331,7 @@ components:
         - "$ref": "#/components/schemas/User"
     UserToken:
       type: object
-      required: [token, webapp_link, created_at]
+      required: [token, webapp_link, created_at, token_length]
       properties:
         token:
           type: string
@@ -2343,6 +2343,10 @@ components:
           example: https://api.sandbox.goteal.co/r/ZwgQkNEMZ4QDkQ
         created_at:
           "$ref": "#/components/schemas/Date"
+        token_length:
+          type: integer
+          description: Number of characters in `token`.
+          example: 164
     ClientConfiguration:
       type: object
       properties:
