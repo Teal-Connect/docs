@@ -593,7 +593,8 @@ paths:
       account, it does not matter if it was established via your own call to
       `POST /accounts` or via the Teal WebUI. Note that any new data retrieved via
       `/payroll/entries/connections` is persisted on Teal's storage and can be retrieved using
-      the `/payroll/{user_id}` endpoint.
+      the `/payroll/{user_id}` endpoint. The response only reports how many payroll
+      submissions were retrieved; it does not contain the payroll data itself.
     post:
       summary: Connects a user account to a payroll provider
       parameters:
@@ -614,12 +615,18 @@ paths:
                   description: The account id to use to connect to the payroll provider
                   example: 95a0e70b-fe02-4f47-aef9-2efff279df71
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK — no new payroll data was returned
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/PayrollData"
+                "$ref": "#/components/schemas/ConnectionResult"
+        "201":
+          description: Created — payroll data was fetched and stored. Retrieve it with `GET /payroll/{user_id}`.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ConnectionResult"
         "400":
           "$ref": "#/components/responses/BadRequest"
         "401":
@@ -1734,7 +1741,8 @@ paths:
       For a Gov Connect (HMRC) account, a call to the `/gov-connect/entries/connections`
       endpoint fetches the latest income data from HMRC for that account and persists it
       on Teal's storage. The stored data can subsequently be retrieved using the
-      `GET /gov-connect/{user_id}` endpoint. The account must have been established via a
+      `GET /gov-connect/{user_id}` endpoint; the response only reports how many income
+      submissions were retrieved. The account must have been established via a
       Gov Connect connection (e.g. the `hmrc` provider) and the user must have HMRC
       enabled and a valid authorisation.
     post:
@@ -1755,13 +1763,13 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/GovConnectData"
+                "$ref": "#/components/schemas/GovConnectResult"
         "201":
-          description: Created — income data was fetched and stored
+          description: Created — income data was fetched and stored. Retrieve it with `GET /gov-connect/{user_id}`.
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/GovConnectData"
+                "$ref": "#/components/schemas/GovConnectResult"
         "400":
           "$ref": "#/components/responses/BadRequest"
         "401":
@@ -2329,6 +2337,22 @@ components:
               "$ref": "#/components/schemas/Date"
               description: Creation time in UTC of the user
         - "$ref": "#/components/schemas/User"
+    ConnectionResult:
+      type: object
+      required: [payroll_submissions_count]
+      properties:
+        payroll_submissions_count:
+          type: integer
+          description: Number of payroll submissions retrieved. The submissions themselves are returned by `GET /payroll/{user_id}`.
+          example: 1
+    GovConnectResult:
+      type: object
+      required: [income_submissions_count]
+      properties:
+        income_submissions_count:
+          type: integer
+          description: Number of income submissions retrieved. The submissions themselves are returned by `GET /gov-connect/{user_id}`.
+          example: 1
     UserToken:
       type: object
       required: [token, webapp_link, created_at]
