@@ -3849,6 +3849,10 @@ components:
         A taxable state benefit reported to HMRC for the taxpayer. All monetary values are
         returned as strings.
       properties:
+        tax_year:
+          type: string
+          description: Tax year the benefit relates to
+          example: "2025-26"
         benefit_type:
           type: string
           description:
