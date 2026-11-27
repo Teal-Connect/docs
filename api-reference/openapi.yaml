@@ -1743,7 +1743,7 @@ paths:
       on Teal's storage. The stored data can subsequently be retrieved using the
       `GET /gov-connect/{user_id}` endpoint; the response only reports how many income
       submissions were retrieved. The account must have been established via a
-      Gov Connect connection (e.g. the `hmrc` provider) and the user must have HMRC
+      Gov Connect connection (the `Hmrc_Untied` provider) and the user must have HMRC
       enabled and a valid authorisation.
     post:
       summary: Fetch and store Gov Connect (HMRC) income data for an account
@@ -3764,8 +3764,21 @@ components:
                   paye_reference:
                     type: string
                     example: 120/NC15208
+                  type:
+                    type: string
+                    nullable: true
+                    description:
+                      How HMRC classes the row. `pension` is a workplace or private
+                      pension paid through PAYE. Only returned for the `non_mtd` flow.
+                      Other values may be added in future, so handle unknown values
+                      gracefully.
+                    enum: [employment, pension]
+                    example: employment
                   status:
                     type: string
+                    description:
+                      Either `active`, for a current job or a pension still being paid, or
+                      `inactive`.
                     example: active
                   start_date:
                     type: string
@@ -3831,6 +3844,139 @@ components:
               rent_received:
                 type: string
                 example: "747.45"
+        state_benefits:
+          type: array
+          nullable: true
+          description:
+            Taxable state benefits HMRC holds for the taxpayer in this tax year. Only
+            returned for HMRC Making Tax Digital connections (`flow` `mtd`); never present
+            for the `non_mtd` flow. Omitted or null when there are none. Non-taxable
+            benefits such as Universal Credit are not available, because HMRC does not
+            hold them.
+          items:
+            "$ref": "#/components/schemas/StateBenefit"
+        state_pension:
+          nullable: true
+          description:
+            State Pension HMRC shows for the taxpayer in this tax year. Only returned for
+            the `non_mtd` flow; for the `mtd` flow State Pension is in `state_benefits`.
+            Omitted when HMRC shows none.
+          allOf:
+            - "$ref": "#/components/schemas/StatePension"
+        debts:
+          type: array
+          nullable: true
+          description:
+            Tax debts HMRC is collecting through the taxpayer's tax code in this tax year.
+            Only returned for the `non_mtd` flow. Omitted when there are none.
+          items:
+            "$ref": "#/components/schemas/DescribedAmount"
+        allowances:
+          type: array
+          nullable: true
+          description:
+            Tax-code allowances HMRC shows for the taxpayer in this tax year. Only
+            returned for the `non_mtd` flow. Omitted when there are none.
+          items:
+            "$ref": "#/components/schemas/DescribedAmount"
+
+    StatePension:
+      type: object
+      description:
+        State Pension as HMRC shows it for one tax year. HMRC shows either `year_total`,
+        or `weekly_amount` with `amount_to_date`; the values it does not show are
+        omitted. All monetary values are returned as strings.
+      properties:
+        tax_year:
+          type: string
+          description: Tax year the State Pension relates to
+          example: "2026-2027"
+        weekly_amount:
+          type: string
+          description: Weekly State Pension rate
+          example: "230.25"
+        amount_to_date:
+          type: string
+          description:
+            HMRC's estimate of the State Pension received so far in the tax year, as of
+            the last time the data was fetched. Not an annual figure.
+          example: "7828.50"
+        year_total:
+          type: string
+          description: State Pension for the whole tax year
+          example: "11973.00"
+
+    DescribedAmount:
+      type: object
+      description:
+        An amount with HMRC's own wording for it. The monetary value is returned as a
+        string.
+      properties:
+        description:
+          type: string
+          description: HMRC's wording for the item. Free text, so do not match on it.
+          example: Personal Allowance
+        amount:
+          type: string
+          example: "12570.00"
+
+    StateBenefit:
+      type: object
+      description:
+        A taxable state benefit reported to HMRC for the taxpayer. All monetary values are
+        returned as strings.
+      properties:
+        tax_year:
+          type: string
+          description: Tax year the benefit relates to
+          example: "2025-26"
+        benefit_type:
+          type: string
+          description:
+            The type of state benefit. Other values may be added in future, so handle
+            unknown values gracefully.
+          enum:
+            - state_pension
+            - state_pension_lump_sum
+            - incapacity_benefit
+            - employment_support_allowance
+            - job_seekers_allowance
+            - bereavement_allowance
+            - other_state_benefits
+          example: state_pension
+        source:
+          type: string
+          description:
+            Where the figure came from. `hmrc` is a figure from HMRC's own records,
+            reported by government (for example the DWP). `customer` is a figure the
+            taxpayer added or amended through their MTD tax software (self-declared).
+          enum: [hmrc, customer]
+          example: hmrc
+        start_date:
+          type: string
+          description: Date the benefit started
+          example: "2019-08-01T00:00Z"
+        end_date:
+          type: string
+          nullable: true
+          description: Date the benefit ended. Null for ongoing benefits.
+          example: null
+        amount:
+          type: string
+          description: Amount of the benefit for the tax year
+          example: "9583.44"
+        tax_paid:
+          type: string
+          nullable: true
+          description: Tax paid on the benefit, if any
+          example: null
+        excluded:
+          type: boolean
+          description:
+            True when the taxpayer has told HMRC to ignore this HMRC figure, typically
+            because they replaced it with a `customer` figure. Excluded entries should not
+            be counted as income.
+          example: false
 
   securitySchemes:
     ApiKeyAuth:
