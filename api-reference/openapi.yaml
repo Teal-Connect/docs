@@ -211,6 +211,488 @@ paths:
           "$ref": "#/components/responses/BadRequest"
         "401":
           "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/users/{user_id}/email":
+    post:
+      summary: Sends a user an email containing their Teal link.
+      description: |
+        Emails the user a link to Teal's hosted flow, using the address stored
+        on the user. A new link is generated for every send, so you do not need
+        to call `POST /user-tokens` first.
+
+        `link_type` selects the link:
+          - `connection` — the user connects their payroll or HR account.
+          - `upload` — the user uploads documents. Requires
+            `payslip_upload_enabled` for the user.
+
+        The email is rendered from the template given in `template_id`, or
+        from your default template when it is omitted (see
+        `GET /email-templates`). It is sent by Teal unless you have configured
+        your own SMTP server with `POST /configuration/email-smtp`.
+
+        A `200` means the message was accepted for delivery, not that it
+        reached the inbox. Use `GET /email-send-log` to follow up on bounces
+        and complaints.
+
+        **Rate limits.** By default you can send 100 emails every 10 minutes,
+        and the same link type to the same address once every 60 seconds. A
+        request over either limit returns `429` with a `Retry-After` header.
+
+        **Error codes** returned in `errors`:
+
+        | Status | Code | Meaning |
+        | --- | --- | --- |
+        | 400 | `user_has_no_email` | The user has no email address. |
+        | 400 | `upload_not_enabled` | `link_type` is `upload` but `payslip_upload_enabled` is off for the user. |
+        | 400 | `smtp_not_configured` | Your delivery mode is `CLIENT_SMTP` but the SMTP settings are missing or incomplete. |
+        | 400 | `unsupported_delivery_mode` | Your email delivery mode is not supported. |
+        | 429 | `rate_limited` | A rate limit was reached. |
+        | 502 | `ses_failure` | Teal's email provider rejected the message. |
+        | 502 | `smtp_failure` | Your SMTP server rejected the message. |
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the user to email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/SendEmailRequest"
+      responses:
+        "200":
+          description: OK — the email was accepted for delivery
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message_id]
+                properties:
+                  message_id:
+                    type: string
+                    description: Identifier of the sent message, assigned by the email provider.
+                    example: 0102018f3c5e7a2b-6f1d2c3e-4b5a-4c6d-8e7f-9a0b1c2d3e4f-000000
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          description: The user or the template does not exist
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        "429":
+          "$ref": "#/components/responses/EmailRateLimited"
+        "502":
+          "$ref": "#/components/responses/EmailDeliveryFailed"
+  "/users/email/bulk":
+    post:
+      summary: Sends several users an email containing their Teal link.
+      description: |
+        Sends the same email as `POST /users/{user_id}/email` to up to 1000
+        users in one request. Each user gets their own link.
+
+        The request succeeds as a whole even when some users cannot be
+        emailed: the response has one entry per user in `results`, in the
+        order the IDs were submitted, plus a `summary` of the counts. Repeated
+        IDs are sent once and reported in `warnings`.
+
+        Each result has a `status`, and a `reason` when it is not `sent`:
+
+        | Status | Reason | Meaning |
+        | --- | --- | --- |
+        | `sent` | — | The email was accepted for delivery. |
+        | `skipped` | `no_email` | The user has no email address. |
+        | `failed` | `not_found` | The user does not exist. |
+        | `failed` | `upload_not_enabled` | `link_type` is `upload` but `payslip_upload_enabled` is off for the user. |
+        | `failed` | `rate_limited` | The same link type was sent to this address in the last 60 seconds. |
+        | `failed` | `ses_failure` | Teal's email provider rejected the message. |
+        | `failed` | `smtp_failure` | Your SMTP server rejected the message. |
+        | `failed` | `send_aborted` | The send was interrupted by an unexpected error. The email may or may not have gone out; check `GET /email-send-log` before retrying. |
+
+        A `400` is returned, and nothing is sent, when the request itself is
+        invalid. The `errors` array then holds a validation message or one of
+        the codes `template_not_found`, `smtp_not_configured` or
+        `unsupported_delivery_mode`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/SendEmailBulkRequest"
+      responses:
+        "200":
+          description: OK — the request was processed; check `results` for the outcome per user
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SendEmailBulkResponse"
+              example:
+                results:
+                  - user_id: 95a0e70b-fe02-4f47-aef9-2efff279df71
+                    status: sent
+                  - user_id: 1b7c1a52-6c0d-4b4e-9d0a-0a4f6f0d2c11
+                    status: skipped
+                    reason: no_email
+                summary:
+                  sent: 1
+                  skipped: 1
+                  failed: 0
+                warnings: []
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "500":
+          description: The send was interrupted by an unexpected error. The body has the same shape as a `200`; users not confirmed as sent are `failed` with `send_aborted`.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SendEmailBulkResponse"
+  "/email-send-log":
+    get:
+      summary: Lists the emails sent to your users.
+      description: |
+        Returns one entry per email Teal attempted to send for you, newest
+        first, including template test sends from the Console. Use it to
+        check whether an email was delivered, bounced or marked as spam.
+
+        Delivery, bounce and complaint updates are only recorded for emails
+        sent by Teal. Emails sent through your own SMTP server stay `sent`
+        once your server accepts them.
+      parameters:
+        - name: offset
+          in: query
+          description: The offset to start at
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: The number of items to return
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 1000
+            default: 20
+        - name: status
+          in: query
+          description: Only return emails with this status
+          required: false
+          schema:
+            "$ref": "#/components/schemas/EmailSendStatus"
+        - name: user_id
+          in: query
+          description: Only return emails sent to this user
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: from
+          in: query
+          description: Only return emails created at or after this time
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: 2026-01-01T00:00:00.000Z
+        - name: to
+          in: query
+          description: Only return emails created at or before this time. Defaults to now.
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: 2026-12-31T23:59:59.000Z
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pagination:
+                    "$ref": "#/components/schemas/Pagination"
+                  items:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/EmailSendLogEntry"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/email-templates":
+    description: Email templates define the subject and body of the emails sent to your users.
+    post:
+      summary: Creates an email template.
+      description: |
+        Templates are plain text. Teal also sends an HTML version, generated
+        from the same body with line breaks preserved.
+
+        Insert a variable as `{{name}}`. A body that uses any other variable
+        is rejected. The available variables are:
+
+        | Variable | Value |
+        | --- | --- |
+        | `{{user.forename}}` | The user's forename |
+        | `{{user.surname}}` | The user's surname |
+        | `{{user.full_name}}` | Forename and surname |
+        | `{{user.email}}` | The user's email address |
+        | `{{client.name}}` | Your display name |
+        | `{{links.connection}}` | The link generated for this email |
+        | `{{links.upload}}` | The link generated for this email |
+
+        Both link variables resolve to the one link generated for the send,
+        which is of the `link_type` requested, so a template works for either
+        link type whichever variable it uses.
+
+        Template names must be unique. A name already in use returns `400`
+        with the code `template_name_taken`.
+
+        When authenticating with a member token, creating, changing, deleting
+        and previewing templates requires the Admin role.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/EmailTemplateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/EmailTemplate"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+    get:
+      summary: Lists your email templates.
+      description: |
+        Always includes a default template: one named `Default` is created
+        for you the first time templates are listed or an email is sent.
+      parameters:
+        - name: offset
+          in: query
+          description: The offset to start at
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: The number of items to return
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pagination:
+                    "$ref": "#/components/schemas/Pagination"
+                  templates:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/EmailTemplate"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+  "/email-templates/{id}":
+    get:
+      summary: Returns an email template by id.
+      parameters:
+        - "$ref": "#/components/parameters/EmailTemplateId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/EmailTemplate"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
+    put:
+      summary: Replaces an email template.
+      description: |
+        Replaces every field of the template, with the same rules as
+        `POST /email-templates`. `is_default` is `false` when omitted, so send
+        `is_default: true` when updating your default template to keep it as
+        the default.
+      parameters:
+        - "$ref": "#/components/parameters/EmailTemplateId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/EmailTemplateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/EmailTemplate"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
+    delete:
+      summary: Deletes an email template.
+      description: |
+        The default template cannot be deleted: the request returns `400`
+        with the code `cannot_delete_default_template`. Make another template
+        the default first. Emails already sent with the template stay in the
+        send log.
+      parameters:
+        - "$ref": "#/components/parameters/EmailTemplateId"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
+  "/email-templates/{id}/preview":
+    post:
+      summary: Renders an email template without sending it.
+      description: |
+        Returns the subject and body as a recipient would see them. Variables
+        are filled with sample values unless you supply your own in
+        `variables`. Send an empty object, `{}`, to use the sample values.
+      parameters:
+        - "$ref": "#/components/parameters/EmailTemplateId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                variables:
+                  type: object
+                  description: Values to render the template with, keyed by variable name. Replaces the sample values entirely; a variable you leave out is shown unrendered.
+                  additionalProperties:
+                    type: string
+                  example:
+                    user.forename: Jane
+                    client.name: Acme Lending
+                    links.connection: https://connect.goteal.io/example-token
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [subject, body_plaintext, body_html]
+                properties:
+                  subject:
+                    type: string
+                    example: "Action Required: Verify Your Payroll"
+                  body_plaintext:
+                    type: string
+                    example: "Hi Jane,\n\nPlease follow this link to verify your payroll: https://connect.goteal.io/example-token\n\nThanks,\nAcme Lending"
+                  body_html:
+                    type: string
+                    example: "Hi Jane,<br><br>Please follow this link to verify your payroll: https://connect.goteal.io/example-token<br><br>Thanks,<br>Acme Lending"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          "$ref": "#/components/responses/ResourceNotFound"
+  "/configuration/email-smtp":
+    description: Send user emails through your own SMTP server instead of Teal's email provider.
+    post:
+      summary: Sets your SMTP server for user emails.
+      description: |
+        Stores your SMTP settings and switches email delivery to your server
+        (`email_delivery_mode` becomes `CLIENT_SMTP`). Every field must be
+        sent each time, including the password.
+
+        Teal connects to the server with the supplied credentials before
+        saving. If that fails, nothing is saved and the request returns `400`
+        with the reason. The password is stored encrypted and is never
+        returned.
+
+        When authenticating with a member token, the SMTP endpoints require
+        the Admin role.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/EmailSmtpConfigRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/EmailSmtpConfig"
+        "400":
+          "$ref": "#/components/responses/BadRequest"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+    get:
+      summary: Returns your SMTP settings.
+      description: The password is never returned; `password_set` tells you whether one is stored.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/EmailSmtpConfig"
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
+        "404":
+          description: No SMTP server is configured. `errors` contains `smtp_not_configured`.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+    delete:
+      summary: Removes your SMTP settings.
+      description: Deletes the stored SMTP settings and switches email delivery back to Teal (`email_delivery_mode` becomes `TEAL`).
+      responses:
+        "204":
+          description: No Content
+        "401":
+          "$ref": "#/components/responses/UnauthorizedApiKey"
   "/user-tokens":
     post:
       summary: Generate a link token for authentication in subsequent steps to a unique user ID.
@@ -1889,7 +2371,37 @@ components:
         applcation/json:
           schema:
             "$ref": "#/components/schemas/NotFound"
+    EmailRateLimited:
+      description: Too many emails. Retry after the number of seconds in the `Retry-After` header.
+      headers:
+        Retry-After:
+          description: Seconds to wait before sending again
+          schema:
+            type: integer
+            example: 42
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
+          example:
+            errors: ["rate_limited"]
+    EmailDeliveryFailed:
+      description: The email provider or your SMTP server rejected the message
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
+          example:
+            errors: ["ses_failure"]
   parameters:
+    EmailTemplateId:
+      name: id
+      in: path
+      required: true
+      description: ID of the email template
+      schema:
+        type: string
+        format: uuid
     XAuthorisationId:
       name: x-teal-authorisation-id
       in: header
@@ -2367,6 +2879,265 @@ components:
           example: https://api.sandbox.goteal.co/r/ZwgQkNEMZ4QDkQ
         created_at:
           "$ref": "#/components/schemas/Date"
+    EmailLinkType:
+      type: string
+      description: Which Teal link the email contains. `connection` lets the user connect their payroll or HR account; `upload` lets the user upload documents.
+      enum: [connection, upload]
+      example: connection
+    SendEmailRequest:
+      type: object
+      required: [link_type]
+      properties:
+        link_type:
+          "$ref": "#/components/schemas/EmailLinkType"
+        template_id:
+          type: string
+          format: uuid
+          description: Email template to use. Your default template is used when omitted.
+          example: 3f0f4d3e-7c7b-4c36-9b55-2f1f6b1c9a10
+    SendEmailBulkRequest:
+      type: object
+      required: [user_ids, link_type]
+      properties:
+        user_ids:
+          type: array
+          description: IDs of the users to email. Repeated IDs are sent once.
+          minItems: 1
+          maxItems: 1000
+          items:
+            type: string
+            format: uuid
+          example:
+            - 95a0e70b-fe02-4f47-aef9-2efff279df71
+            - 1b7c1a52-6c0d-4b4e-9d0a-0a4f6f0d2c11
+        link_type:
+          "$ref": "#/components/schemas/EmailLinkType"
+        template_id:
+          type: string
+          format: uuid
+          description: Email template to use. Your default template is used when omitted.
+          example: 3f0f4d3e-7c7b-4c36-9b55-2f1f6b1c9a10
+    SendEmailBulkResponse:
+      type: object
+      required: [results, summary, warnings]
+      properties:
+        results:
+          type: array
+          description: One entry per distinct user ID, in the order submitted
+          items:
+            type: object
+            required: [user_id, status]
+            properties:
+              user_id:
+                type: string
+                format: uuid
+                example: 95a0e70b-fe02-4f47-aef9-2efff279df71
+              status:
+                type: string
+                enum: [sent, skipped, failed]
+                example: sent
+              reason:
+                type: string
+                description: Why the email was skipped or failed. Not present when `status` is `sent`.
+                enum: [no_email, not_found, upload_not_enabled, rate_limited, ses_failure, smtp_failure, send_aborted]
+          example:
+            - user_id: 95a0e70b-fe02-4f47-aef9-2efff279df71
+              status: sent
+            - user_id: 1b7c1a52-6c0d-4b4e-9d0a-0a4f6f0d2c11
+              status: skipped
+              reason: no_email
+        summary:
+          type: object
+          required: [sent, skipped, failed]
+          properties:
+            sent:
+              type: integer
+              example: 1
+            skipped:
+              type: integer
+              example: 1
+            failed:
+              type: integer
+              example: 0
+        warnings:
+          type: array
+          description: Notes about how the request was handled, such as repeated user IDs being ignored
+          items:
+            type: string
+          example: ["Duplicate user_ids ignored; only the first occurrence of each id is sent."]
+    EmailSendStatus:
+      type: string
+      description: |
+        Delivery status of an email:
+          - `pending` — being sent
+          - `sent` — accepted for delivery
+          - `bounced` — rejected by the recipient's mail server
+          - `complained` — marked as spam by the recipient
+          - `failed` — could not be sent
+      enum: [pending, sent, bounced, complained, failed]
+      example: sent
+    EmailDeliveryMode:
+      type: string
+      description: How the email is sent. `TEAL` uses Teal's email provider; `CLIENT_SMTP` uses your own SMTP server.
+      enum: [TEAL, CLIENT_SMTP]
+      example: TEAL
+    EmailSendLogEntry:
+      type: object
+      required: [id, recipient_email, delivery_mode, status, subject, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 6e0f2a8b-3c4d-4e5f-8a9b-0c1d2e3f4a5b
+        user_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: The user the email was sent to. `null` for template test sends.
+          example: 95a0e70b-fe02-4f47-aef9-2efff279df71
+        recipient_email:
+          type: string
+          format: email
+          example: jane.doe@example.com
+        link_type:
+          allOf:
+            - "$ref": "#/components/schemas/EmailLinkType"
+          nullable: true
+          description: The link the email contained. `null` for template test sends.
+        delivery_mode:
+          "$ref": "#/components/schemas/EmailDeliveryMode"
+        status:
+          "$ref": "#/components/schemas/EmailSendStatus"
+        subject:
+          type: string
+          description: The subject as sent, with variables filled in
+          example: "Action Required: Verify Your Payroll"
+        error_message:
+          type: string
+          nullable: true
+          description: Why the email failed, bounced or was marked as spam
+          example: null
+        delivered_at:
+          allOf:
+            - "$ref": "#/components/schemas/Date"
+          nullable: true
+          description: When the recipient's mail server accepted the email. Only recorded for emails sent by Teal.
+        failed_at:
+          allOf:
+            - "$ref": "#/components/schemas/Date"
+          nullable: true
+          description: When the email bounced or was marked as spam. Only recorded for emails sent by Teal.
+          example: null
+        created_at:
+          "$ref": "#/components/schemas/Date"
+    EmailTemplateRequest:
+      type: object
+      required: [name, subject, body]
+      properties:
+        name:
+          type: string
+          description: A name for the template, unique among your templates
+          maxLength: 255
+          example: Payroll reminder
+        subject:
+          type: string
+          description: Subject line. May contain variables.
+          maxLength: 500
+          example: "Action Required: Verify Your Payroll"
+        body:
+          type: string
+          description: Plain-text body. May contain variables.
+          example: "Hi {{user.forename}},\n\nPlease follow this link to verify your payroll: {{links.connection}}\n\nThanks,\n{{client.name}}"
+        format:
+          type: string
+          description: Body format. Only `plaintext` is supported.
+          enum: [plaintext]
+          default: plaintext
+        is_default:
+          type: boolean
+          description: Makes this the template used when a send request has no `template_id`. The previous default stops being the default.
+          default: false
+    EmailTemplate:
+      allOf:
+        - "$ref": "#/components/schemas/EmailTemplateRequest"
+        - type: object
+          required: [id, name, subject, body, format, is_default, created_at, updated_at]
+          properties:
+            id:
+              type: string
+              format: uuid
+              example: 3f0f4d3e-7c7b-4c36-9b55-2f1f6b1c9a10
+            created_at:
+              "$ref": "#/components/schemas/Date"
+            updated_at:
+              "$ref": "#/components/schemas/Date"
+    EmailSmtpConfigRequest:
+      type: object
+      required: [host, port, username, password, encryption, from_address]
+      properties:
+        host:
+          type: string
+          example: smtp.example.com
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+          example: 587
+        username:
+          type: string
+          example: mailer@example.com
+        password:
+          type: string
+          format: password
+          example: correct-horse-battery-staple
+        encryption:
+          type: string
+          enum: [STARTTLS, TLS]
+          example: STARTTLS
+        from_address:
+          type: string
+          format: email
+          description: Address the emails are sent from. A bare address, without a display name.
+          maxLength: 254
+          example: verify@example.com
+        from_name:
+          type: string
+          nullable: true
+          description: Display name shown next to the from address. Omit to keep the stored name; send `null` or an empty string to clear it.
+          maxLength: 100
+          example: Acme Lending
+    EmailSmtpConfig:
+      type: object
+      required: [host, port, username, encryption, from_address, from_name, password_set, email_delivery_mode]
+      properties:
+        host:
+          type: string
+          example: smtp.example.com
+        port:
+          type: integer
+          example: 587
+        username:
+          type: string
+          example: mailer@example.com
+        encryption:
+          type: string
+          enum: [STARTTLS, TLS]
+          example: STARTTLS
+        from_address:
+          type: string
+          example: verify@example.com
+        from_name:
+          type: string
+          nullable: true
+          example: Acme Lending
+        password_set:
+          type: boolean
+          description: Whether a password is stored
+          example: true
+        email_delivery_mode:
+          allOf:
+            - "$ref": "#/components/schemas/EmailDeliveryMode"
+          example: CLIENT_SMTP
     ClientConfiguration:
       type: object
       properties:
