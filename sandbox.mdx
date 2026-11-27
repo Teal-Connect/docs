@@ -681,6 +681,51 @@ curl --request GET \
 }
 ```
 
+**State Benefits**
+
+For the self-employed flow (`"flow": "mtd"`), each tax-year submission can also include
+`state_benefits`: the taxable state benefits HMRC holds for the taxpayer. It is omitted
+when there are none and is never returned for the `non_mtd` flow. Entries with
+`"source": "hmrc"` come from HMRC's own records; `"source": "customer"` entries were
+added or amended by the taxpayer in their MTD tax software. Entries with
+`"excluded": true` should not be counted as income.
+
+In sandbox, the `mtd` test user (NINO `SE785342B`) returns HMRC's sample state benefits
+for tax years 2025-26 and 2026-27. HMRC's sandbox returns the same sample list for every
+test taxpayer.
+
+```json
+"state_benefits": [
+  {
+    "benefit_type": "state_pension",
+    "source": "hmrc",
+    "start_date": "2019-08-01T00:00Z",
+    "end_date": null,
+    "amount": "9583.44",
+    "tax_paid": null,
+    "excluded": false
+  },
+  {
+    "benefit_type": "incapacity_benefit",
+    "source": "hmrc",
+    "start_date": "2020-01-01T00:00Z",
+    "end_date": "2020-04-01T00:00Z",
+    "amount": "34345.55",
+    "tax_paid": "345.55",
+    "excluded": true
+  },
+  {
+    "benefit_type": "incapacity_benefit",
+    "source": "customer",
+    "start_date": "2020-02-11T00:00Z",
+    "end_date": "2020-04-12T00:00Z",
+    "amount": "303045.55",
+    "tax_paid": "3443.55",
+    "excluded": false
+  }
+]
+```
+
 #### Fetch HMRC Income `/gov-connect/entries/connections`
 
 Income is fetched automatically when the account is authorised, so this step is only
