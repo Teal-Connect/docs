@@ -1743,7 +1743,7 @@ paths:
       on Teal's storage. The stored data can subsequently be retrieved using the
       `GET /gov-connect/{user_id}` endpoint; the response only reports how many income
       submissions were retrieved. The account must have been established via a
-      Gov Connect connection (e.g. the `hmrc` provider) and the user must have HMRC
+      Gov Connect connection (the `Hmrc_Untied` provider) and the user must have HMRC
       enabled and a valid authorisation.
     post:
       summary: Fetch and store Gov Connect (HMRC) income data for an account
@@ -3764,8 +3764,21 @@ components:
                   paye_reference:
                     type: string
                     example: 120/NC15208
+                  type:
+                    type: string
+                    nullable: true
+                    description:
+                      How HMRC classes the row. `pension` is a workplace or private
+                      pension paid through PAYE. Only returned for the `non_mtd` flow.
+                      Other values may be added in future, so handle unknown values
+                      gracefully.
+                    enum: [employment, pension]
+                    example: employment
                   status:
                     type: string
+                    description:
+                      Either `active`, for a current job or a pension still being paid, or
+                      `inactive`.
                     example: active
                   start_date:
                     type: string
@@ -3842,6 +3855,70 @@ components:
             hold them.
           items:
             "$ref": "#/components/schemas/StateBenefit"
+        state_pension:
+          nullable: true
+          description:
+            State Pension HMRC shows for the taxpayer in this tax year. Only returned for
+            the `non_mtd` flow; for the `mtd` flow State Pension is in `state_benefits`.
+            Omitted when HMRC shows none.
+          allOf:
+            - "$ref": "#/components/schemas/StatePension"
+        debts:
+          type: array
+          nullable: true
+          description:
+            Tax debts HMRC is collecting through the taxpayer's tax code in this tax year.
+            Only returned for the `non_mtd` flow. Omitted when there are none.
+          items:
+            "$ref": "#/components/schemas/DescribedAmount"
+        allowances:
+          type: array
+          nullable: true
+          description:
+            Tax-code allowances HMRC shows for the taxpayer in this tax year. Only
+            returned for the `non_mtd` flow. Omitted when there are none.
+          items:
+            "$ref": "#/components/schemas/DescribedAmount"
+
+    StatePension:
+      type: object
+      description:
+        State Pension as HMRC shows it for one tax year. HMRC shows either `year_total`,
+        or `weekly_amount` with `amount_to_date`; the values it does not show are
+        omitted. All monetary values are returned as strings.
+      properties:
+        tax_year:
+          type: string
+          description: Tax year the State Pension relates to
+          example: "2026-2027"
+        weekly_amount:
+          type: string
+          description: Weekly State Pension rate
+          example: "230.25"
+        amount_to_date:
+          type: string
+          description:
+            HMRC's estimate of the State Pension received so far in the tax year, as of
+            the last time the data was fetched. Not an annual figure.
+          example: "7828.50"
+        year_total:
+          type: string
+          description: State Pension for the whole tax year
+          example: "11973.00"
+
+    DescribedAmount:
+      type: object
+      description:
+        An amount with HMRC's own wording for it. The monetary value is returned as a
+        string.
+      properties:
+        description:
+          type: string
+          description: HMRC's wording for the item. Free text, so do not match on it.
+          example: Personal Allowance
+        amount:
+          type: string
+          example: "12570.00"
 
     StateBenefit:
       type: object
